@@ -1,0 +1,8 @@
+# 配置文件供 iOS 端读取，统一使用 LF 换行
+* text=auto eol=lf
+*.conf   text eol=lf
+*.list   text eol=lf
+*.module text eol=lf
+*.sgmodule text eol=lf
+*.js     text eol=lf
+*.png    binary

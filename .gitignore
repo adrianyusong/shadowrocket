@@ -1,0 +1,18 @@
+# === 敏感配置：绝不入库 ===
+# 含机场订阅链接、服务器地址、密码 / UUID 的真实配置
+*.local.conf
+*.private.conf
+secrets/
+subscription*.txt
+
+# Playwright 调试产物
+.playwright-cli/
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*~
