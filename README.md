@@ -25,22 +25,40 @@ https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/config/default.
 
 ## 配置说明
 
-`config/default.conf` 包含：
+`config/default.conf` 包含 41 个策略组、42 个远程规则集，
+规则集来源 [blackmatrix7/ios_rule_script](https://github.com/blackmatrix7/ios_rule_script)。
 
-- **DNS** — 国内 DNS 直连解析，劫持 App 发往 8.8.8.8 / 1.1.1.1 的请求防绕过，
-  污染应答（返回私有 IP）直接丢弃
-- **策略组** — 主策略（手动 / 自动测速 / 故障转移 / 负载均衡）+ 21 个分类组
-- **分流规则** — 32 个远程规则集，来源 [blackmatrix7/ios_rule_script](https://github.com/blackmatrix7/ios_rule_script)
+### 首次加载必须检查
 
-规则顺序上有几处是刻意安排的，改动时注意：
+自动测速类分组（`♻️ 自动选择`、`🔯 故障转移`、`🔮 负载均衡`）与 6 个地区分组
+使用 `policy-regex-filter` 按**节点名关键词**匹配订阅节点。加载后请确认这些分组
+里有节点：
+
+- **有节点** → 正常
+- **空的** → Shadowrocket 版本不支持该语法，或你的节点名不含地区关键词。
+  需改为显式列出节点名：`♻️ 自动选择 = url-test, 节点A, 节点B, url = ..., interval = 300`
+
+分组为空时策略链会静默失效（全部走直连），不会报错，所以这步不能跳过。
+
+### 规则顺序
+
+有几处是刻意安排的，改动时注意：
 
 | 位置 | 原因 |
 |---|---|
-| 广告 / 隐私规则最靠前 | 拦截优先于分流，否则会被后面的域名规则抢先命中 |
-| AI 服务在 Global / Microsoft 之前 | 否则 OpenAI、Copilot 会被宽泛规则集吞掉 |
-| GoogleFCM 在 Google 之前且走 DIRECT | FCM 走代理会收不到推送 |
-| Download 走直连 | 大流量下载不消耗机场套餐 |
+| QUIC 阻断在最前 | UDP 443 会绕过 TCP 侧规则匹配，也让流媒体解锁判定不稳 |
+| 广告 / 隐私规则靠前 | 拦截优先于分流，否则被后面的域名规则抢先命中 |
+| AI 服务在 Global / Microsoft / Google 之前 | 否则 OpenAI、Copilot 会被宽泛规则集吞掉 |
+| GoogleFCM 在 Google 之前且走 DIRECT | FCM 走代理收不到推送 |
+| AppleID 在 Apple 之前且走 DIRECT | 走代理易触发二次验证 |
+| BiliBiliIntl 在 BiliBili 之前 | 国际版需代理，国内版直连 |
+| Download / Speedtest 走直连 | 前者不消耗套餐，后者测本地真实带宽 |
 | ChinaMax + GEOIP,CN 在 FINAL 之前 | 域名规则先行，IP 兜底 |
+
+### 已知不确定项
+
+`[General]` 中的 `private-ip-answer` 语义未在设备上验证。若国内域名解析异常，
+优先注释该行排查。旧设备内存吃紧时，可把 `ChinaMax` 换成体积更小的 `China`。
 
 ### MITM
 
