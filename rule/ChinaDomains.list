@@ -1,0 +1,148 @@
+# 国内服务域名直连列表
+#
+# 为什么需要这个文件：
+# blackmatrix7 的 Shadowrocket 版国内规则集实质都是 IP 列表——
+#   ChinaMax  12575 条中 12445 条为 IP-CIDR，域名规则仅 64 条
+#   ChinaIPs  22849 条全为 IP-CIDR
+#   China        63 条中域名规则仅 11 条
+# 均不含 qq.com / pinduoduo / ele.me 等主流域名。
+#
+# 这类流量最终靠 GEOIP,CN 兜底命中，能直连，但要等 DNS 解析完成才能判定。
+# 域名规则在解析前即可匹配，更快也更可控。GEOIP,CN 仍作为后备保留。
+#
+# 部分条目来自连接日志实测（拼多多、饿了么、阿里诚盾等）。
+
+# ---- 腾讯 ----
+DOMAIN-SUFFIX,qq.com
+DOMAIN-SUFFIX,qcloud.com
+DOMAIN-SUFFIX,tencent.com
+DOMAIN-SUFFIX,tencent-cloud.net
+DOMAIN-SUFFIX,weixin.com
+DOMAIN-SUFFIX,weixinbridge.com
+DOMAIN-SUFFIX,wechat.com
+DOMAIN-SUFFIX,gtimg.com
+DOMAIN-SUFFIX,idqqimg.com
+DOMAIN-SUFFIX,myqcloud.com
+
+# ---- 阿里 ----
+DOMAIN-SUFFIX,taobao.com
+DOMAIN-SUFFIX,tmall.com
+DOMAIN-SUFFIX,alipay.com
+DOMAIN-SUFFIX,alipayobjects.com
+DOMAIN-SUFFIX,aliyun.com
+DOMAIN-SUFFIX,aliyuncs.com
+DOMAIN-SUFFIX,alicdn.com
+DOMAIN-SUFFIX,alibaba.com
+DOMAIN-SUFFIX,alibabachengdun.com
+DOMAIN-SUFFIX,alibabausercontent.com
+DOMAIN-SUFFIX,ele.me
+DOMAIN-SUFFIX,eleme.cn
+DOMAIN-SUFFIX,amap.com
+DOMAIN-SUFFIX,autonavi.com
+DOMAIN-SUFFIX,dingtalk.com
+DOMAIN-SUFFIX,youku.com
+DOMAIN-SUFFIX,uc.cn
+DOMAIN-SUFFIX,1688.com
+DOMAIN-SUFFIX,xiami.com
+
+# ---- 拼多多 ----
+DOMAIN-SUFFIX,pinduoduo.com
+DOMAIN-SUFFIX,pinduoduo.net
+DOMAIN-SUFFIX,yangkeduo.com
+DOMAIN-SUFFIX,pddpic.com
+
+# ---- 京东 ----
+DOMAIN-SUFFIX,jd.com
+DOMAIN-SUFFIX,jd.hk
+DOMAIN-SUFFIX,360buyimg.com
+DOMAIN-SUFFIX,jcloudcs.com
+
+# ---- 百度 ----
+DOMAIN-SUFFIX,baidu.com
+DOMAIN-SUFFIX,bdstatic.com
+DOMAIN-SUFFIX,bdimg.com
+DOMAIN-SUFFIX,baidubce.com
+
+# ---- 字节 ----
+DOMAIN-SUFFIX,douyin.com
+DOMAIN-SUFFIX,douyinpic.com
+DOMAIN-SUFFIX,douyinstatic.com
+DOMAIN-SUFFIX,bytedance.com
+DOMAIN-SUFFIX,bytecdn.cn
+DOMAIN-SUFFIX,byteimg.com
+DOMAIN-SUFFIX,feishu.cn
+DOMAIN-SUFFIX,toutiao.com
+DOMAIN-SUFFIX,snssdk.com
+
+# ---- 网易 ----
+DOMAIN-SUFFIX,163.com
+DOMAIN-SUFFIX,126.net
+DOMAIN-SUFFIX,netease.com
+DOMAIN-SUFFIX,ydstatic.com
+DOMAIN-SUFFIX,youdao.com
+
+# ---- 视频 / 音频 ----
+DOMAIN-SUFFIX,bilibili.com
+DOMAIN-SUFFIX,bilivideo.com
+DOMAIN-SUFFIX,bilivideo.cn
+DOMAIN-SUFFIX,hdslb.com
+DOMAIN-SUFFIX,iqiyi.com
+DOMAIN-SUFFIX,qiyipic.com
+DOMAIN-SUFFIX,mgtv.com
+DOMAIN-SUFFIX,ximalaya.com
+DOMAIN-SUFFIX,kuaishou.com
+DOMAIN-SUFFIX,kuaishouzt.com
+DOMAIN-SUFFIX,acfun.cn
+
+# ---- 社区 / 社交 ----
+DOMAIN-SUFFIX,zhihu.com
+DOMAIN-SUFFIX,zhimg.com
+DOMAIN-SUFFIX,weibo.com
+DOMAIN-SUFFIX,weibocdn.com
+DOMAIN-SUFFIX,sinaimg.cn
+DOMAIN-SUFFIX,sina.com.cn
+DOMAIN-SUFFIX,xiaohongshu.com
+DOMAIN-SUFFIX,xhscdn.com
+DOMAIN-SUFFIX,douban.com
+DOMAIN-SUFFIX,doubanio.com
+DOMAIN-SUFFIX,sohu.com
+DOMAIN-SUFFIX,sohucs.com
+
+# ---- 生活 / 出行 / 支付 ----
+DOMAIN-SUFFIX,meituan.com
+DOMAIN-SUFFIX,meituan.net
+DOMAIN-SUFFIX,dianping.com
+DOMAIN-SUFFIX,didiglobal.com
+DOMAIN-SUFFIX,xiaojukeji.com
+DOMAIN-SUFFIX,ctrip.com
+DOMAIN-SUFFIX,trip.com
+DOMAIN-SUFFIX,12306.cn
+DOMAIN-SUFFIX,unionpay.com
+DOMAIN-SUFFIX,95516.com
+
+# ---- 设备厂商 ----
+DOMAIN-SUFFIX,mi.com
+DOMAIN-SUFFIX,xiaomi.com
+DOMAIN-SUFFIX,miui.com
+DOMAIN-SUFFIX,huawei.com
+DOMAIN-SUFFIX,hicloud.com
+DOMAIN-SUFFIX,vivo.com.cn
+DOMAIN-SUFFIX,oppomobile.com
+
+# ---- 其他常用 ----
+DOMAIN-SUFFIX,qidian.com
+DOMAIN-SUFFIX,yuque.com
+DOMAIN-SUFFIX,gitee.com
+DOMAIN-SUFFIX,csdn.net
+DOMAIN-SUFFIX,cnblogs.com
+DOMAIN-SUFFIX,coolapk.com
+DOMAIN-SUFFIX,smzdm.com
+DOMAIN-SUFFIX,wps.cn
+DOMAIN-SUFFIX,ccb.com
+DOMAIN-SUFFIX,icbc.com.cn
+DOMAIN-SUFFIX,cmbchina.com
+DOMAIN-SUFFIX,boc.cn
+
+# ---- 国家顶级域 ----
+# 放在最后：.cn 域名基本都是国内服务，作为域名层兜底
+DOMAIN-SUFFIX,cn
