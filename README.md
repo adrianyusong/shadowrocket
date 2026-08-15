@@ -19,9 +19,39 @@ https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/config/default.
 | 目录 | 内容 |
 |---|---|
 | `config/` | 主配置文件（`.conf`） |
-| `rule/` | 自定义分流规则集（`.list`） |
+| `rule/` | 分流规则集（`.list`），已收编上游 |
 | `module/` | 模块（`.module` / `.sgmodule`） |
 | `script/` | 重写脚本（`.js`） |
+| `tools/` | 维护脚本 |
+
+### 规则集为什么收编进仓库
+
+原先配置直接引用 54 个 blackmatrix7 的远程规则集。每次配置更新就是 54 次网络请求，
+任何一个失败该类规则会**静默消失**，不报错。上游改动也会在你不知情时改变分流。
+
+现在全部收编进 `rule/`，`tools/sync-rules.py` 负责同步：
+
+```bash
+python tools/sync-rules.py
+```
+
+脚本做三件事：
+
+1. 按 `config/default.conf` 中 RULE-SET 的**出现顺序**拉取上游
+2. **全局去重** —— 同一条规则只保留首次出现的策略，与 Shadowrocket 自上而下
+   的匹配语义一致。合并后文件之间不再有跨文件冲突（原先有 498 条这类冲突，
+   靠规则顺序隐式决定胜负）
+3. 按策略合并输出，每个策略一个文件；同时把 QuantumultX 的 `HOST-SUFFIX`
+   归一化为 Shadowrocket 原生的 `DOMAIN-SUFFIX`
+
+结果：54 个远程引用 → 34 个本仓库文件，23,599 条 → 22,851 条。
+
+`rule/*.list` 由脚本生成，**不要手改** —— 下次同步会覆盖。需要增补规则请写进
+`config/default.conf` 的内联规则段（LinkedIn、拼多多、埋点拦截都在那里）。
+
+例外：`rule/ChinaDomains.list` 是手工维护的，不参与同步。
+
+**代价**：广告规则集上游更新频繁，收编后会变旧，需要定期跑同步脚本。
 
 ## 配置说明
 

@@ -1,0 +1,13 @@
+# 策略: ☁️ PIKPAK
+# 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
+# 需要增补规则请写进 config/default.conf 的内联规则段。
+# 上游: blackmatrix7/ios_rule_script
+# 规则数: 7
+
+DOMAIN-SUFFIX,dlandroid.rcv.sandai.net
+DOMAIN-SUFFIX,hub5idx.v6.shub.sandai.net
+DOMAIN-SUFFIX,hub5pn.wap.sandai.net
+DOMAIN-SUFFIX,hub5pnc.sandai.net
+DOMAIN-SUFFIX,hub5pr.v6.phub.sandai.net
+DOMAIN-SUFFIX,hubciddata.sandai.net
+DOMAIN-KEYWORD,mypikpak

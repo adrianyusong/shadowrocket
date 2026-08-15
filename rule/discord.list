@@ -1,0 +1,35 @@
+# 策略: 💬 DISCORD
+# 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
+# 需要增补规则请写进 config/default.conf 的内联规则段。
+# 上游: blackmatrix7/ios_rule_script
+# 规则数: 29
+
+DOMAIN-SUFFIX,airhorn.solutions
+DOMAIN-SUFFIX,airhornbot.com
+DOMAIN-SUFFIX,bigbeans.solutions
+DOMAIN-SUFFIX,dis.gd
+DOMAIN-SUFFIX,discord-activities.com
+DOMAIN-SUFFIX,discord-attachments-uploads-prd.storage.googleapis.com
+DOMAIN-SUFFIX,discord.co
+DOMAIN-SUFFIX,discord.com
+DOMAIN-SUFFIX,discord.design
+DOMAIN-SUFFIX,discord.dev
+DOMAIN-SUFFIX,discord.gg
+DOMAIN-SUFFIX,discord.gift
+DOMAIN-SUFFIX,discord.gifts
+DOMAIN-SUFFIX,discord.media
+DOMAIN-SUFFIX,discord.new
+DOMAIN-SUFFIX,discord.store
+DOMAIN-SUFFIX,discord.tools
+DOMAIN-SUFFIX,discordactivities.com
+DOMAIN-SUFFIX,discordapp.com
+DOMAIN-SUFFIX,discordapp.io
+DOMAIN-SUFFIX,discordapp.net
+DOMAIN-SUFFIX,discordapp.page.link
+DOMAIN-SUFFIX,discordcdn.com
+DOMAIN-SUFFIX,discordmerch.com
+DOMAIN-SUFFIX,discordpartygames.com
+DOMAIN-SUFFIX,discordsays.com
+DOMAIN-SUFFIX,discordstatus.com
+DOMAIN-SUFFIX,hammerandchisel.ssl.zendesk.com
+DOMAIN-SUFFIX,watchanimeattheoffice.com

@@ -1,0 +1,43 @@
+# 策略: 🍎 苹果服务
+# 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
+# 需要增补规则请写进 config/default.conf 的内联规则段。
+# 上游: blackmatrix7/ios_rule_script
+# 规则数: 37
+
+DOMAIN-KEYWORD,apple-support.akadns.net
+DOMAIN-KEYWORD,apple.com.akadns.net
+DOMAIN-KEYWORD,apple.com.edgekey.net
+DOMAIN-KEYWORD,buy.itunes.apple.com
+DOMAIN-KEYWORD,smp-device
+DOMAIN-KEYWORD,testflight
+DOMAIN-KEYWORD,icloud.com.akadns.net
+USER-AGENT,*FindMyiPhone?
+USER-AGENT,*Music?
+USER-AGENT,*WeatherFoundation*
+USER-AGENT,*com.apple.Maps?
+USER-AGENT,*com.apple.mobileme.fmip1
+USER-AGENT,FMDClient*
+USER-AGENT,FMFD*
+USER-AGENT,FindMyFriends*
+USER-AGENT,FindMyiPhone*
+USER-AGENT,Maps*
+USER-AGENT,Wallet*
+USER-AGENT,com.apple.Maps
+USER-AGENT,com.apple.appstored*
+USER-AGENT,fmflocatord*
+USER-AGENT,geod*
+USER-AGENT,locationd*
+USER-AGENT,passd*
+IP-CIDR,139.178.128.0/18
+IP-CIDR,144.178.0.0/19
+IP-CIDR,144.178.36.0/22
+IP-CIDR,144.178.48.0/20
+IP-CIDR,17.0.0.0/8
+IP-CIDR,192.35.50.0/24
+IP-CIDR,198.183.17.0/24
+IP-CIDR,205.180.175.0/24
+IP-CIDR,2403:300::/32
+IP-CIDR,2620:149::/32
+IP-CIDR,2a01:b740::/32
+IP-CIDR,63.92.224.0/19
+IP-CIDR,65.199.22.0/23

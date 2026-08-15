@@ -1,0 +1,30 @@
+# 策略: 📺 ABEMATV
+# 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
+# 需要增补规则请写进 config/default.conf 的内联规则段。
+# 上游: blackmatrix7/ios_rule_script
+# 规则数: 24
+
+DOMAIN-SUFFIX,abema-tv.com
+DOMAIN-SUFFIX,abema.io
+DOMAIN-SUFFIX,abema.tv
+DOMAIN-SUFFIX,abematv.akamaized.net
+DOMAIN-SUFFIX,adx.promo
+DOMAIN-SUFFIX,ameba.jp
+DOMAIN-SUFFIX,amebame.com
+DOMAIN-SUFFIX,amebaownd.com
+DOMAIN-SUFFIX,amebaowndme.com
+DOMAIN-SUFFIX,ameblo.jp
+DOMAIN-SUFFIX,bucketeer.jp
+DOMAIN-SUFFIX,d1otoma47x30pg.cloudfront.net
+DOMAIN-SUFFIX,d2wy8f7a9ursnm.cloudfront.net
+DOMAIN-SUFFIX,dokusho-ojikan.jp
+DOMAIN-SUFFIX,ds-linear-abematv.akamaized.net
+DOMAIN-SUFFIX,ds-vod-abematv.akamaized.net
+DOMAIN-SUFFIX,hayabusa.dev
+DOMAIN-SUFFIX,hayabusa.io
+DOMAIN-SUFFIX,hayabusa.media
+DOMAIN-SUFFIX,linear-abematv.akamaized.net
+DOMAIN-SUFFIX,vod-abematv.akamaized.net
+DOMAIN-SUFFIX,winticket.jp
+DOMAIN-KEYWORD,abematv.akamaized.net
+USER-AGENT,AbemaTV*
