@@ -101,6 +101,8 @@ def check_policy_refs(cfg):
             own = s.split('=')[0].strip()
             body = '='.join(s.split('=')[1:])
             for x in [y.strip() for y in body.split(',')][1:]:
+                # 跳过 key=value 参数（policy-select-name / interval / url 等），
+                # 它们不是策略引用
                 if '=' in x or not x:
                     continue
                 refs.append((i, x))
@@ -121,6 +123,26 @@ def check_policy_refs(cfg):
         if n > 1:
             fail('策略组重复定义: %s' % g)
     return len(defined), len(refs)
+
+
+def check_select_name(cfg):
+    """policy-select-name 指定的默认值必须出现在该组的候选里，否则不生效。"""
+    for sec, i, s in sections(cfg):
+        if sec != '[Proxy Group]' or 'policy-select-name' not in s:
+            continue
+        name = s.split('=')[0].strip()
+        body = '='.join(s.split('=')[1:])
+        parts = [x.strip() for x in body.split(',')]
+        want = None
+        cands = []
+        for x in parts[1:]:
+            if x.startswith('policy-select-name='):
+                want = x.split('=', 1)[1].strip()
+            elif '=' not in x and x:
+                cands.append(x)
+        if want and want not in cands:
+            fail('L%d 分组 %s 的 policy-select-name=%s 不在候选列表中，不会生效'
+                 % (i, name, want))
 
 
 def check_case(cfg):
@@ -284,6 +306,7 @@ def main():
     cfg = io.open(CONFIG, encoding='utf-8').read()
     ngroups, nrefs = check_policy_refs(cfg)
     check_case(cfg)
+    check_select_name(cfg)
     check_order(cfg)
     check_rulesets_exist(cfg)
     check_workflows()
