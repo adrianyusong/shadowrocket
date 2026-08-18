@@ -24,12 +24,15 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG = os.path.join(ROOT, 'config', 'default.conf')
 RULEDIR = os.path.join(ROOT, 'rule')
 
+# REJECT-VIDEO 与 TAILSCALE 见官方懒人配置 2026-08-07 版
 BUILTIN = {'DIRECT', 'REJECT', 'REJECT-DROP', 'REJECT-NO-DROP', 'REJECT-TINYGIF',
-           'REJECT-IMG', 'REJECT-200', 'REJECT-DICT', 'REJECT-ARRAY', 'PROXY'}
+           'REJECT-IMG', 'REJECT-200', 'REJECT-DICT', 'REJECT-ARRAY',
+           'REJECT-VIDEO', 'TAILSCALE', 'PROXY'}
 
 # (先, 后) —— 含前者的规则行必须出现在含后者的规则行之前
 ORDER = [
     ('rmonitor.qq.com', 'reject-ads'),
+    ('linkedin.com', 'china.list'),
     ('jpush.cn', 'DOMAIN-SUFFIX,cn'),
     ('linkedin.com', 'DOMAIN-SUFFIX,cn'),
     ('linkedin.com', 'GEOIP'),
@@ -115,8 +118,29 @@ def check_case(cfg):
                  % (i, name))
 
 
+def rule_lines(cfg):
+    """取出 [Rule] 段的行。
+
+    必须按整行相等来定位段落，不能用 cfg.split('[Rule]')——注释里出现
+    "[Rule]" 字样就会把切分点挪到前面，导致整段约束静默失效。
+    这正是本函数曾经踩过的坑。
+    """
+    out, inside = [], False
+    for line in cfg.splitlines():
+        s = line.strip()
+        if s.startswith('[') and s.endswith(']'):
+            inside = (s == '[Rule]')
+            continue
+        if inside:
+            out.append(line)
+    return out
+
+
 def check_order(cfg):
-    body = cfg.split('[Rule]')[1].split('[Host]')[0].split('\n')
+    body = rule_lines(cfg)
+    if not body:
+        fail('找不到 [Rule] 段，顺序约束无法检查')
+        return
     pos = {}
     for i, line in enumerate(body):
         s = line.strip()
@@ -127,8 +151,12 @@ def check_order(cfg):
                 if token in s and token not in pos:
                     pos[token] = i
     for a, b in ORDER:
-        if a not in pos or b not in pos:
-            warn('顺序约束无法检查，标记未出现: %s < %s' % (a, b))
+        # 标记缺失一律判失败：约束静默失效比约束被破坏更危险，
+        # 因为后者至少会在日志里表现出来。
+        missing = [t for t in (a, b) if t not in pos]
+        if missing:
+            fail('顺序约束的标记未出现在 [Rule] 段，约束形同虚设: %s < %s（缺 %s）'
+                 % (a, b, '、'.join(missing)))
             continue
         if pos[a] >= pos[b]:
             fail('顺序约束被破坏: %s (第%d行) 必须早于 %s (第%d行)'
