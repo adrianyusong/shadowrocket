@@ -129,6 +129,15 @@ DOMAIN-SUFFIX,hicloud.com
 DOMAIN-SUFFIX,vivo.com.cn
 DOMAIN-SUFFIX,oppomobile.com
 
+# ---- 国内 AI ----
+# 上游三家 AI 规则集都不含，实测会掉到 FINAL 走代理——它是国内服务，
+# 代理反而更慢且可能被判异常。
+DOMAIN-SUFFIX,deepseek.com
+DOMAIN-SUFFIX,moonshot.cn
+DOMAIN-SUFFIX,zhipuai.cn
+DOMAIN-SUFFIX,bigmodel.cn
+DOMAIN-SUFFIX,dashscope.aliyuncs.com
+
 # ---- 其他常用 ----
 DOMAIN-SUFFIX,qidian.com
 DOMAIN-SUFFIX,yuque.com

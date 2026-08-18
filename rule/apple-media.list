@@ -2,7 +2,7 @@
 # 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
 # 需要增补规则请写进 config/default.conf 的内联规则段。
 # 上游: blackmatrix7/ios_rule_script
-# 规则数: 52
+# 规则数: 51
 
 DOMAIN,aod-ssl.itunes.apple.com
 DOMAIN,aod.itunes.apple.com
@@ -30,7 +30,6 @@ DOMAIN,developer.apple.com
 DOMAIN,devimages-cdn.apple.com
 DOMAIN,devstreaming-cdn.apple.com
 DOMAIN,docs-assets.developer.apple.com
-DOMAIN,gspe1-ssl.ls.apple.com
 DOMAIN,hls-svod.itunes.apple.com
 DOMAIN,itunes.apple.com
 DOMAIN,js-cdn.music.apple.com

@@ -17,6 +17,10 @@ https://anti-ad.net/surge.txt 🛑 广告拦截
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/AdvertisingLite/AdvertisingLite.list 🛑 广告拦截
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Privacy/Privacy.list 🍃 应用净化
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Hijacking/Hijacking.list 🛑 广告拦截
+# iab0x00/ProxyRules 的 AI 集：49 条，含 blackmatrix7 缺失的 x.ai / grok.com /
+# perplexity.ai / generativelanguage.googleapis.com。
+# 实测 16 个 AI 域名，它覆盖 11 个、blackmatrix7 四件套覆盖 7 个，故取并集。
+https://raw.githubusercontent.com/iab0x00/ProxyRules/main/Rule/AI.txt 🤖 AI 服务
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/OpenAI/OpenAI.list 🤖 AI 服务
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Claude/Claude.list 🤖 AI 服务
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Gemini/Gemini.list 🤖 AI 服务
