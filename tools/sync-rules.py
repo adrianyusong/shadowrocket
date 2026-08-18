@@ -79,6 +79,9 @@ NORMALIZE = {
 }
 
 # 本仓库自维护的列表不参与收编，它们本来就在仓库里
+# 规则尾部的修饰符。no-resolve 让 IP 类规则跳过域名请求，不触发本地 DNS 查询。
+MODIFIERS = {"no-resolve", "extended-matching", "pre-matching", "force-remote-dns"}
+
 SELF_HOSTED = 'adrianyusong/shadowrocket'
 
 
@@ -125,17 +128,22 @@ def fetch(url, attempts=3):
 
 
 def parse(body):
-    """产出 (type, value) 序列，跳过注释与空行，并归一化语法。"""
-    for line in body.split('\n'):
+    """产出 (type, value, modifiers) 序列。
+
+    修饰符必须保留：上游 ChinaMax 的 12163 条 IP-CIDR 都带 no-resolve，
+    丢掉后每条规则都会为域名请求触发一次本地 DNS 解析——既把域名泄漏给
+    国内 DNS，又让被污染的解析结果把境外域名判成国内（LinkedIn 即此类）。
+    """
+    for line in body.split(chr(10)):
         line = line.strip()
-        if not line or line.startswith('#'):
+        if not line or line.startswith("#"):
             continue
-        parts = [p.strip() for p in line.split(',')]
+        parts = [p.strip() for p in line.split(",")]
         if len(parts) < 2:
             continue
         rtype = NORMALIZE.get(parts[0], parts[0])
-        yield rtype, parts[1]
-
+        mods = tuple(x for x in parts[2:] if x in MODIFIERS)
+        yield rtype, parts[1], mods
 
 def main():
     ap = argparse.ArgumentParser()
@@ -166,7 +174,7 @@ def main():
 
     for url, policy in sets:
         name = url.rsplit('/', 1)[-1].replace('.list', '')
-        for rtype, value in parse(bodies[url]):
+        for rtype, value, mods in parse(bodies[url]):
             total += 1
             key = (rtype, value)
             if key in excludes:
@@ -180,7 +188,7 @@ def main():
                     dropped[(seen[key], policy)] += 1
                 continue
             seen[key] = policy
-            merged.setdefault(policy, []).append(key)
+            merged.setdefault(policy, []).append((rtype, value, mods))
             stats[name] += 1
 
     print('原始 %d 条 -> 去重后 %d 条（丢弃 %d 条，其中跨策略冲突 %d 条）'
@@ -216,8 +224,8 @@ def main():
             fh.write('# 需要增补规则请写进 config/default.conf 的内联规则段。\n')
             fh.write('# 上游: blackmatrix7/ios_rule_script\n')
             fh.write('# 规则数: %d\n\n' % len(rules))
-            for rtype, value in rules:
-                fh.write('%s,%s\n' % (rtype, value))
+            for rtype, value, mods in rules:
+                fh.write(','.join((rtype, value) + mods) + chr(10))
         written.append((policy, SLUG[policy] + '.list', len(rules)))
 
     # 声明了策略却一条规则都没产出，说明它被前面的源全部抢走（顺序错了）。

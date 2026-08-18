@@ -10,6 +10,7 @@
   * 误伤真实服务        —— licdn 是 alicdn 的子串
   * workflow YAML 语法  —— heredoc 内容顶格会冲出 run: | 的块作用域
   * skip-proxy 漏网    —— 该层在规则之前生效，命中即绕过隧道，规则拦不住
+  * 丢失 no-resolve    —— 合并时丢掉修饰符，IP 规则会为每个域名请求触发本地 DNS
 
 用法：
     python tools/check-config.py
@@ -278,6 +279,29 @@ def check_skip_proxy(cfg):
                     fail('skip-proxy 含 Apple 域名，会绕过隧道使代理规则失效: %s' % item)
 
 
+def check_no_resolve():
+    """IP 类规则必须保留 no-resolve。
+
+    上游 ChinaMax 的一万两千余条 IP-CIDR 都带该修饰符。丢掉后每条规则都会
+    为域名请求触发一次本地 DNS 解析——既把域名泄漏给国内 DNS，又让被污染的
+    解析结果把境外域名判成国内。sync-rules.py 曾因只取 (类型, 值) 而全部丢失。
+    """
+    path = os.path.join(RULEDIR, 'china.list')
+    if not os.path.exists(path):
+        return
+    total = kept = 0
+    for line in io.open(path, encoding='utf-8'):
+        line = line.strip()
+        if not line.startswith('IP-CIDR'):
+            continue
+        total += 1
+        if 'no-resolve' in line:
+            kept += 1
+    if total and kept < total * 0.9:
+        fail('china.list 的 IP-CIDR 规则大量缺失 no-resolve（%d/%d 保留），'
+             '会为域名请求触发本地 DNS 解析' % (kept, total))
+
+
 def check_workflows():
     """GitHub 只在推送后才报 YAML 错误，本地必须先挡住。"""
     paths = sorted(glob.glob(os.path.join(ROOT, '.github', 'workflows', '*.yml'))
@@ -310,6 +334,7 @@ def main():
     check_order(cfg)
     check_rulesets_exist(cfg)
     check_workflows()
+    check_no_resolve()
     check_skip_proxy(cfg)
     rules = load_rules()
     check_keywords(rules)

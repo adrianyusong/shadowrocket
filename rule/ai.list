@@ -76,9 +76,9 @@ DOMAIN-SUFFIX,openaicom.imgix.net
 DOMAIN-SUFFIX,stripe.com
 DOMAIN-SUFFIX,turn.livekit.cloud
 DOMAIN-KEYWORD,openai
-IP-CIDR,24.199.123.28/32
-IP-CIDR,64.23.132.171/32
-IP-ASN,20473
+IP-CIDR,24.199.123.28/32,no-resolve
+IP-CIDR,64.23.132.171/32,no-resolve
+IP-ASN,20473,no-resolve
 DOMAIN,cdn.usefathom.com
 DOMAIN,makersuite.google.com
 DOMAIN-SUFFIX,bard.google.com
@@ -102,4 +102,4 @@ DOMAIN-SUFFIX,bing-shopping.microsoft-falcon.io
 DOMAIN-SUFFIX,challenges.cloudflare.com
 DOMAIN-SUFFIX,edgeservices.bing.com
 DOMAIN-KEYWORD,openaicom-api
-IP-ASN,14061
+IP-ASN,14061,no-resolve
