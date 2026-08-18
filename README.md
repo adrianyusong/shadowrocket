@@ -136,6 +136,20 @@ python tools/sync-rules.py && python tools/check-config.py
 
 所以这 18 条域名以内联 `DOMAIN-SUFFIX` 规则显式拦到直连，位置在游戏规则集之前。
 
+### WebRTC 防泄漏
+
+```
+stun-response-ip = 1.1.1.1
+stun-response-ipv6 = ::1
+```
+
+浏览器与部分 App 通过 STUN 探测公网地址，那条路径不经过代理，是绕过隧道
+暴露真实 IP 的经典途径。开启后 STUN 只能拿到固定假值。
+
+**代价**：P2P 打洞失败。FaceTime、微信视频、腾讯会议、Discord 语音会被迫
+走中继，接通变慢、质量下降，个别情况连不上。遇到通话问题就注释掉这两行，
+立即恢复，不需要改别处。
+
 ### 已知不确定项
 
 `[General]` 中的 `private-ip-answer` 语义未在设备上验证。若国内域名解析异常，
