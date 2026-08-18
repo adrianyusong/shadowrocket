@@ -29,15 +29,19 @@ jobs:
 
       - name: 有变化才提交
         run: |
-          if git diff --quiet; then
+          # 用 status --porcelain 而非 diff --quiet：后者看不到新增文件，
+          # 往 sources.txt 加新策略时生成的新 .list 会被静默丢弃。
+          if [ -z "$(git status --porcelain rule/)" ]; then
             echo "上游无变化，跳过提交"
             exit 0
           fi
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add rule/
-          git commit -m "chore: 同步上游规则集
+          git commit -F - <<'MSG'
+chore: 同步上游规则集
 
-          由 .github/workflows/sync.yml 自动执行。
-          校验通过后才提交，详见 tools/check-config.py。"
+由 .github/workflows/sync.yml 自动执行，校验通过后才提交。
+上游清单见 tools/sources.txt，缺陷豁免见 tools/exclude.txt。
+MSG
           git push
