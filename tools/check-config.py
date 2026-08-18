@@ -53,8 +53,20 @@ MUST_NOT_BLOCK = [
     'javadoc.io',
 ]
 
+# IP 类规则可带尾部修饰符，取策略名时必须先剥掉，
+# 否则会把 no-resolve 当成策略名并误报未定义。
+MODIFIERS = {'no-resolve', 'extended-matching', 'pre-matching', 'force-remote-dns'}
+
 FAILS = []
 WARNS = []
+
+
+def policy_of(line):
+    """取规则行的策略名，忽略尾部修饰符。"""
+    parts = [x.strip() for x in line.split(',')]
+    while len(parts) > 2 and parts[-1] in MODIFIERS:
+        parts.pop()
+    return parts[-1]
 
 
 def fail(msg):
@@ -94,7 +106,7 @@ def check_policy_refs(cfg):
                 if x != own:
                     used.add(x)
         elif sec == '[Rule]':
-            target = [y.strip() for y in s.split(',')][-1]
+            target = policy_of(s)
             refs.append((i, target))
             used.add(target)
 
