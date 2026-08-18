@@ -149,6 +149,30 @@ TCP，属于纯损失。而阻断 QUIC 的两个理由——绕过 TCP 侧规则
 
 所以这 18 条域名以内联 `DOMAIN-SUFFIX` 规则显式拦到直连，位置在游戏规则集之前。
 
+### Apple 全量走代理
+
+`🍎 苹果服务` 为代理优先，`AppleID` 也归入该组（不再单独直连）。
+
+`apple.list` 只有 41 条且无 `apple.com` 全域后缀，大量 Apple 域名会解析到国内 IP
+并被 `GEOIP,CN` 判成国内服务走直连 —— 日志实测 `ocsp2.apple.com` 286 次、
+`gs-loc-cn.apple.com` 169 次都是这么走掉的。所以补了 12 条域名后缀加
+`IP-CIDR,17.0.0.0/8`（Apple 独占段）兜底，位置在 `china.list` 与 `GEOIP,CN` 之前。
+
+**唯一例外**：`captive.apple.com` 保留在 `skip-proxy`。那是 WiFi 门户检测，
+`skip-proxy` 在规则之前生效、直接绕过隧道；走代理会导致连不上酒店与机场热点。
+
+**代价**：
+
+| 影响 | 后果 |
+|---|---|
+| APNs 推送 | `push.apple.com` 走代理，推送可能延迟或丢失 |
+| App Store 下载 | 应用动辄几百 MB，全走机场流量 |
+| iCloud 备份 / 照片同步 | 流量可能很大 |
+| Apple ID 登录 | 走代理易触发二次验证 |
+| 中国区 iCloud | 服务器在云上贵州，代理反而更慢 |
+
+要回退某一项，把对应域名单独加一条 `DIRECT` 规则，位置放在这批规则之前即可。
+
 ### WebRTC 防泄漏
 
 ```

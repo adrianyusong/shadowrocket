@@ -40,6 +40,8 @@ ORDER = [
     ('ai.list', 'proxy.list'),
     ('direct-global.list', 'game.list'),
     ('china.list', 'GEOIP'),
+    ('DOMAIN-SUFFIX,apple.com', 'GEOIP'),
+    ('IP-CIDR,17.0.0.0/8', 'GEOIP'),
 ]
 
 # 正常服务不该被任何拦截类策略命中

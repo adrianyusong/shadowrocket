@@ -2,7 +2,7 @@
 # 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
 # 需要增补规则请写进 config/default.conf 的内联规则段。
 # 上游: blackmatrix7/ios_rule_script
-# 规则数: 185
+# 规则数: 181
 
 DOMAIN,asusrouter.com
 DOMAIN,instant.arubanetworks.com
@@ -185,7 +185,3 @@ IP-CIDR,74.125.206.188/32
 IP-CIDR,74.125.23.188/32
 IP-CIDR,74.125.24.188/32
 IP-CIDR,74.125.28.188/32
-DOMAIN,appleid.apple.com
-DOMAIN,appleid.cdn-apple.com
-DOMAIN,gsa.apple.com
-DOMAIN,idmsa.apple.com
