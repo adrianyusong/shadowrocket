@@ -14,11 +14,11 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
-          python-version: '3.12'
+          python-version: '3.13'
 
       - name: 安装依赖
         # check-config.py 用 PyYAML 校验本文件自身的语法；缺库只会降级为警告，
