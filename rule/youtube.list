@@ -2,13 +2,11 @@
 # 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
 # 需要增补规则请写进 config/default.conf 的内联规则段。
 # 上游: blackmatrix7/ios_rule_script
-# 规则数: 190
+# 规则数: 188
 
-DOMAIN-SUFFIX,ggpht.cn
 DOMAIN-SUFFIX,ggpht.com
 DOMAIN-SUFFIX,googlevideo.com
 DOMAIN-SUFFIX,gvt1.com
-DOMAIN-SUFFIX,gvt2.com
 DOMAIN-SUFFIX,video.google.com
 DOMAIN-SUFFIX,wide-youtube.l.google.com
 DOMAIN-SUFFIX,withyoutube.com

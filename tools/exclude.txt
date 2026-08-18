@@ -1,0 +1,24 @@
+# 上游规则黑名单——同步时从抓取结果中剔除。
+#
+# 收编上游后，上游的缺陷也一并进了本仓库。手工删除会在下次
+# tools/sync-rules.py 运行时被原样搬回，所以缺陷修复必须记在这里。
+#
+# 格式：
+#   类型,值            剔除所有策略下的该规则
+#   类型,值,策略slug   只剔除指定策略下的该规则
+# 以 # 开头为注释，空行忽略。
+
+# blackmatrix7 Global.list 中用于匹配成人站点的关键词，
+# 但 jav 是 java / javascript 的子串，实测误伤 javascript.info、javadoc.io，
+# 把开发资源推进代理白白消耗流量。
+DOMAIN-KEYWORD,jav
+
+# .ms 是蒙特塞拉特（Montserrat）的国家顶级域，不是中国 gTLD。
+# 上游把它归入国内规则，导致 gov.ms、visitmontserrat.ms 等境外站点
+# 被强制直连而打不开——与 LinkedIn 被 GEOIP,CN 误判是同一类问题。
+DOMAIN-SUFFIX,ms
+
+# simility.com 是 PayPal 的风控/反欺诈引擎。anti-AD 把它归入追踪域名，
+# 但它排在支付规则之前，会把 PayPal 的风控请求拦掉，可能导致登录或
+# 支付被判为风险环境。只从广告策略剔除，让 PayPal 规则集正常接管。
+DOMAIN-SUFFIX,simility.com,reject-ads

@@ -2,7 +2,7 @@
 # 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
 # 需要增补规则请写进 config/default.conf 的内联规则段。
 # 上游: blackmatrix7/ios_rule_script
-# 规则数: 48
+# 规则数: 47
 
 DOMAIN-SUFFIX,bcbolthboa-a.akamaihd.net
 DOMAIN-SUFFIX,cf-images.ap-southeast-1.prod.boltdns.net
@@ -49,6 +49,5 @@ DOMAIN-SUFFIX,nowe.com
 DOMAIN-SUFFIX,nowe.hk
 DOMAIN-SUFFIX,players.brightcove.net
 DOMAIN-SUFFIX,warnermediacdn.com
-DOMAIN-SUFFIX,youboranqs01.com
 USER-AGENT,HBO%20NOW*
 USER-AGENT,HBOMAX*

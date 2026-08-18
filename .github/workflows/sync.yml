@@ -1,0 +1,43 @@
+name: 同步上游规则
+
+# 规则集收编进仓库后不会自己更新，广告类上游变动尤其频繁。
+# 每周日拉一次并跑校验，有变化才提交。
+on:
+  schedule:
+    - cron: '0 20 * * 0'   # UTC 20:00 周日 = 北京时间周一 04:00
+  workflow_dispatch:        # 也可手动触发
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 拉取上游并合并
+        run: python tools/sync-rules.py
+
+      - name: 校验配置与规则
+        # 校验失败就不提交，避免把坏规则推给正在订阅的设备
+        run: python tools/check-config.py
+
+      - name: 有变化才提交
+        run: |
+          if git diff --quiet; then
+            echo "上游无变化，跳过提交"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add rule/
+          git commit -m "chore: 同步上游规则集
+
+          由 .github/workflows/sync.yml 自动执行。
+          校验通过后才提交，详见 tools/check-config.py。"
+          git push

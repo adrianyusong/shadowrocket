@@ -10,9 +10,13 @@
 https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/config/default.conf
 ```
 
-> 本仓库为 Private，raw 地址不能匿名访问。私有仓库需在链接后附加
-> token（`?token=...`，GitHub raw 页面「Raw」按钮给出的带签名地址，有效期有限），
-> 或将仓库改为 Public。若改 Public，务必先确认没有任何真实节点信息被提交。
+若 `raw.githubusercontent.com` 拉不动，可换 jsDelivr 镜像（有缓存延迟）：
+
+```
+https://cdn.jsdelivr.net/gh/adrianyusong/shadowrocket@main/config/default.conf
+```
+
+> 仓库为 Public。它不含任何节点凭据——`[Proxy]` 段留空，节点由 App 内订阅提供。
 
 ## 目录结构
 
@@ -29,34 +33,59 @@ https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/config/default.
 原先配置直接引用 54 个 blackmatrix7 的远程规则集。每次配置更新就是 54 次网络请求，
 任何一个失败该类规则会**静默消失**，不报错。上游改动也会在你不知情时改变分流。
 
-现在全部收编进 `rule/`，`tools/sync-rules.py` 负责同步：
+现在全部收编进 `rule/`，共 34 个文件、12.3 万条规则。
+
+### 维护
+
+| 文件 | 作用 |
+|---|---|
+| `tools/sources.txt` | **上游清单，脚本的唯一数据来源**。顺序即优先级 |
+| `tools/exclude.txt` | 上游缺陷黑名单，同步时剔除 |
+| `tools/sync-rules.py` | 拉取、去重、按策略合并 |
+| `tools/check-config.py` | 静态校验，失败退出码非 0 |
+| `.github/workflows/sync.yml` | 每周日自动同步，校验通过才提交 |
 
 ```bash
-python tools/sync-rules.py
+python tools/sync-rules.py && python tools/check-config.py
 ```
 
-脚本做三件事：
+`sources.txt` 必须独立存在：规则集收编后配置里只剩指向本仓库的 URL，
+脚本再也无法从配置反推上游。
 
-1. 按 `config/default.conf` 中 RULE-SET 的**出现顺序**拉取上游
-2. **全局去重** —— 同一条规则只保留首次出现的策略，与 Shadowrocket 自上而下
-   的匹配语义一致。合并后文件之间不再有跨文件冲突（原先有 498 条这类冲突，
-   靠规则顺序隐式决定胜负）
-3. 按策略合并输出，每个策略一个文件；同时把 QuantumultX 的 `HOST-SUFFIX`
-   归一化为 Shadowrocket 原生的 `DOMAIN-SUFFIX`
+`sync-rules.py` 会按 `sources.txt` 顺序拉取，然后**全局去重** —— 同一条规则只保留
+首次出现的策略，与 Shadowrocket 自上而下的匹配语义一致。合并后文件之间不再有跨文件
+冲突（原先有 680 条这类冲突，靠规则顺序隐式决定胜负）。同时把 QuantumultX 的
+`HOST-SUFFIX` 归一化为原生 `DOMAIN-SUFFIX`。
 
-结果：54 个远程引用 → 34 个本仓库文件，23,599 条 → 22,851 条。
+`exclude.txt` 记录上游缺陷。收编后上游的错误也进了本仓库，手工删除会在下次同步时
+被搬回，所以必须记在这里。当前豁免三条，每条都有实测依据：
+
+- `DOMAIN-KEYWORD,jav` —— 误伤 `javascript.info`、`javadoc.io`
+- `DOMAIN-SUFFIX,ms` —— `.ms` 是蒙特塞拉特国家域，非中国 gTLD
+- `DOMAIN-SUFFIX,simility.com,reject-ads` —— PayPal 风控引擎，只从广告策略剔除
+
+### 广告拦截
+
+`reject-ads.list` 以 [anti-AD](https://anti-ad.net) 为主，10 万条。
+
+引入原因：blackmatrix7 的 Advertising 系列按服务分类而非按广告网络，实测 19 个常见
+广告域名只覆盖 4 个，换完整版 `Advertising`（781 条）也只到 2/15。anti-AD 同组覆盖
+13/19，且对 LinkedIn、拼多多、QQ、GitHub、OpenAI、Google、Apple、支付宝、淘宝
+九个正常服务 0 误伤。
+
+**代价**：规则总量从 2.3 万涨到 12.3 万，iOS 端加载表现未在设备上验证。
 
 `rule/*.list` 由脚本生成，**不要手改** —— 下次同步会覆盖。需要增补规则请写进
-`config/default.conf` 的内联规则段（LinkedIn、拼多多、埋点拦截都在那里）。
+`config/default.conf` 的内联规则段（LinkedIn、拼多多、埋点拦截都在那里），
+需要剔除上游规则请写进 `tools/exclude.txt`。
 
 例外：`rule/ChinaDomains.list` 是手工维护的，不参与同步。
 
-**代价**：广告规则集上游更新频繁，收编后会变旧，需要定期跑同步脚本。
-
 ## 配置说明
 
-`config/default.conf` 包含 41 个策略组、42 个远程规则集，
-规则集来源 [blackmatrix7/ios_rule_script](https://github.com/blackmatrix7/ios_rule_script)。
+`config/default.conf` 包含 43 个策略组、34 个规则集（全部托管于本仓库 `rule/`），
+合计 12.3 万条规则。上游为 [blackmatrix7/ios_rule_script](https://github.com/blackmatrix7/ios_rule_script)
+与 [anti-AD](https://anti-ad.net)。
 
 ### 节点分组
 
@@ -112,12 +141,18 @@ python tools/sync-rules.py
 `[General]` 中的 `private-ip-answer` 语义未在设备上验证。若国内域名解析异常，
 优先注释该行排查。
 
-规则集合计约 19,800 条 / 0.66 MB，对 iOS 网络扩展无压力，无需精简。
+引入 anti-AD 后规则总量从 2.3 万涨到 12.3 万，iOS 网络扩展的加载表现未在设备上
+验证。若出现启动慢或内存告警，从 `tools/sources.txt` 移除 anti-AD 一行后重跑同步即可。
 
 ### MITM
 
-默认 `enable = false`。URL 重写和去广告脚本需要 MITM 才生效，开启前先在
-Shadowrocket 内生成并信任 CA 证书：
+`enable = true`。配置本身不含重写脚本，但 iRingo 一类模块需要 MITM，
+且若这里写 false，每次拉取配置都会把 App 内的开关按回去，表现为模块间歇性失效。
+
+`hostname` 留空是对的：模块用 `hostname = %APPEND% xxx` 追加自己的域名，
+启用模块后自动并入全局列表。
+
+证书需在 App 内生成并**在系统里信任**：
 
 设置 → 证书 → 生成新的 CA 证书 → 安装 → 系统「通用 → 关于 → 证书信任设置」中启用
 

@@ -2,7 +2,7 @@
 # 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
 # 需要增补规则请写进 config/default.conf 的内联规则段。
 # 上游: blackmatrix7/ios_rule_script
-# 规则数: 571
+# 规则数: 569
 
 DOMAIN-SUFFIX,aboutfacebook.com
 DOMAIN-SUFFIX,accessfacebookfromschool.com
@@ -33,7 +33,6 @@ DOMAIN-SUFFIX,cdninstagram.com
 DOMAIN-SUFFIX,celebgramme.com
 DOMAIN-SUFFIX,chickstagram.com
 DOMAIN-SUFFIX,china-facebook.com
-DOMAIN-SUFFIX,click-url.com
 DOMAIN-SUFFIX,como-hackearfacebook.com
 DOMAIN-SUFFIX,componentkit.org
 DOMAIN-SUFFIX,crowdtangle.com
@@ -133,7 +132,6 @@ DOMAIN-SUFFIX,facebook30.com
 DOMAIN-SUFFIX,facebook30.net
 DOMAIN-SUFFIX,facebook30.org
 DOMAIN-SUFFIX,facebook4business.com
-DOMAIN-SUFFIX,facebookads.com
 DOMAIN-SUFFIX,facebookadvertisingsecrets.com
 DOMAIN-SUFFIX,facebookappcenter.info
 DOMAIN-SUFFIX,facebookappcenter.net

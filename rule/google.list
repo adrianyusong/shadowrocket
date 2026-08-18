@@ -2,29 +2,16 @@
 # 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
 # 需要增补规则请写进 config/default.conf 的内联规则段。
 # 上游: blackmatrix7/ios_rule_script
-# 规则数: 694
+# 规则数: 651
 
 DOMAIN,voice.telephony.goog
-DOMAIN-SUFFIX,0emm.com
 DOMAIN-SUFFIX,1e100.net
 DOMAIN-SUFFIX,1ucrs.com
 DOMAIN-SUFFIX,265.com
-DOMAIN-SUFFIX,2mdn-cn.net
-DOMAIN-SUFFIX,2mdn.net
 DOMAIN-SUFFIX,466453.com
 DOMAIN-SUFFIX,abc.xyz
 DOMAIN-SUFFIX,adgoogle.net
 DOMAIN-SUFFIX,admeld.com
-DOMAIN-SUFFIX,admob-cn.com
-DOMAIN-SUFFIX,admob.com
-DOMAIN-SUFFIX,adsense.com
-DOMAIN-SUFFIX,adsensecustomsearchads.com
-DOMAIN-SUFFIX,adsenseformobileapps.com
-DOMAIN-SUFFIX,advertisercommunity.com
-DOMAIN-SUFFIX,advertiserscommunity.com
-DOMAIN-SUFFIX,adwords-community.com
-DOMAIN-SUFFIX,adwords.com
-DOMAIN-SUFFIX,adwordsexpress.com
 DOMAIN-SUFFIX,amp.dev
 DOMAIN-SUFFIX,ampproject.com
 DOMAIN-SUFFIX,ampproject.net
@@ -35,9 +22,6 @@ DOMAIN-SUFFIX,androidtv.com
 DOMAIN-SUFFIX,angulardart.org
 DOMAIN-SUFFIX,api.ai
 DOMAIN-SUFFIX,apigee.com
-DOMAIN-SUFFIX,app-analytics-services.com
-DOMAIN-SUFFIX,app-measurement-cn.com
-DOMAIN-SUFFIX,app-measurement.com
 DOMAIN-SUFFIX,app-measurement.net
 DOMAIN-SUFFIX,appbridge.ca
 DOMAIN-SUFFIX,appbridge.io
@@ -170,11 +154,9 @@ DOMAIN-SUFFIX,cobrasearch.com
 DOMAIN-SUFFIX,codespot.com
 DOMAIN-SUFFIX,conscrypt.com
 DOMAIN-SUFFIX,conscrypt.org
-DOMAIN-SUFFIX,cookiechoices.org
 DOMAIN-SUFFIX,coova.com
 DOMAIN-SUFFIX,coova.net
 DOMAIN-SUFFIX,coova.org
-DOMAIN-SUFFIX,crashlytics.com
 DOMAIN-SUFFIX,crbug.com
 DOMAIN-SUFFIX,creativelab5.com
 DOMAIN-SUFFIX,crossmediapanel.com
@@ -184,7 +166,6 @@ DOMAIN-SUFFIX,cs4hs.com
 DOMAIN-SUFFIX,dart.dev
 DOMAIN-SUFFIX,dartlang.org
 DOMAIN-SUFFIX,dartpad.dev
-DOMAIN-SUFFIX,dartsearch-cn.net
 DOMAIN-SUFFIX,dartsearch.net
 DOMAIN-SUFFIX,data-vocabulary.org
 DOMAIN-SUFFIX,dataliberation.org
@@ -198,9 +179,6 @@ DOMAIN-SUFFIX,dialogflow.com
 DOMAIN-SUFFIX,digisfera.com
 DOMAIN-SUFFIX,digitalassetlinks.org
 DOMAIN-SUFFIX,digitalattackmap.com
-DOMAIN-SUFFIX,doubleclick-cn.net
-DOMAIN-SUFFIX,doubleclick.com
-DOMAIN-SUFFIX,doubleclick.net
 DOMAIN-SUFFIX,episodic.com
 DOMAIN-SUFFIX,fastlane.ci
 DOMAIN-SUFFIX,fastlane.tools
@@ -247,13 +225,10 @@ DOMAIN-SUFFIX,golang.com
 DOMAIN-SUFFIX,golang.net
 DOMAIN-SUFFIX,golang.org
 DOMAIN-SUFFIX,gonglchuangl.net
-DOMAIN-SUFFIX,gongyichuangyi.net
 DOMAIN-SUFFIX,goo.gl
 DOMAIN-SUFFIX,googel.com
 DOMAIN-SUFFIX,googil.com
 DOMAIN-SUFFIX,googl.com
-DOMAIN-SUFFIX,google-analytics-cn.com
-DOMAIN-SUFFIX,google-analytics.com
 DOMAIN-SUFFIX,google-syndication.com
 DOMAIN-SUFFIX,google.ad
 DOMAIN-SUFFIX,google.ae
@@ -451,10 +426,6 @@ DOMAIN-SUFFIX,google.vg
 DOMAIN-SUFFIX,google.vu
 DOMAIN-SUFFIX,google.ws
 DOMAIN-SUFFIX,googleacquisitionmigration.com
-DOMAIN-SUFFIX,googleadapis.com
-DOMAIN-SUFFIX,googleadservices-cn.com
-DOMAIN-SUFFIX,googleadservices.com
-DOMAIN-SUFFIX,googleanalytics.com
 DOMAIN-SUFFIX,googleapis-cn.com
 DOMAIN-SUFFIX,googleapis.cn
 DOMAIN-SUFFIX,googleapis.com
@@ -467,7 +438,6 @@ DOMAIN-SUFFIX,googlecapital.com
 DOMAIN-SUFFIX,googlecert.net
 DOMAIN-SUFFIX,googlecnapps.cn
 DOMAIN-SUFFIX,googlecode.com
-DOMAIN-SUFFIX,googlecommerce.com
 DOMAIN-SUFFIX,googlecompare.co.uk
 DOMAIN-SUFFIX,googledanmark.com
 DOMAIN-SUFFIX,googledomains.com
@@ -476,12 +446,9 @@ DOMAIN-SUFFIX,googleearth.com
 DOMAIN-SUFFIX,googlefiber.com
 DOMAIN-SUFFIX,googlefiber.net
 DOMAIN-SUFFIX,googlefinland.com
-DOMAIN-SUFFIX,googleflights-cn.net
 DOMAIN-SUFFIX,googlemail.com
 DOMAIN-SUFFIX,googlemaps.com
 DOMAIN-SUFFIX,googlemashups.com
-DOMAIN-SUFFIX,googleoptimize-cn.com
-DOMAIN-SUFFIX,googleoptimize.com
 DOMAIN-SUFFIX,googlepagecreator.com
 DOMAIN-SUFFIX,googlephotos.com
 DOMAIN-SUFFIX,googleplay.com
@@ -490,15 +457,6 @@ DOMAIN-SUFFIX,googlescholar.com
 DOMAIN-SUFFIX,googlesource.com
 DOMAIN-SUFFIX,googlestore.com
 DOMAIN-SUFFIX,googlesverige.com
-DOMAIN-SUFFIX,googlesyndication-cn.com
-DOMAIN-SUFFIX,googlesyndication.com
-DOMAIN-SUFFIX,googletagmanager-cn.com
-DOMAIN-SUFFIX,googletagmanager.com
-DOMAIN-SUFFIX,googletagservices-cn.com
-DOMAIN-SUFFIX,googletagservices.com
-DOMAIN-SUFFIX,googletraveladservices-cn.com
-DOMAIN-SUFFIX,googletraveladservices.com
-DOMAIN-SUFFIX,googlevads-cn.com
 DOMAIN-SUFFIX,googleventures.com
 DOMAIN-SUFFIX,googlr.com
 DOMAIN-SUFFIX,goolge.com
@@ -640,7 +598,6 @@ DOMAIN-SUFFIX,tiltbrush.com
 DOMAIN-SUFFIX,txcloud.net
 DOMAIN-SUFFIX,txvia.com
 DOMAIN-SUFFIX,unfiltered.news
-DOMAIN-SUFFIX,urchin.com
 DOMAIN-SUFFIX,useplannr.com
 DOMAIN-SUFFIX,usvimosquito.com
 DOMAIN-SUFFIX,usvimosquitoproject.com

@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """把配置里引用的全部上游 RULE-SET 收编进本仓库。
 
+数据来源是 tools/sources.txt，不是配置文件——规则集收编后配置里只剩
+指向本仓库的 URL，无法再从配置反推上游。
+
 做三件事：
-  1. 按 config/default.conf 中 RULE-SET 出现的顺序拉取所有上游规则集
+  1. 按 tools/sources.txt 中的顺序拉取所有上游规则集
   2. 全局去重——同一条规则只保留首次出现的那个策略（首次即最高优先级，
      与 Shadowrocket 自上而下的匹配语义一致）。这样合并后的文件之间
      不再有跨文件冲突，顺序不再是隐式依赖
@@ -26,8 +29,9 @@ import sys
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CONFIG = os.path.join(ROOT, 'config', 'default.conf')
+SOURCES = os.path.join(ROOT, 'tools', 'sources.txt')
 OUTDIR = os.path.join(ROOT, 'rule')
+EXCLUDE = os.path.join(ROOT, 'tools', 'exclude.txt')
 
 # 策略名 -> 输出文件名。策略名含 emoji 与中文，不能直接做文件名。
 SLUG = {
@@ -78,17 +82,33 @@ NORMALIZE = {
 SELF_HOSTED = 'adrianyusong/shadowrocket'
 
 
-def read_rulesets():
-    """按出现顺序取出 [Rule] 段里的 (url, policy)。"""
-    text = io.open(CONFIG, encoding='utf-8').read()
-    section = text.split('[Rule]')[1].split('[Host]')[0]
-    out = []
-    for line in section.split('\n'):
-        line = line.strip()
-        if not line.startswith('RULE-SET'):
+def read_excludes():
+    """读黑名单。返回 {(type, value): policy_slug or None}，None 表示所有策略。"""
+    out = {}
+    if not os.path.exists(EXCLUDE):
+        return out
+    for line in io.open(EXCLUDE, encoding='utf-8'):
+        line = line.split('#')[0].strip()
+        if not line:
             continue
         parts = [p.strip() for p in line.split(',')]
-        url, policy = parts[1], parts[-1]
+        if len(parts) < 2:
+            continue
+        out[(parts[0], parts[1])] = parts[2] if len(parts) > 2 else None
+    return out
+
+
+def read_rulesets():
+    """按 tools/sources.txt 中的顺序取出 (url, policy)。顺序即优先级。"""
+    out = []
+    for line in io.open(SOURCES, encoding='utf-8'):
+        line = line.split('#')[0].strip()
+        if not line:
+            continue
+        url, _, policy = line.partition(' ')
+        policy = policy.strip()
+        if not url.startswith('http') or not policy:
+            continue
         if SELF_HOSTED in url:
             continue
         out.append((url, policy))
@@ -123,7 +143,9 @@ def main():
     args = ap.parse_args()
 
     sets = read_rulesets()
+    excludes = read_excludes()
     print('配置中引用的上游规则集: %d 个' % len(sets))
+    print('黑名单条目: %d 条' % len(excludes))
 
     bodies = {}
     with futures.ThreadPoolExecutor(14) as pool:
@@ -139,6 +161,7 @@ def main():
     merged = collections.OrderedDict()         # policy -> [(type, value)]
     stats = collections.Counter()
     dropped = collections.Counter()
+    excluded = collections.Counter()
     total = 0
 
     for url, policy in sets:
@@ -146,6 +169,11 @@ def main():
         for rtype, value in parse(bodies[url]):
             total += 1
             key = (rtype, value)
+            if key in excludes:
+                want = excludes[key]
+                if want is None or want == SLUG.get(policy):
+                    excluded[key] += 1
+                    continue
             if key in seen:
                 # 首次出现的策略优先，与自上而下匹配一致
                 if seen[key] != policy:
@@ -156,7 +184,17 @@ def main():
             stats[name] += 1
 
     print('原始 %d 条 -> 去重后 %d 条（丢弃 %d 条，其中跨策略冲突 %d 条）'
-          % (total, len(seen), total - len(seen), sum(dropped.values())))
+          % (total, len(seen), total - len(seen) - sum(excluded.values()),
+             sum(dropped.values())))
+    if excluded:
+        print('黑名单剔除 %d 条:' % sum(excluded.values()))
+        for (t, v), n in excluded.most_common():
+            print('   %s,%s  x%d' % (t, v, n))
+    unused = [k for k in excludes if k not in excluded]
+    if unused:
+        print('黑名单中未命中任何上游规则（可能上游已修复，可删除）:')
+        for t, v in unused:
+            print('   %s,%s' % (t, v))
 
     unknown = [p for p in merged if p not in SLUG]
     if unknown:

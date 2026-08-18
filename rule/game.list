@@ -2,7 +2,7 @@
 # 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
 # 需要增补规则请写进 config/default.conf 的内联规则段。
 # 上游: blackmatrix7/ios_rule_script
-# 规则数: 303
+# 规则数: 302
 
 DOMAIN-SUFFIX,cdn-ali.content.steamchina.com
 DOMAIN-SUFFIX,cdn-qc.content.steamchina.com
@@ -265,7 +265,6 @@ DOMAIN-SUFFIX,bnet.163.com
 DOMAIN-SUFFIX,bnetcmsus-a.akamaihd.net
 DOMAIN-SUFFIX,bnetproduct-a.akamaihd.net
 DOMAIN-SUFFIX,bnetshopus.akamaized.net
-DOMAIN-SUFFIX,cdp.cloud.unity3d.com
 DOMAIN-SUFFIX,di.res.netease.com
 DOMAIN-SUFFIX,diablo3.com
 DOMAIN-SUFFIX,diablo3.nosdn.127.net
@@ -288,19 +287,19 @@ IP-CIDR,182.162.135.1/32
 IP-CIDR,210.242.235.6/32
 IP-CIDR,54.94.196.47/32
 IP-CIDR,182.162.132.1/32
-IP-CIDR,185.60.112.157/32
-IP-CIDR,185.60.112.158/32
-IP-CIDR,24.105.30.129/32
 IP-CIDR,103.4.114.233/32
 IP-CIDR,182.162.116.1/32
+IP-CIDR,185.60.112.157/32
+IP-CIDR,185.60.112.158/32
 IP-CIDR,202.9.67.59/32
 IP-CIDR,203.69.111.4/32
+IP-CIDR,24.105.30.129/32
 IP-CIDR,24.105.62.129/32
 IP-CIDR,54.207.104.145/32
+IP-CIDR,185.60.114.159/32
 IP-CIDR,203.66.81.98/32
 IP-CIDR,211.234.110.1/32
 IP-CIDR,54.207.107.12/32
-IP-CIDR,185.60.114.159/32
 IP-CIDR,202.9.67.254/32
 IP-CIDR,222.231.22.1/32
 IP-CIDR,103.4.115.248/32

@@ -2,7 +2,7 @@
 # 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
 # 需要增补规则请写进 config/default.conf 的内联规则段。
 # 上游: blackmatrix7/ios_rule_script
-# 规则数: 173
+# 规则数: 172
 
 DOMAIN-SUFFIX,20thcenturystudios.com.au
 DOMAIN-SUFFIX,20thcenturystudios.com.br
@@ -18,7 +18,6 @@ DOMAIN-SUFFIX,babyzone.com
 DOMAIN-SUFFIX,bam.nr-data.net
 DOMAIN-SUFFIX,bamgrid.com
 DOMAIN-SUFFIX,beautyandthebeastmusical.co.uk
-DOMAIN-SUFFIX,braze.com
 DOMAIN-SUFFIX,cdn.optimizely.com
 DOMAIN-SUFFIX,conviva.com
 DOMAIN-SUFFIX,d9.flashtalking.com

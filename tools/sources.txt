@@ -1,0 +1,69 @@
+# 上游规则集清单——tools/sync-rules.py 的唯一数据来源。
+#
+# 为什么单独一个文件：规则集收编进本仓库后，config/default.conf 里
+# 只剩指向本仓库的 URL，脚本再也无法从配置反推上游。清单必须独立保存。
+#
+# 顺序即优先级：同一条规则出现在多个源里时，只保留首个出现的策略，
+# 与 Shadowrocket 自上而下的匹配语义一致。改动顺序会改变分流结果。
+#
+# 格式：URL<空格>策略名
+# 以 # 开头为注释，空行忽略。
+
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Lan/Lan.list DIRECT
+# anti-AD：10 万条广告/追踪域名。blackmatrix7 的 Advertising 系列按服务分类，
+# 实测 19 个常见广告域名只覆盖 4 个，完整版 Advertising 也只 2/15。
+# anti-AD 同组覆盖 13/19，且对九个正常服务 0 误伤。
+https://anti-ad.net/surge.txt 🛑 广告拦截
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/AdvertisingLite/AdvertisingLite.list 🛑 广告拦截
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Privacy/Privacy.list 🍃 应用净化
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Hijacking/Hijacking.list 🛑 广告拦截
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/OpenAI/OpenAI.list 🤖 AI 服务
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Claude/Claude.list 🤖 AI 服务
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Gemini/Gemini.list 🤖 AI 服务
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Copilot/Copilot.list 🤖 AI 服务
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/YouTube/YouTube.list 📹 YOUTUBE
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Netflix/Netflix.list 🎥 NETFLIX
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Disney/Disney.list 🎬 DISNEY+
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/HBO/HBO.list 🎦 HBO
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/PrimeVideo/PrimeVideo.list 📦 PRIMEVIDEO
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Spotify/Spotify.list 🎧 SPOTIFY
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/TikTok/TikTok.list 🎶 TIKTOK
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Bahamut/Bahamut.list 🕹️ 巴哈姆特
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/AbemaTV/AbemaTV.list 📺 ABEMATV
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Twitch/Twitch.list 🎙️ TWITCH
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Emby/Emby.list 📀 EMBY
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/PikPak/PikPak.list ☁️ PIKPAK
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/GlobalMedia/GlobalMedia.list 🌍 国外媒体
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/BiliBiliIntl/BiliBiliIntl.list 🌍 国外媒体
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/BiliBili/BiliBili.list 🌏 国内媒体
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/ChinaMedia/ChinaMedia.list 🌏 国内媒体
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Telegram/Telegram.list 📲 TELEGRAM
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Twitter/Twitter.list 🐦 TWITTER
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Facebook/Facebook.list 📘 META
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Instagram/Instagram.list 📘 META
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Discord/Discord.list 💬 DISCORD
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Line/Line.list 💚 LINE
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/GitHub/GitHub.list 🐱 GITHUB
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/PayPal/PayPal.list 💰 支付服务
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/SteamCN/SteamCN.list 🎯 全球直连
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Steam/Steam.list 🎮 游戏平台
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Epic/Epic.list 🎮 游戏平台
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Xbox/Xbox.list 🎮 游戏平台
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/PlayStation/PlayStation.list 🎮 游戏平台
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Nintendo/Nintendo.list 🎮 游戏平台
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Blizzard/Blizzard.list 🎮 游戏平台
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/GoogleFCM/GoogleFCM.list DIRECT
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Google/Google.list 📢 谷歌服务
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Bing/Bing.list 🔍 BING
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/OneDrive/OneDrive.list Ⓜ️ 微软服务
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Microsoft/Microsoft.list Ⓜ️ 微软服务
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/AppleID/AppleID.list DIRECT
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/AppleMusic/AppleMusic.list 🎵 苹果媒体
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/AppleTV/AppleTV.list 🎵 苹果媒体
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/AppleProxy/AppleProxy.list 🎵 苹果媒体
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Apple/Apple.list 🍎 苹果服务
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Speedtest/Speedtest.list 🎯 全球直连
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Download/Download.list 🎯 全球直连
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/China/China.list 🇨🇳 国内服务
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Global/Global.list 🚀 节点选择
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/ChinaMax/ChinaMax.list 🇨🇳 国内服务

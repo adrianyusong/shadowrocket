@@ -2,7 +2,7 @@
 # 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
 # 需要增补规则请写进 config/default.conf 的内联规则段。
 # 上游: blackmatrix7/ios_rule_script
-# 规则数: 428
+# 规则数: 416
 
 DOMAIN,0gr4uqmtt8y41hcjsgrzdrc31.ourdvsss.com
 DOMAIN,0gr4uqmtt8y41hcjsgrzdrc3s.ourdvsss.com
@@ -186,13 +186,10 @@ DOMAIN-SUFFIX,zggbdszt.com.cn
 DOMAIN-SUFFIX,zggbdszt.net.cn
 DOMAIN-SUFFIX,zygbdszt.net.cn
 DOMAIN-SUFFIX,0co3geye.cn
-DOMAIN-SUFFIX,1.letvlive.com
-DOMAIN-SUFFIX,2.letvlive.com
 DOMAIN-SUFFIX,2isbbess.cn
 DOMAIN-SUFFIX,33lwhaoinc.cn
 DOMAIN-SUFFIX,52mtkvideo.cn
 DOMAIN-SUFFIX,56.com
-DOMAIN-SUFFIX,71.am
 DOMAIN-SUFFIX,71.am.com
 DOMAIN-SUFFIX,71edge.com
 DOMAIN-SUFFIX,71edge.net
@@ -200,8 +197,6 @@ DOMAIN-SUFFIX,9xsecndns.cn
 DOMAIN-SUFFIX,acfun.cn
 DOMAIN-SUFFIX,acfun.com
 DOMAIN-SUFFIX,acfun.tv
-DOMAIN-SUFFIX,ads1.lfengmobile.com
-DOMAIN-SUFFIX,afp.pplive.com
 DOMAIN-SUFFIX,ai.xiaomi.com
 DOMAIN-SUFFIX,aianno.cn
 DOMAIN-SUFFIX,aianno.com
@@ -209,7 +204,6 @@ DOMAIN-SUFFIX,aiqiyicloud-mgmt.com
 DOMAIN-SUFFIX,aiqiyicloud.com
 DOMAIN-SUFFIX,aiqiyicloud.net
 DOMAIN-SUFFIX,aixifan.com
-DOMAIN-SUFFIX,androidgo.duapp.com
 DOMAIN-SUFFIX,api.game.letvstore.com
 DOMAIN-SUFFIX,b82yxres.cn
 DOMAIN-SUFFIX,baiying.com
@@ -250,7 +244,6 @@ DOMAIN-SUFFIX,itc.cn
 DOMAIN-SUFFIX,ixigua.com
 DOMAIN-SUFFIX,jiangbing.cn
 DOMAIN-SUFFIX,jstucdn.com
-DOMAIN-SUFFIX,koowo.com
 DOMAIN-SUFFIX,kugou.com
 DOMAIN-SUFFIX,kumiao.com
 DOMAIN-SUFFIX,kumiao.tv
@@ -270,11 +263,9 @@ DOMAIN-SUFFIX,music.163.com
 DOMAIN-SUFFIX,music.qq.com
 DOMAIN-SUFFIX,music.tc.qq.com
 DOMAIN-SUFFIX,music.xiaomi.com
-DOMAIN-SUFFIX,noxagile.duapp.com
 DOMAIN-SUFFIX,ns6mitkxo.cn
 DOMAIN-SUFFIX,p-bstarstatic.akamaized.net
 DOMAIN-SUFFIX,p.bstarstatic.com
-DOMAIN-SUFFIX,pgdt.gtimg.cn
 DOMAIN-SUFFIX,pplive.cn
 DOMAIN-SUFFIX,pps.tv
 DOMAIN-SUFFIX,ppsimg.com
@@ -312,7 +303,6 @@ DOMAIN-SUFFIX,v.qq.com
 DOMAIN-SUFFIX,v.smtcdns.com
 DOMAIN-SUFFIX,v1d.szbdyd.com
 DOMAIN-SUFFIX,video.qq.com
-DOMAIN-SUFFIX,videojj.com
 DOMAIN-SUFFIX,wenyupages.com
 DOMAIN-SUFFIX,wingsmobiletek.cn
 DOMAIN-SUFFIX,wwc.alicdn.com
@@ -330,13 +320,11 @@ DOMAIN-SUFFIX,youku.com
 DOMAIN-SUFFIX,youku.com.cn
 DOMAIN-SUFFIX,youku.org
 DOMAIN-SUFFIX,youqoo.net
-DOMAIN-SUFFIX,zamplus.com
 DOMAIN-SUFFIX,zimuzu.io
 DOMAIN-SUFFIX,zimuzu.tv
 DOMAIN-SUFFIX,zmz2019.com
 DOMAIN-SUFFIX,zmzapi.com
 DOMAIN-SUFFIX,zmzapi.net
-DOMAIN-SUFFIX,zmzfile.com
 DOMAIN-KEYWORD,bilibili
 DOMAIN-KEYWORD,qiyi
 USER-AGENT,%E4%BC%98%E9%85%B7*

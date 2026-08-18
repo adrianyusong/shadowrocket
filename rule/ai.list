@@ -2,7 +2,7 @@
 # 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
 # 需要增补规则请写进 config/default.conf 的内联规则段。
 # 上游: blackmatrix7/ios_rule_script
-# 规则数: 71
+# 规则数: 68
 
 DOMAIN,browser-intake-datadoghq.com
 DOMAIN,chat.openai.com.cdn.cloudflare.net
@@ -19,7 +19,6 @@ DOMAIN-SUFFIX,chatgpt.com
 DOMAIN-SUFFIX,chatgpt.livekit.cloud
 DOMAIN-SUFFIX,client-api.arkoselabs.com
 DOMAIN-SUFFIX,events.statsigapi.net
-DOMAIN-SUFFIX,featuregates.org
 DOMAIN-SUFFIX,host.livekit.cloud
 DOMAIN-SUFFIX,identrust.com
 DOMAIN-SUFFIX,intercom.io
@@ -31,8 +30,6 @@ DOMAIN-SUFFIX,observeit.net
 DOMAIN-SUFFIX,openai.com
 DOMAIN-SUFFIX,openaiapi-site.azureedge.net
 DOMAIN-SUFFIX,openaicom.imgix.net
-DOMAIN-SUFFIX,segment.io
-DOMAIN-SUFFIX,sentry.io
 DOMAIN-SUFFIX,stripe.com
 DOMAIN-SUFFIX,turn.livekit.cloud
 DOMAIN-KEYWORD,openai

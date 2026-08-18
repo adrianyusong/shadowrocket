@@ -2,7 +2,7 @@
 # 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
 # 需要增补规则请写进 config/default.conf 的内联规则段。
 # 上游: blackmatrix7/ios_rule_script
-# 规则数: 631
+# 规则数: 627
 
 DOMAIN-SUFFIX,1drv.com
 DOMAIN-SUFFIX,livefilestore.com
@@ -193,7 +193,6 @@ DOMAIN-SUFFIX,fasttrackreadysupport.com
 DOMAIN-SUFFIX,femalefounderscomp.com
 DOMAIN-SUFFIX,flipwithsurface.com
 DOMAIN-SUFFIX,fluidpreview.com
-DOMAIN-SUFFIX,footprintdns.com
 DOMAIN-SUFFIX,g.akamaiedge.net
 DOMAIN-SUFFIX,gamesstack.com
 DOMAIN-SUFFIX,gameuxmasterguide.com
@@ -246,7 +245,6 @@ DOMAIN-SUFFIX,live.eu
 DOMAIN-SUFFIX,live.net
 DOMAIN-SUFFIX,livetileedge.dsx.mp.microsoft.com.edgekey.net
 DOMAIN-SUFFIX,livingyourambition.com
-DOMAIN-SUFFIX,localytics.com
 DOMAIN-SUFFIX,lync.cn
 DOMAIN-SUFFIX,lync.com
 DOMAIN-SUFFIX,m12.vc
@@ -319,7 +317,6 @@ DOMAIN-SUFFIX,microsoft.vn
 DOMAIN-SUFFIX,microsoft365.com
 DOMAIN-SUFFIX,microsoftaccountguard.com
 DOMAIN-SUFFIX,microsoftadc.com
-DOMAIN-SUFFIX,microsoftads.com
 DOMAIN-SUFFIX,microsoftadvertising.com
 DOMAIN-SUFFIX,microsoftadvertisingregionalawards.com
 DOMAIN-SUFFIX,microsoftaffiliates.com
@@ -406,7 +403,6 @@ DOMAIN-SUFFIX,mpnevolution.com
 DOMAIN-SUFFIX,ms-studiosmedia.com
 DOMAIN-SUFFIX,ms365surfaceoffer.com
 DOMAIN-SUFFIX,msa.akadns6.net
-DOMAIN-SUFFIX,msads.net
 DOMAIN-SUFFIX,msappproxy.cn
 DOMAIN-SUFFIX,msappproxy.net
 DOMAIN-SUFFIX,msauth.cn
