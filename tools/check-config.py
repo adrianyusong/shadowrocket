@@ -9,6 +9,7 @@
   * 危险关键词          —— DOMAIN-KEYWORD,jav 误伤 javascript.info
   * 误伤真实服务        —— licdn 是 alicdn 的子串
   * workflow YAML 语法  —— heredoc 内容顶格会冲出 run: | 的块作用域
+  * skip-proxy 漏网    —— 该层在规则之前生效，命中即绕过隧道，规则拦不住
 
 用法：
     python tools/check-config.py
@@ -237,6 +238,24 @@ def check_rulesets_exist(cfg):
             fail('配置引用了不存在的规则文件: rule/%s' % fname)
 
 
+# skip-proxy 命中即绕过隧道，[Rule] 里写什么都无效。
+# 目标是「所有 Apple 走代理」，故这里不允许出现 Apple 域名，
+# 唯一例外是 WiFi 门户检测——走代理会连不上酒店与机场热点。
+SKIP_PROXY_ALLOWED_APPLE = {'captive.apple.com'}
+
+
+def check_skip_proxy(cfg):
+    for sec, i, s in sections(cfg):
+        if not s.startswith('skip-proxy'):
+            continue
+        items = [x.strip() for x in s.split('=', 1)[1].split(',')]
+        for item in items:
+            low = item.lower().lstrip('*.')
+            if 'apple' in low or 'icloud' in low:
+                if item not in SKIP_PROXY_ALLOWED_APPLE:
+                    fail('skip-proxy 含 Apple 域名，会绕过隧道使代理规则失效: %s' % item)
+
+
 def check_workflows():
     """GitHub 只在推送后才报 YAML 错误，本地必须先挡住。"""
     paths = sorted(glob.glob(os.path.join(ROOT, '.github', 'workflows', '*.yml'))
@@ -268,6 +287,7 @@ def main():
     check_order(cfg)
     check_rulesets_exist(cfg)
     check_workflows()
+    check_skip_proxy(cfg)
     rules = load_rules()
     check_keywords(rules)
     check_no_block(rules, cfg)
