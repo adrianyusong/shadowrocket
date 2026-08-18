@@ -114,16 +114,29 @@ python tools/sync-rules.py && python tools/check-config.py
 
 | 位置 | 原因 |
 |---|---|
-| QUIC 阻断在最前 | UDP 443 会绕过 TCP 侧规则匹配，也让流媒体解锁判定不稳 |
+| 埋点 `REJECT-DROP` 在广告规则之前 | 否则用的是普通 REJECT，抑制不了重试风暴 |
 | 广告 / 隐私规则靠前 | 拦截优先于分流，否则被后面的域名规则抢先命中 |
 | AI 服务在 Global / Microsoft / Google 之前 | 否则 OpenAI、Copilot 会被宽泛规则集吞掉 |
 | GoogleFCM 在 Google 之前且走 DIRECT | FCM 走代理收不到推送 |
 | AppleID 在 Apple 之前且走 DIRECT | 走代理易触发二次验证 |
 | Bing 在 Microsoft 之前 | 否则被 Microsoft 规则集吞掉走直连 |
+| LinkedIn 在 `.cn` 与 `GEOIP,CN` 之前 | 国内 DNS 把 `linkedin.com` 解析到国内 IP，GEOIP 会误判成国内服务 |
+| `jpush.cn` 在 `DOMAIN-SUFFIX,cn` 之前 | 否则被 `.cn` 规则当成国内服务放行 |
 | 游戏 CDN 内联规则在 Steam / Blizzard 之前 | 见下 |
 | BiliBiliIntl 在 BiliBili 之前 | 国际版需代理，国内版直连 |
 | Speedtest 走直连 | 测本地真实带宽 |
-| ChinaMax + GEOIP,CN 在 FINAL 之前 | 域名规则先行，IP 兜底 |
+| `china.list` + `GEOIP,CN` 在 FINAL 之前 | 域名规则先行，IP 兜底 |
+
+这些约束由 `tools/check-config.py` 逐条验证，破坏或标记缺失都会 FAIL。
+
+### QUIC
+
+用 `[General]` 的 `block-quic = all-proxy`，不再用 `[Rule]` 里的
+`AND,((PROTOCOL,UDP),(DST-PORT,443))`。
+
+后者对所有连接生效，日志里 5990 条 QUIC 拒绝中相当一部分是国内 App 被迫回落
+TCP，属于纯损失。而阻断 QUIC 的两个理由——绕过 TCP 侧规则匹配、流媒体解锁判定
+不稳——只对代理连接成立。`all-proxy` 正好只管代理连接。
 
 ### 游戏下载为什么要单独拦
 
