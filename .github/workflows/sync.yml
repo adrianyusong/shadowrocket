@@ -20,6 +20,11 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: 安装依赖
+        # check-config.py 用 PyYAML 校验本文件自身的语法；缺库只会降级为警告，
+        # 那样等于没校验，所以显式安装。
+        run: pip install --quiet pyyaml
+
       - name: 拉取上游并合并
         run: python tools/sync-rules.py
 
@@ -38,10 +43,7 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add rule/
-          git commit -F - <<'MSG'
-chore: 同步上游规则集
-
-由 .github/workflows/sync.yml 自动执行，校验通过后才提交。
-上游清单见 tools/sources.txt，缺陷豁免见 tools/exclude.txt。
-MSG
+          # 不用 heredoc：它的内容必须顶格，会冲出 YAML 块作用域导致语法错误。
+          # 多个 -m 会被拼成段落，效果相同且不受缩进影响。
+          git commit             -m "chore: 同步上游规则集"             -m "由 .github/workflows/sync.yml 自动执行，校验通过后才提交。"             -m "上游清单见 tools/sources.txt，缺陷豁免见 tools/exclude.txt。"
           git push

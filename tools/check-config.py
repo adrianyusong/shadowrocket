@@ -8,6 +8,7 @@
   * 顺序约束            —— SteamCN 必须先于 Steam，否则几十 GB 下载走代理
   * 危险关键词          —— DOMAIN-KEYWORD,jav 误伤 javascript.info
   * 误伤真实服务        —— licdn 是 alicdn 的子串
+  * workflow YAML 语法  —— heredoc 内容顶格会冲出 run: | 的块作用域
 
 用法：
     python tools/check-config.py
@@ -194,12 +195,37 @@ def check_rulesets_exist(cfg):
             fail('配置引用了不存在的规则文件: rule/%s' % fname)
 
 
+def check_workflows():
+    """GitHub 只在推送后才报 YAML 错误，本地必须先挡住。"""
+    paths = sorted(glob.glob(os.path.join(ROOT, '.github', 'workflows', '*.yml'))
+                   + glob.glob(os.path.join(ROOT, '.github', 'workflows', '*.yaml')))
+    if not paths:
+        return
+    try:
+        import yaml
+    except ImportError:
+        warn('PyYAML 未安装，跳过 workflow 语法校验（pip install pyyaml）')
+        return
+    for path in paths:
+        rel = os.path.relpath(path, ROOT)
+        try:
+            doc = yaml.safe_load(io.open(path, encoding='utf-8').read())
+        except yaml.YAMLError as exc:
+            mark = getattr(exc, 'problem_mark', None)
+            where = ' 第%d行' % (mark.line + 1) if mark else ''
+            fail('%s YAML 语法错误%s: %s' % (rel, where, getattr(exc, 'problem', exc)))
+            continue
+        if not isinstance(doc, dict) or 'jobs' not in doc:
+            fail('%s 缺少 jobs 段' % rel)
+
+
 def main():
     cfg = io.open(CONFIG, encoding='utf-8').read()
     ngroups, nrefs = check_policy_refs(cfg)
     check_case(cfg)
     check_order(cfg)
     check_rulesets_exist(cfg)
+    check_workflows()
     rules = load_rules()
     check_keywords(rules)
     check_no_block(rules, cfg)
