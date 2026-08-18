@@ -2,7 +2,7 @@
 # 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
 # 需要增补规则请写进 config/default.conf 的内联规则段。
 # 上游: blackmatrix7/ios_rule_script
-# 规则数: 51
+# 规则数: 55
 
 DOMAIN,aod-ssl.itunes.apple.com
 DOMAIN,aod.itunes.apple.com
@@ -21,6 +21,8 @@ DOMAIN,play-edge.itunes.apple.com
 DOMAIN,tv.applemusic.com
 DOMAIN,uts-api.itunes.apple.com
 DOMAIN-SUFFIX,tv.apple.com
+USER-AGENT,AppleTV*
+USER-AGENT,com.apple.tv*
 DOMAIN,api-glb-sea.smoot.apple.com
 DOMAIN,apple.comscoreresearch.com
 DOMAIN,books.itunes.apple.com
@@ -30,6 +32,7 @@ DOMAIN,developer.apple.com
 DOMAIN,devimages-cdn.apple.com
 DOMAIN,devstreaming-cdn.apple.com
 DOMAIN,docs-assets.developer.apple.com
+DOMAIN,gspe1-ssl.ls.apple.com
 DOMAIN,hls-svod.itunes.apple.com
 DOMAIN,itunes.apple.com
 DOMAIN,js-cdn.music.apple.com
@@ -49,6 +52,7 @@ DOMAIN-SUFFIX,apps.apple.com
 DOMAIN-SUFFIX,appsto.re
 DOMAIN-SUFFIX,audio-ssl.itunes.apple.com
 DOMAIN-SUFFIX,cdn-apple.com
+DOMAIN-SUFFIX,digicert.com
 DOMAIN-SUFFIX,hls-amt.itunes.apple.com
 DOMAIN-SUFFIX,hls.itunes.apple.com
 DOMAIN-SUFFIX,ocsp.apple.com

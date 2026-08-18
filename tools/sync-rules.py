@@ -220,6 +220,20 @@ def main():
                 fh.write('%s,%s\n' % (rtype, value))
         written.append((policy, SLUG[policy] + '.list', len(rules)))
 
+    # 声明了策略却一条规则都没产出，说明它被前面的源全部抢走（顺序错了）。
+    # 此时旧文件仍留在磁盘上会被配置继续引用，属于静默陈旧，必须报错中止。
+    declared = {pol for _, pol in sets}
+    empty = sorted(declared - set(merged))
+    if empty:
+        print('以下策略产出 0 条规则，多半是 sources.txt 的顺序把它们的域名'
+              '让给了更靠前的源:')
+        for pol in empty:
+            path = os.path.join(OUTDIR, SLUG[pol] + '.list')
+            stale = '  <-- 磁盘上仍有旧文件，配置会继续引用陈旧内容' \
+                if os.path.exists(path) else ''
+            print('   %s -> rule/%s.list%s' % (pol, SLUG[pol], stale))
+        return 1
+
     print('\n写出 %d 个文件:' % len(written))
     for policy, fname, n in written:
         print('   %-14s rule/%-18s %5d 条' % (policy, fname, n))

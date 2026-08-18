@@ -22,3 +22,10 @@ DOMAIN-SUFFIX,ms
 # 但它排在支付规则之前，会把 PayPal 的风控请求拦掉，可能导致登录或
 # 支付被判为风险环境。只从广告策略剔除，让 PayPal 规则集正常接管。
 DOMAIN-SUFFIX,simility.com,reject-ads
+
+# 按 lazy_group 的顺序，Twitter 排在 AI 之前，而 blackmatrix7 的 Twitter 集
+# 收录了 grok.com（Grok 属 X 旗下），去重后被 Twitter 组抢走。
+# 两者都是代理组不影响连通，但 AI 组才有为风控设计的 IP 稳定策略
+# （候选不含 🚀 节点选择，避免落到负载均衡上每请求换出口）。
+# 只从 Twitter 策略剔除，让 AI 规则集正常接管。
+DOMAIN-SUFFIX,grok.com,twitter
