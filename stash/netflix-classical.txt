@@ -1,0 +1,7 @@
+# 由 tools/build-stash.py 从 rule/netflix.list 生成，请勿手改。
+# behavior: classical   条数: 5
+DOMAIN-KEYWORD,apiproxy-device-prod-nlb-
+DOMAIN-KEYWORD,dualstack.apiproxy-
+DOMAIN-KEYWORD,dualstack.ichnaea-web-
+DOMAIN-KEYWORD,netflixdnstest
+USER-AGENT,Argo*

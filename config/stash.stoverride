@@ -1,0 +1,1154 @@
+# Stash 覆写文件（.stoverride）
+#
+# 由 tools/build-stash.py 生成，请勿手改。
+# 规则数据与 Shadowrocket 配置共用 rule/*.list，两边分开维护各自的配置。
+#
+# 这是覆写而非完整配置：节点来自你自己的订阅，覆写只替换规则与分组，
+# 不碰节点，所以仓库里不需要出现订阅地址。
+#
+# 用法：Stash -> 配置 -> 覆写 -> 添加，填入本文件的 raw 地址，
+# 然后在订阅配置上启用该覆写。
+
+name: Shadowrocket 全量配置 (Stash)
+desc: 与 Shadowrocket 配置共用规则数据。含协议分组、地区分组、线路属性分组。
+author: adrianyusong
+homepage: https://github.com/adrianyusong/shadowrocket
+category: rules
+
+# 用 #!replace 整段替换订阅自带的 dns，避免与机场配置相互干扰。
+dns: #!replace
+  enable: true
+  ipv6: false
+  # fake-ip 让域名不必真正解析就能进规则匹配，是避免 DNS 泄漏的关键。
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  # 这些必须拿到真实 IP，走 fake-ip 会坏：局域网发现、游戏机 STUN、
+  # 系统联网检测。
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - "+.srv.nintendo.net"
+    - "+.stun.playstation.net"
+    - "+.msftconnecttest.com"
+    - "+.msftncsi.com"
+    - "localhost.ptlogin2.qq.com"
+    - "+.battle.net"
+    - "stun.*"
+    - "time.*.com"
+    - "ntp.*.com"
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+  # 直连域名用国内 DoH 解析；明文 UDP 53 本身可被中间人劫持。
+  nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+  # 解析节点域名时用的 DNS。走这里可避免「解析节点地址」这一步本身被污染。
+  proxy-server-nameserver:
+    - https://dns.alidns.com/dns-query
+  # 代理域名交给远端解析，不在本地留痕。
+  nameserver-policy:
+    "geosite:cn":
+      - https://dns.alidns.com/dns-query
+      - https://doh.pub/dns-query
+
+# 分组用 #!replace 整段替换，否则会与订阅自带的分组混在一起。
+proxy-groups: #!replace
+  # 主策略。候选里同时给出协议、线路属性、地区三个维度，按需切换。
+  - name: "🚀 节点选择"
+    type: select
+    proxies:
+      - "♻️ 自动选择"
+      - "🔯 故障转移"
+      - "🔮 负载均衡"
+      - "🅥 VLESS"
+      - "🅗 Hysteria2"
+      - "🅣 Trojan"
+      - "🅢 Shadowsocks"
+      - "🏠 住宅IP"
+      - "🛣️ 专线"
+      - "🎞️ 流媒体节点"
+      - "💴 低倍率"
+      - "🇭🇰 香港"
+      - "🇹🇼 台湾"
+      - "🇯🇵 日本"
+      - "🇸🇬 狮城"
+      - "🇺🇲 美国"
+      - "🇰🇷 韩国"
+      - "DIRECT"
+  # 自动测速类。filter 排除机场的信息类伪节点。
+  - name: "♻️ 自动选择"
+    type: url-test
+    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|群组|群組|直连|直連|Expire|Traffic|Reset|Website)).*$"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 300
+    tolerance: 100
+    lazy: true
+  - name: "🔯 故障转移"
+    type: fallback
+    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|群组|群組|直连|直連|Expire|Traffic|Reset|Website)).*$"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 300
+    lazy: true
+  - name: "🔮 负载均衡"
+    type: load-balance
+    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|群组|群組|直连|直連|Expire|Traffic|Reset|Website)).*$"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 300
+    strategy: consistent-hashing
+  # 协议分组。proxy-groups 只有 exclude-type 没有 include-type，
+  # 所以「只要某协议」写成「排除其余全部」。这是 Shadowrocket 做不到的维度。
+  - name: "🅥 VLESS"
+    type: url-test
+    exclude-type: "ss|ssr|vmess|trojan|hysteria|hysteria2|tuic|wireguard|snell|http|socks5|anytls|ssh"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🅗 Hysteria2"
+    type: url-test
+    exclude-type: "ss|ssr|vmess|vless|trojan|tuic|wireguard|snell|http|socks5|anytls|ssh"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🅣 Trojan"
+    type: url-test
+    exclude-type: "ss|ssr|vmess|vless|hysteria|hysteria2|tuic|wireguard|snell|http|socks5|anytls|ssh"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🅢 Shadowsocks"
+    type: url-test
+    exclude-type: "vmess|vless|trojan|hysteria|hysteria2|tuic|wireguard|snell|http|socks5|anytls|ssh"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  # 线路属性分组，与地区维度正交。
+  - name: "🏠 住宅IP"
+    type: url-test
+    filter: "(?i)(住宅|家宽|家寬|原生|Residential)"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🛣️ 专线"
+    type: url-test
+    filter: "(?i)(专线|專線|IPLC|IEPL)"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🎞️ 流媒体节点"
+    type: url-test
+    filter: "(?i)(流媒体|流媒體)"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "💴 低倍率"
+    type: url-test
+    filter: "(?i)(?<![0-9.])0\\.[0-9]+ ?x"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  # 地区分组。
+  - name: "🇭🇰 香港"
+    type: url-test
+    filter: "(?i)(香港|港岛|深港|沪港|Hong ?Kong|(?<![A-Za-z])(HK|HKG)(?![A-Za-z]))"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🇹🇼 台湾"
+    type: url-test
+    filter: "(?i)(台湾|台灣|台北|臺灣|Taiwan|(?<![A-Za-z])(TW|TPE)(?![A-Za-z]))"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🇯🇵 日本"
+    type: url-test
+    filter: "(?i)(日本|東京|东京|大阪|名古屋|埼玉|Japan|(?<![A-Za-z])(JP|JPN|NRT|KIX)(?![A-Za-z]))"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🇸🇬 狮城"
+    type: url-test
+    filter: "(?i)(新加坡|狮城|獅城|Singapore|(?<![A-Za-z])(SG|SIN)(?![A-Za-z]))"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🇺🇲 美国"
+    type: url-test
+    filter: "(?i)(美国|美國|美西|美东|美東|洛杉矶|圣何塞|西雅图|达拉斯|凤凰城|United ?States|(?<![A-Za-z])(US|USA|LAX|SJC)(?![A-Za-z]))"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🇰🇷 韩国"
+    type: url-test
+    filter: "(?i)(韩国|韓國|首尔|首爾|Korea|(?<![A-Za-z])(KR|ICN)(?![A-Za-z]))"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  # AI 对 IP 风控极严。住宅 IP 排首位——机房 IP 是判定代理的首要特征。
+  # 候选里刻意不放 🚀 节点选择，避免间接落到负载均衡上每请求换出口。
+  - name: "🤖 AI 服务"
+    type: select
+    proxies:
+      - "🏠 住宅IP"
+      - "🛣️ 专线"
+      - "🇺🇲 美国"
+      - "🇯🇵 日本"
+      - "🇸🇬 狮城"
+      - "DIRECT"
+  # 流媒体对 IP 跳变敏感，机场自标的流媒体节点排首位。
+  - name: "📹 YOUTUBE"
+    type: select
+    proxies:
+      - "🎞️ 流媒体节点"
+      - "🏠 住宅IP"
+      - "🇸🇬 狮城"
+      - "🇭🇰 香港"
+      - "🇯🇵 日本"
+      - "🇺🇲 美国"
+      - "🚀 节点选择"
+      - "DIRECT"
+  - name: "🎥 NETFLIX"
+    type: select
+    proxies:
+      - "🎞️ 流媒体节点"
+      - "🏠 住宅IP"
+      - "🇸🇬 狮城"
+      - "🇭🇰 香港"
+      - "🇯🇵 日本"
+      - "🇺🇲 美国"
+      - "🚀 节点选择"
+      - "DIRECT"
+  - name: "🎬 DISNEY+"
+    type: select
+    proxies:
+      - "🎞️ 流媒体节点"
+      - "🏠 住宅IP"
+      - "🇸🇬 狮城"
+      - "🇭🇰 香港"
+      - "🇯🇵 日本"
+      - "🇺🇲 美国"
+      - "🚀 节点选择"
+      - "DIRECT"
+  - name: "🎦 HBO"
+    type: select
+    proxies:
+      - "🎞️ 流媒体节点"
+      - "🏠 住宅IP"
+      - "🇸🇬 狮城"
+      - "🇭🇰 香港"
+      - "🇯🇵 日本"
+      - "🇺🇲 美国"
+      - "🚀 节点选择"
+      - "DIRECT"
+  - name: "📦 PRIMEVIDEO"
+    type: select
+    proxies:
+      - "🎞️ 流媒体节点"
+      - "🏠 住宅IP"
+      - "🇸🇬 狮城"
+      - "🇭🇰 香港"
+      - "🇯🇵 日本"
+      - "🇺🇲 美国"
+      - "🚀 节点选择"
+      - "DIRECT"
+  - name: "🎧 SPOTIFY"
+    type: select
+    proxies:
+      - "🚀 节点选择"
+      - "♻️ 自动选择"
+      - "DIRECT"
+  - name: "🎶 TIKTOK"
+    type: select
+    proxies:
+      - "🚀 节点选择"
+      - "♻️ 自动选择"
+      - "DIRECT"
+  - name: "🎙️ TWITCH"
+    type: select
+    proxies:
+      - "🚀 节点选择"
+      - "♻️ 自动选择"
+      - "DIRECT"
+  - name: "☁️ PIKPAK"
+    type: select
+    proxies:
+      - "🚀 节点选择"
+      - "♻️ 自动选择"
+      - "DIRECT"
+  - name: "🌍 国外媒体"
+    type: select
+    proxies:
+      - "🚀 节点选择"
+      - "♻️ 自动选择"
+      - "DIRECT"
+  - name: "📲 TELEGRAM"
+    type: select
+    proxies:
+      - "🚀 节点选择"
+      - "♻️ 自动选择"
+      - "DIRECT"
+  - name: "🐦 TWITTER"
+    type: select
+    proxies:
+      - "🚀 节点选择"
+      - "♻️ 自动选择"
+      - "DIRECT"
+  - name: "📘 META"
+    type: select
+    proxies:
+      - "🚀 节点选择"
+      - "♻️ 自动选择"
+      - "DIRECT"
+  - name: "💬 DISCORD"
+    type: select
+    proxies:
+      - "🚀 节点选择"
+      - "♻️ 自动选择"
+      - "DIRECT"
+  - name: "🐱 GITHUB"
+    type: select
+    proxies:
+      - "🚀 节点选择"
+      - "♻️ 自动选择"
+      - "DIRECT"
+  - name: "🔍 BING"
+    type: select
+    proxies:
+      - "🚀 节点选择"
+      - "♻️ 自动选择"
+      - "DIRECT"
+  - name: "📢 谷歌服务"
+    type: select
+    proxies:
+      - "🚀 节点选择"
+      - "♻️ 自动选择"
+      - "DIRECT"
+  - name: "🎵 苹果媒体"
+    type: select
+    proxies:
+      - "🚀 节点选择"
+      - "♻️ 自动选择"
+      - "DIRECT"
+  - name: "🕹️ 巴哈姆特"
+    type: select
+    proxies:
+      - "🇹🇼 台湾"
+      - "🚀 节点选择"
+      - "DIRECT"
+  - name: "📺 ABEMATV"
+    type: select
+    proxies:
+      - "🇯🇵 日本"
+      - "🚀 节点选择"
+      - "DIRECT"
+  - name: "💚 LINE"
+    type: select
+    proxies:
+      - "🇯🇵 日本"
+      - "🚀 节点选择"
+      - "DIRECT"
+  - name: "🍎 苹果服务"
+    type: select
+    proxies:
+      - "🚀 节点选择"
+      - "DIRECT"
+  - name: "🎮 游戏平台"
+    type: select
+    proxies:
+      - "🚀 节点选择"
+      - "DIRECT"
+  # 以下默认直连。
+  - name: "Ⓜ️ 微软服务"
+    type: select
+    proxies:
+      - "DIRECT"
+      - "🚀 节点选择"
+  - name: "💰 支付服务"
+    type: select
+    proxies:
+      - "DIRECT"
+      - "🚀 节点选择"
+  - name: "🌏 国内媒体"
+    type: select
+    proxies:
+      - "DIRECT"
+      - "🚀 节点选择"
+  - name: "📀 EMBY"
+    type: select
+    proxies:
+      - "DIRECT"
+      - "🚀 节点选择"
+  - name: "🎯 全球直连"
+    type: select
+    proxies:
+      - "DIRECT"
+      - "💴 低倍率"
+      - "🚀 节点选择"
+  - name: "🇨🇳 国内服务"
+    type: select
+    proxies:
+      - "DIRECT"
+      - "🚀 节点选择"
+  - name: "🛑 广告拦截"
+    type: select
+    proxies:
+      - "REJECT"
+      - "REJECT-DROP"
+      - "DIRECT"
+  - name: "🍃 应用净化"
+    type: select
+    proxies:
+      - "REJECT"
+      - "REJECT-DROP"
+      - "DIRECT"
+  - name: "🐟 漏网之鱼"
+    type: select
+    proxies:
+      - "🚀 节点选择"
+      - "DIRECT"
+      - "♻️ 自动选择"
+
+# 规则集。domain 与 ipcidr 是为海量规则优化的加载器，classical 效率最低，
+# 所以按类型拆开而不是整份丢给 classical。
+rule-providers: #!replace
+  direct-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/direct-domain.txt
+    path: ./ruleset/direct-domain.txt
+    interval: 86400
+  direct-ipcidr:
+    type: http
+    behavior: ipcidr
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/direct-ipcidr.txt
+    path: ./ruleset/direct-ipcidr.txt
+    interval: 86400
+  reject-ads-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/reject-ads-domain.txt
+    path: ./ruleset/reject-ads-domain.txt
+    interval: 86400
+  reject-ads-ipcidr:
+    type: http
+    behavior: ipcidr
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/reject-ads-ipcidr.txt
+    path: ./ruleset/reject-ads-ipcidr.txt
+    interval: 86400
+  reject-ads-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/reject-ads-classical.txt
+    path: ./ruleset/reject-ads-classical.txt
+    interval: 86400
+  reject-privacy-ipcidr:
+    type: http
+    behavior: ipcidr
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/reject-privacy-ipcidr.txt
+    path: ./ruleset/reject-privacy-ipcidr.txt
+    interval: 86400
+  reject-privacy-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/reject-privacy-classical.txt
+    path: ./ruleset/reject-privacy-classical.txt
+    interval: 86400
+  apple-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/apple-domain.txt
+    path: ./ruleset/apple-domain.txt
+    interval: 86400
+  apple-ipcidr:
+    type: http
+    behavior: ipcidr
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/apple-ipcidr.txt
+    path: ./ruleset/apple-ipcidr.txt
+    interval: 86400
+  apple-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/apple-classical.txt
+    path: ./ruleset/apple-classical.txt
+    interval: 86400
+  apple-media-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/apple-media-domain.txt
+    path: ./ruleset/apple-media-domain.txt
+    interval: 86400
+  apple-media-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/apple-media-classical.txt
+    path: ./ruleset/apple-media-classical.txt
+    interval: 86400
+  media-cn-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/media-cn-domain.txt
+    path: ./ruleset/media-cn-domain.txt
+    interval: 86400
+  media-cn-ipcidr:
+    type: http
+    behavior: ipcidr
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/media-cn-ipcidr.txt
+    path: ./ruleset/media-cn-ipcidr.txt
+    interval: 86400
+  media-cn-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/media-cn-classical.txt
+    path: ./ruleset/media-cn-classical.txt
+    interval: 86400
+  youtube-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/youtube-domain.txt
+    path: ./ruleset/youtube-domain.txt
+    interval: 86400
+  youtube-ipcidr:
+    type: http
+    behavior: ipcidr
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/youtube-ipcidr.txt
+    path: ./ruleset/youtube-ipcidr.txt
+    interval: 86400
+  youtube-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/youtube-classical.txt
+    path: ./ruleset/youtube-classical.txt
+    interval: 86400
+  netflix-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/netflix-domain.txt
+    path: ./ruleset/netflix-domain.txt
+    interval: 86400
+  netflix-ipcidr:
+    type: http
+    behavior: ipcidr
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/netflix-ipcidr.txt
+    path: ./ruleset/netflix-ipcidr.txt
+    interval: 86400
+  netflix-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/netflix-classical.txt
+    path: ./ruleset/netflix-classical.txt
+    interval: 86400
+  disney-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/disney-domain.txt
+    path: ./ruleset/disney-domain.txt
+    interval: 86400
+  disney-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/disney-classical.txt
+    path: ./ruleset/disney-classical.txt
+    interval: 86400
+  hbo-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/hbo-domain.txt
+    path: ./ruleset/hbo-domain.txt
+    interval: 86400
+  hbo-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/hbo-classical.txt
+    path: ./ruleset/hbo-classical.txt
+    interval: 86400
+  primevideo-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/primevideo-domain.txt
+    path: ./ruleset/primevideo-domain.txt
+    interval: 86400
+  primevideo-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/primevideo-classical.txt
+    path: ./ruleset/primevideo-classical.txt
+    interval: 86400
+  spotify-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/spotify-domain.txt
+    path: ./ruleset/spotify-domain.txt
+    interval: 86400
+  spotify-ipcidr:
+    type: http
+    behavior: ipcidr
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/spotify-ipcidr.txt
+    path: ./ruleset/spotify-ipcidr.txt
+    interval: 86400
+  spotify-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/spotify-classical.txt
+    path: ./ruleset/spotify-classical.txt
+    interval: 86400
+  bahamut-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/bahamut-domain.txt
+    path: ./ruleset/bahamut-domain.txt
+    interval: 86400
+  bahamut-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/bahamut-classical.txt
+    path: ./ruleset/bahamut-classical.txt
+    interval: 86400
+  abematv-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/abematv-domain.txt
+    path: ./ruleset/abematv-domain.txt
+    interval: 86400
+  abematv-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/abematv-classical.txt
+    path: ./ruleset/abematv-classical.txt
+    interval: 86400
+  twitch-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/twitch-domain.txt
+    path: ./ruleset/twitch-domain.txt
+    interval: 86400
+  twitch-ipcidr:
+    type: http
+    behavior: ipcidr
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/twitch-ipcidr.txt
+    path: ./ruleset/twitch-ipcidr.txt
+    interval: 86400
+  twitch-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/twitch-classical.txt
+    path: ./ruleset/twitch-classical.txt
+    interval: 86400
+  emby-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/emby-domain.txt
+    path: ./ruleset/emby-domain.txt
+    interval: 86400
+  emby-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/emby-classical.txt
+    path: ./ruleset/emby-classical.txt
+    interval: 86400
+  pikpak-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/pikpak-domain.txt
+    path: ./ruleset/pikpak-domain.txt
+    interval: 86400
+  pikpak-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/pikpak-classical.txt
+    path: ./ruleset/pikpak-classical.txt
+    interval: 86400
+  media-global-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/media-global-domain.txt
+    path: ./ruleset/media-global-domain.txt
+    interval: 86400
+  media-global-ipcidr:
+    type: http
+    behavior: ipcidr
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/media-global-ipcidr.txt
+    path: ./ruleset/media-global-ipcidr.txt
+    interval: 86400
+  media-global-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/media-global-classical.txt
+    path: ./ruleset/media-global-classical.txt
+    interval: 86400
+  ai-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/ai-domain.txt
+    path: ./ruleset/ai-domain.txt
+    interval: 86400
+  ai-ipcidr:
+    type: http
+    behavior: ipcidr
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/ai-ipcidr.txt
+    path: ./ruleset/ai-ipcidr.txt
+    interval: 86400
+  ai-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/ai-classical.txt
+    path: ./ruleset/ai-classical.txt
+    interval: 86400
+  telegram-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/telegram-domain.txt
+    path: ./ruleset/telegram-domain.txt
+    interval: 86400
+  telegram-ipcidr:
+    type: http
+    behavior: ipcidr
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/telegram-ipcidr.txt
+    path: ./ruleset/telegram-ipcidr.txt
+    interval: 86400
+  telegram-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/telegram-classical.txt
+    path: ./ruleset/telegram-classical.txt
+    interval: 86400
+  twitter-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/twitter-domain.txt
+    path: ./ruleset/twitter-domain.txt
+    interval: 86400
+  twitter-ipcidr:
+    type: http
+    behavior: ipcidr
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/twitter-ipcidr.txt
+    path: ./ruleset/twitter-ipcidr.txt
+    interval: 86400
+  twitter-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/twitter-classical.txt
+    path: ./ruleset/twitter-classical.txt
+    interval: 86400
+  meta-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/meta-domain.txt
+    path: ./ruleset/meta-domain.txt
+    interval: 86400
+  meta-ipcidr:
+    type: http
+    behavior: ipcidr
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/meta-ipcidr.txt
+    path: ./ruleset/meta-ipcidr.txt
+    interval: 86400
+  meta-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/meta-classical.txt
+    path: ./ruleset/meta-classical.txt
+    interval: 86400
+  discord-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/discord-domain.txt
+    path: ./ruleset/discord-domain.txt
+    interval: 86400
+  line-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/line-domain.txt
+    path: ./ruleset/line-domain.txt
+    interval: 86400
+  line-ipcidr:
+    type: http
+    behavior: ipcidr
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/line-ipcidr.txt
+    path: ./ruleset/line-ipcidr.txt
+    interval: 86400
+  payment-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/payment-domain.txt
+    path: ./ruleset/payment-domain.txt
+    interval: 86400
+  payment-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/payment-classical.txt
+    path: ./ruleset/payment-classical.txt
+    interval: 86400
+  github-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/github-domain.txt
+    path: ./ruleset/github-domain.txt
+    interval: 86400
+  github-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/github-classical.txt
+    path: ./ruleset/github-classical.txt
+    interval: 86400
+  bing-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/bing-domain.txt
+    path: ./ruleset/bing-domain.txt
+    interval: 86400
+  microsoft-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/microsoft-domain.txt
+    path: ./ruleset/microsoft-domain.txt
+    interval: 86400
+  microsoft-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/microsoft-classical.txt
+    path: ./ruleset/microsoft-classical.txt
+    interval: 86400
+  google-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/google-domain.txt
+    path: ./ruleset/google-domain.txt
+    interval: 86400
+  google-ipcidr:
+    type: http
+    behavior: ipcidr
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/google-ipcidr.txt
+    path: ./ruleset/google-ipcidr.txt
+    interval: 86400
+  google-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/google-classical.txt
+    path: ./ruleset/google-classical.txt
+    interval: 86400
+  tiktok-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/tiktok-domain.txt
+    path: ./ruleset/tiktok-domain.txt
+    interval: 86400
+  tiktok-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/tiktok-classical.txt
+    path: ./ruleset/tiktok-classical.txt
+    interval: 86400
+  direct-global-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/direct-global-domain.txt
+    path: ./ruleset/direct-global-domain.txt
+    interval: 86400
+  direct-global-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/direct-global-classical.txt
+    path: ./ruleset/direct-global-classical.txt
+    interval: 86400
+  game-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/game-domain.txt
+    path: ./ruleset/game-domain.txt
+    interval: 86400
+  game-ipcidr:
+    type: http
+    behavior: ipcidr
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/game-ipcidr.txt
+    path: ./ruleset/game-ipcidr.txt
+    interval: 86400
+  game-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/game-classical.txt
+    path: ./ruleset/game-classical.txt
+    interval: 86400
+  china-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/china-domain.txt
+    path: ./ruleset/china-domain.txt
+    interval: 86400
+  china-ipcidr:
+    type: http
+    behavior: ipcidr
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/china-ipcidr.txt
+    path: ./ruleset/china-ipcidr.txt
+    interval: 86400
+  china-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/china-classical.txt
+    path: ./ruleset/china-classical.txt
+    interval: 86400
+  ChinaDomains-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/ChinaDomains-domain.txt
+    path: ./ruleset/ChinaDomains-domain.txt
+    interval: 86400
+  proxy-domain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/proxy-domain.txt
+    path: ./ruleset/proxy-domain.txt
+    interval: 86400
+  proxy-ipcidr:
+    type: http
+    behavior: ipcidr
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/proxy-ipcidr.txt
+    path: ./ruleset/proxy-ipcidr.txt
+    interval: 86400
+  proxy-classical:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/proxy-classical.txt
+    path: ./ruleset/proxy-classical.txt
+    interval: 86400
+
+# 规则顺序与 Shadowrocket 配置一致，几处刻意安排见 README。
+rules: #!replace
+  # 高频埋点用 REJECT-DROP：静默丢包让 App 等超时才重试，
+  # 日志实测 rmonitor.qq.com 从 1592 次/小时降到 9 次/小时。
+  - DOMAIN,rmonitor.qq.com,REJECT-DROP
+  - DOMAIN,h.trace.qq.com,REJECT-DROP
+  - DOMAIN-SUFFIX,jpush.cn,REJECT-DROP
+  - DOMAIN-SUFFIX,jpush.io,REJECT-DROP
+  - DOMAIN-SUFFIX,pangolin-sdk-toutiao1.com,REJECT-DROP
+  - DOMAIN-SUFFIX,pangle.io,REJECT-DROP
+  - DOMAIN-SUFFIX,iadsdk.apple.com,REJECT-DROP
+  # LinkedIn 中国 2023 年停运，国内 DNS 仍会把 linkedin.com 解析到国内 IP，
+  # 不显式指定就会被后面的 GEOIP,CN 判成国内服务走直连。
+  - DOMAIN-SUFFIX,linkedin.com,🚀 节点选择
+  - DOMAIN-SUFFIX,licdn.com,🚀 节点选择
+  - DOMAIN-SUFFIX,linkedin-ei.com,🚀 节点选择
+  - DOMAIN-SUFFIX,linkedin.cn,🚀 节点选择
+  - DOMAIN-SUFFIX,licdn.cn,🚀 节点选择
+  # 境外 AI 服务，上游规则集未覆盖。
+  - DOMAIN-SUFFIX,poe.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,huggingface.co,🤖 AI 服务
+  - DOMAIN-SUFFIX,hf.co,🤖 AI 服务
+  - DOMAIN-SUFFIX,cursor.sh,🤖 AI 服务
+  - DOMAIN-SUFFIX,cursor.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,midjourney.com,🤖 AI 服务
+  # 游戏本体下载走直连，否则几十 GB 烧机场套餐。
+  - DOMAIN-SUFFIX,steampipe.akamaized.net,🎯 全球直连
+  - DOMAIN-SUFFIX,steampipe-kr.akamaized.net,🎯 全球直连
+  - DOMAIN-SUFFIX,steampipe-partner.akamaized.net,🎯 全球直连
+  - DOMAIN-SUFFIX,steamcdn-a.akamaihd.net,🎯 全球直连
+  - DOMAIN-SUFFIX,steamusercontent-a.akamaihd.net,🎯 全球直连
+  - DOMAIN-SUFFIX,steamcontent.tnkjmec.com,🎯 全球直连
+  - DOMAIN-SUFFIX,blzddist1-a.akamaihd.net,🎯 全球直连
+  - DOMAIN-SUFFIX,blzddistkr1-a.akamaihd.net,🎯 全球直连
+  - DOMAIN-SUFFIX,blzmedia-a.akamaihd.net,🎯 全球直连
+  - DOMAIN-SUFFIX,blznav.akamaized.net,🎯 全球直连
+  - DOMAIN-SUFFIX,blizzcon-a.akamaihd.net,🎯 全球直连
+  - DOMAIN-SUFFIX,blz-contentstack.com,🎯 全球直连
+  - DOMAIN-SUFFIX,eac-cdn.com,🎯 全球直连
+  # 拼多多与 .cn 顶级域。
+  - DOMAIN-SUFFIX,pinduoduo.com,🇨🇳 国内服务
+  - DOMAIN-SUFFIX,pinduoduo.net,🇨🇳 国内服务
+  - DOMAIN-SUFFIX,pddpic.com,🇨🇳 国内服务
+  - DOMAIN-SUFFIX,yangkeduo.com,🇨🇳 国内服务
+  - DOMAIN-SUFFIX,cn,🇨🇳 国内服务
+  # 全部 Apple 流量走代理。
+  - DOMAIN-SUFFIX,apple.com,🍎 苹果服务
+  - DOMAIN-SUFFIX,apple.news,🍎 苹果服务
+  - DOMAIN-SUFFIX,aaplimg.com,🍎 苹果服务
+  - DOMAIN-SUFFIX,icloud.com,🍎 苹果服务
+  - DOMAIN-SUFFIX,icloud-content.com,🍎 苹果服务
+  - DOMAIN-SUFFIX,cdn-apple.com,🍎 苹果服务
+  - DOMAIN-SUFFIX,mzstatic.com,🍎 苹果服务
+  - DOMAIN-SUFFIX,apple-cloudkit.com,🍎 苹果服务
+  - DOMAIN-SUFFIX,apple-mapkit.com,🍎 苹果服务
+  - DOMAIN-SUFFIX,itunes.com,🍎 苹果服务
+  - DOMAIN-SUFFIX,me.com,🍎 苹果服务
+  - IP-CIDR,17.0.0.0/8,🍎 苹果服务,no-resolve
+
+  # 规则集
+  - RULE-SET,direct-domain,DIRECT
+  - RULE-SET,direct-ipcidr,DIRECT,no-resolve
+  - RULE-SET,reject-ads-domain,🛑 广告拦截
+  - RULE-SET,reject-ads-ipcidr,🛑 广告拦截,no-resolve
+  - RULE-SET,reject-ads-classical,🛑 广告拦截
+  - RULE-SET,reject-privacy-ipcidr,🍃 应用净化,no-resolve
+  - RULE-SET,reject-privacy-classical,🍃 应用净化
+  - RULE-SET,apple-domain,🍎 苹果服务
+  - RULE-SET,apple-ipcidr,🍎 苹果服务,no-resolve
+  - RULE-SET,apple-classical,🍎 苹果服务
+  - RULE-SET,apple-media-domain,🎵 苹果媒体
+  - RULE-SET,apple-media-classical,🎵 苹果媒体
+  - RULE-SET,media-cn-domain,🌏 国内媒体
+  - RULE-SET,media-cn-ipcidr,🌏 国内媒体,no-resolve
+  - RULE-SET,media-cn-classical,🌏 国内媒体
+  - RULE-SET,youtube-domain,📹 YOUTUBE
+  - RULE-SET,youtube-ipcidr,📹 YOUTUBE,no-resolve
+  - RULE-SET,youtube-classical,📹 YOUTUBE
+  - RULE-SET,netflix-domain,🎥 NETFLIX
+  - RULE-SET,netflix-ipcidr,🎥 NETFLIX,no-resolve
+  - RULE-SET,netflix-classical,🎥 NETFLIX
+  - RULE-SET,disney-domain,🎬 DISNEY+
+  - RULE-SET,disney-classical,🎬 DISNEY+
+  - RULE-SET,hbo-domain,🎦 HBO
+  - RULE-SET,hbo-classical,🎦 HBO
+  - RULE-SET,primevideo-domain,📦 PRIMEVIDEO
+  - RULE-SET,primevideo-classical,📦 PRIMEVIDEO
+  - RULE-SET,spotify-domain,🎧 SPOTIFY
+  - RULE-SET,spotify-ipcidr,🎧 SPOTIFY,no-resolve
+  - RULE-SET,spotify-classical,🎧 SPOTIFY
+  - RULE-SET,bahamut-domain,🕹️ 巴哈姆特
+  - RULE-SET,bahamut-classical,🕹️ 巴哈姆特
+  - RULE-SET,abematv-domain,📺 ABEMATV
+  - RULE-SET,abematv-classical,📺 ABEMATV
+  - RULE-SET,twitch-domain,🎙️ TWITCH
+  - RULE-SET,twitch-ipcidr,🎙️ TWITCH,no-resolve
+  - RULE-SET,twitch-classical,🎙️ TWITCH
+  - RULE-SET,emby-domain,📀 EMBY
+  - RULE-SET,emby-classical,📀 EMBY
+  - RULE-SET,pikpak-domain,☁️ PIKPAK
+  - RULE-SET,pikpak-classical,☁️ PIKPAK
+  - RULE-SET,media-global-domain,🌍 国外媒体
+  - RULE-SET,media-global-ipcidr,🌍 国外媒体,no-resolve
+  - RULE-SET,media-global-classical,🌍 国外媒体
+  - RULE-SET,ai-domain,🤖 AI 服务
+  - RULE-SET,ai-ipcidr,🤖 AI 服务,no-resolve
+  - RULE-SET,ai-classical,🤖 AI 服务
+  - RULE-SET,telegram-domain,📲 TELEGRAM
+  - RULE-SET,telegram-ipcidr,📲 TELEGRAM,no-resolve
+  - RULE-SET,telegram-classical,📲 TELEGRAM
+  - RULE-SET,twitter-domain,🐦 TWITTER
+  - RULE-SET,twitter-ipcidr,🐦 TWITTER,no-resolve
+  - RULE-SET,twitter-classical,🐦 TWITTER
+  - RULE-SET,meta-domain,📘 META
+  - RULE-SET,meta-ipcidr,📘 META,no-resolve
+  - RULE-SET,meta-classical,📘 META
+  - RULE-SET,discord-domain,💬 DISCORD
+  - RULE-SET,line-domain,💚 LINE
+  - RULE-SET,line-ipcidr,💚 LINE,no-resolve
+  - RULE-SET,payment-domain,💰 支付服务
+  - RULE-SET,payment-classical,💰 支付服务
+  - RULE-SET,github-domain,🐱 GITHUB
+  - RULE-SET,github-classical,🐱 GITHUB
+  - RULE-SET,bing-domain,🔍 BING
+  - RULE-SET,microsoft-domain,Ⓜ️ 微软服务
+  - RULE-SET,microsoft-classical,Ⓜ️ 微软服务
+  - RULE-SET,google-domain,📢 谷歌服务
+  - RULE-SET,google-ipcidr,📢 谷歌服务,no-resolve
+  - RULE-SET,google-classical,📢 谷歌服务
+  - RULE-SET,tiktok-domain,🎶 TIKTOK
+  - RULE-SET,tiktok-classical,🎶 TIKTOK
+  - RULE-SET,direct-global-domain,🎯 全球直连
+  - RULE-SET,direct-global-classical,🎯 全球直连
+  - RULE-SET,game-domain,🎮 游戏平台
+  - RULE-SET,game-ipcidr,🎮 游戏平台,no-resolve
+  - RULE-SET,game-classical,🎮 游戏平台
+  - RULE-SET,china-domain,🇨🇳 国内服务
+  - RULE-SET,china-ipcidr,🇨🇳 国内服务,no-resolve
+  - RULE-SET,china-classical,🇨🇳 国内服务
+  - RULE-SET,ChinaDomains-domain,🇨🇳 国内服务
+  - RULE-SET,proxy-domain,🚀 节点选择
+  - RULE-SET,proxy-ipcidr,🚀 节点选择,no-resolve
+  - RULE-SET,proxy-classical,🚀 节点选择
+  - GEOIP,CN,🇨🇳 国内服务,no-resolve
+  - MATCH,🐟 漏网之鱼

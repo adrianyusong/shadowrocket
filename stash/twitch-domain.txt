@@ -1,0 +1,10 @@
+# 由 tools/build-stash.py 从 rule/twitch.list 生成，请勿手改。
+# behavior: domain   条数: 8
++.ext-twitch.tv
++.jtvnw.net
++.live-video.net
++.ttvnw.net
++.twitch-ext.rootonline.de
++.twitch.tv
++.twitchcdn.net
++.twitchsvc.net

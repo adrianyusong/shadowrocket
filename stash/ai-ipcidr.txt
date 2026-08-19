@@ -1,0 +1,4 @@
+# 由 tools/build-stash.py 从 rule/ai.list 生成，请勿手改。
+# behavior: ipcidr   条数: 2
+24.199.123.28/32
+64.23.132.171/32

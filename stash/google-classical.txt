@@ -1,0 +1,10 @@
+# 由 tools/build-stash.py 从 rule/google.list 生成，请勿手改。
+# behavior: classical   条数: 8
+DOMAIN-KEYWORD,appspot
+DOMAIN-KEYWORD,blogspot
+DOMAIN-KEYWORD,gmail
+DOMAIN-KEYWORD,google
+DOMAIN-KEYWORD,recaptcha
+USER-AGENT,%E4%BA%91%E7%AB%AF%E7%A1%AC%E7%9B%98*
+USER-AGENT,*com.google.Drive*
+USER-AGENT,Google.Drive*

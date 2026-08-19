@@ -1,0 +1,3 @@
+# 由 tools/build-stash.py 从 rule/bahamut.list 生成，请勿手改。
+# behavior: classical   条数: 1
+USER-AGENT,Anime*

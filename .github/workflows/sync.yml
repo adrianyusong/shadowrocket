@@ -28,6 +28,10 @@ jobs:
       - name: 拉取上游并合并
         run: python tools/sync-rules.py
 
+      - name: 生成 Stash 配置
+        # 与 Shadowrocket 共用 rule/*.list，但产物完全分开
+        run: python tools/build-stash.py
+
       - name: 校验配置与规则
         # 校验失败就不提交，避免把坏规则推给正在订阅的设备
         run: python tools/check-config.py
@@ -36,13 +40,13 @@ jobs:
         run: |
           # 用 status --porcelain 而非 diff --quiet：后者看不到新增文件，
           # 往 sources.txt 加新策略时生成的新 .list 会被静默丢弃。
-          if [ -z "$(git status --porcelain rule/)" ]; then
+          if [ -z "$(git status --porcelain rule/ stash/ config/stash.stoverride)" ]; then
             echo "上游无变化，跳过提交"
             exit 0
           fi
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add rule/
+          git add rule/ stash/ config/stash.stoverride
           # 不用 heredoc：它的内容必须顶格，会冲出 YAML 块作用域导致语法错误。
           # 多个 -m 会被拼成段落，效果相同且不受缩进影响。
           git commit             -m "chore: 同步上游规则集"             -m "由 .github/workflows/sync.yml 自动执行，校验通过后才提交。"             -m "上游清单见 tools/sources.txt，缺陷豁免见 tools/exclude.txt。"

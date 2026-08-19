@@ -1,0 +1,23 @@
+# 由 tools/build-stash.py 从 rule/proxy.list 生成，请勿手改。
+# behavior: classical   条数: 21
+DOMAIN-KEYWORD,amazon
+DOMAIN-KEYWORD,pinterest
+DOMAIN-KEYWORD,twimg
+DOMAIN-KEYWORD,wikileaks
+DOMAIN-KEYWORD,1e100
+DOMAIN-KEYWORD,abema
+DOMAIN-KEYWORD,appledaily
+DOMAIN-KEYWORD,avtb
+DOMAIN-KEYWORD,beetalk
+DOMAIN-KEYWORD,dlercloud
+DOMAIN-KEYWORD,dropbox
+DOMAIN-KEYWORD,porn
+DOMAIN-KEYWORD,sci-hub
+DOMAIN-KEYWORD,telegram
+DOMAIN-KEYWORD,whatsapp
+USER-AGENT,TwDramas
+USER-AGENT,Duolingo*
+USER-AGENT,Roam*
+USER-AGENT,WhatsApp*
+USER-AGENT,battleroyale*
+USER-AGENT,hearthstone*

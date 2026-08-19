@@ -1,0 +1,25 @@
+# 由 tools/build-stash.py 从 rule/twitter.list 生成，请勿手改。
+# behavior: domain   条数: 23
++.cms-twdigitalassets.com
++.periscope.tv
++.pscp.tv
++.t.co
++.tweetdeck.com
++.twimg.co
++.twimg.com
++.twimg.org
++.twitpic.com
++.twitter.biz
++.twitter.com
++.twitter.jp
++.twittercommunity.com
++.twitterflightschool.com
++.twitterinc.com
++.twitteroauth.com
++.twitterstat.us
++.twtrdns.net
++.twttr.com
++.twttr.net
++.twvid.com
++.vine.co
++.x.com

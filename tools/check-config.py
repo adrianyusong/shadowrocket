@@ -326,6 +326,76 @@ def check_workflows():
             fail('%s 缺少 jobs 段' % rel)
 
 
+STASH_OVERRIDE = os.path.join(ROOT, 'config', 'stash.stoverride')
+STASH_DIR = os.path.join(ROOT, 'stash')
+CLASH_BUILTIN = {'DIRECT', 'REJECT', 'REJECT-DROP', 'PASS', 'COMPATIBLE'}
+
+
+def check_stash():
+    """校验 Stash 覆写文件。与 Shadowrocket 配置分开，但共用 rule/*.list。"""
+    if not os.path.exists(STASH_OVERRIDE):
+        return 0, 0
+    try:
+        import yaml
+    except ImportError:
+        warn('PyYAML 未安装，跳过 Stash 覆写校验')
+        return 0, 0
+    try:
+        doc = yaml.safe_load(io.open(STASH_OVERRIDE, encoding='utf-8').read())
+    except yaml.YAMLError as exc:
+        mark = getattr(exc, 'problem_mark', None)
+        where = ' 第%d行' % (mark.line + 1) if mark else ''
+        fail('stash.stoverride YAML 语法错误%s: %s'
+             % (where, getattr(exc, 'problem', exc)))
+        return 0, 0
+
+    groups = doc.get('proxy-groups') or []
+    provs = doc.get('rule-providers') or {}
+    rules = doc.get('rules') or []
+    names = {g.get('name') for g in groups}
+
+    for g in groups:
+        for pxy in g.get('proxies', []) or []:
+            if pxy not in names and pxy not in CLASH_BUILTIN:
+                fail('Stash 分组 %s 引用未定义策略: %s' % (g.get('name'), pxy))
+
+    used = set()
+    for r in rules:
+        parts = [x.strip() for x in str(r).split(',')]
+        pol = parts[-2] if parts[-1] in MODIFIERS else parts[-1]
+        used.add(pol)
+        if pol not in names and pol not in CLASH_BUILTIN:
+            fail('Stash 规则引用未定义策略: %s' % pol)
+        if parts[0] == 'RULE-SET' and parts[1] not in provs:
+            fail('Stash 规则引用不存在的规则集: %s' % parts[1])
+
+    for n in names:
+        referenced = n in used or any(n in (g.get('proxies') or []) for g in groups)
+        if not referenced:
+            fail('Stash 孤儿分组，无任何引用: %s' % n)
+
+    # 规则集文件必须真实存在，否则 Stash 拉取时静默少一类规则
+    for k, v in provs.items():
+        fname = os.path.basename(v.get('url', ''))
+        if not fname or not os.path.exists(os.path.join(STASH_DIR, fname)):
+            fail('Stash 规则集文件缺失: stash/%s' % fname)
+
+    # domain behavior 的文件不能含逗号，那说明混进了带类型的规则
+    for k, v in provs.items():
+        if v.get('behavior') != 'domain':
+            continue
+        path = os.path.join(STASH_DIR, os.path.basename(v.get('url', '')))
+        if not os.path.exists(path):
+            continue
+        for ln in io.open(path, encoding='utf-8'):
+            ln = ln.strip()
+            if ln and not ln.startswith('#') and ',' in ln:
+                fail('Stash %s 是 domain behavior，却含带类型的规则: %s' % (k, ln))
+                break
+    return len(groups), len(rules)
+
+
+
 def main():
     cfg = io.open(CONFIG, encoding='utf-8').read()
     ngroups, nrefs = check_policy_refs(cfg)
@@ -339,8 +409,12 @@ def main():
     rules = load_rules()
     check_keywords(rules)
     check_no_block(rules, cfg)
+    sgroups, srules = check_stash()
 
-    print('策略组 %d，策略引用 %d，规则 %d 条' % (ngroups, nrefs, len(rules)))
+    print('Shadowrocket: 策略组 %d，策略引用 %d，规则 %d 条'
+          % (ngroups, nrefs, len(rules)))
+    if sgroups:
+        print('Stash:        分组 %d，规则 %d 条' % (sgroups, srules))
     for w in WARNS:
         print('  WARN  %s' % w)
     for f in FAILS:

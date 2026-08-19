@@ -1,0 +1,9 @@
+# 由 tools/build-stash.py 从 rule/microsoft.list 生成，请勿手改。
+# behavior: classical   条数: 7
+DOMAIN-KEYWORD,1drv
+DOMAIN-KEYWORD,onedrive
+DOMAIN-KEYWORD,skydrive
+DOMAIN-KEYWORD,microsoft
+USER-AGENT,Microsoft*
+USER-AGENT,OneDrive*
+USER-AGENT,OneDriveiOSApp*

@@ -1,0 +1,10 @@
+# 由 tools/build-stash.py 从 rule/youtube.list 生成，请勿手改。
+# behavior: classical   条数: 8
+DOMAIN-KEYWORD,youtube
+USER-AGENT,*YouTubeMusic*
+USER-AGENT,*com.google.ios.youtubemusic*
+USER-AGENT,*youtube*
+USER-AGENT,YouTube*
+USER-AGENT,YouTubeMusic*
+USER-AGENT,com.google.ios.youtube*
+USER-AGENT,com.google.ios.youtubemusic*

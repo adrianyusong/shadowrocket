@@ -1,0 +1,13 @@
+# 由 tools/build-stash.py 从 rule/ai.list 生成，请勿手改。
+# behavior: classical   条数: 11
+DOMAIN-KEYWORD,openaiapi
+DOMAIN-KEYWORD,openaicom
+DOMAIN-KEYWORD,notebooklm.google
+DOMAIN-KEYWORD,labs.google
+DOMAIN-KEYWORD,openai
+IP-ASN,20473,no-resolve
+DOMAIN-KEYWORD,colab
+DOMAIN-KEYWORD,developerprofiles
+DOMAIN-KEYWORD,generativelanguage
+DOMAIN-KEYWORD,openaicom-api
+IP-ASN,14061,no-resolve

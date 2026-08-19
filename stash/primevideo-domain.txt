@@ -1,0 +1,17 @@
+# 由 tools/build-stash.py 从 rule/primevideo.list 生成，请勿手改。
+# behavior: domain   条数: 15
+atv-ps.amazon.com
+avodmp4s3ww-a.akamaihd.net
+d1v5ir2lpwr8os.cloudfront.net
+d22qjgkvxw22r6.cloudfront.net
+d25xi40x97liuc.cloudfront.net
+d27xxe7juh1us6.cloudfront.net
+dmqdd6hw24ucf.cloudfront.net
+fls-na.amazon.com
+www.amazon.com
++.aiv-cdn.net
++.aiv-delivery.net
++.amazonvideo.com
++.media-amazon.com
++.primevideo.com
++.pv-cdn.net

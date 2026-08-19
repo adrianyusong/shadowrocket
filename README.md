@@ -2,6 +2,49 @@
 
 个人的 Shadowrocket 规则、模块与脚本集合。
 
+## 两套配置，共用一份规则
+
+| | Shadowrocket | Stash |
+|---|---|---|
+| 配置 | `config/default.conf` | `config/stash.stoverride` |
+| 规则 | `rule/*.list` | `stash/*.txt` |
+| 生成 | 手写 | `tools/build-stash.py` |
+
+规则数据同源：`tools/sources.txt` → `tools/sync-rules.py` → `rule/*.list`，
+Stash 那套再由 `build-stash.py` 从中派生。改上游只需改一处。
+
+### Stash 独有的两点
+
+**协议分组。** Shadowrocket 只能按节点名正则筛选，而协议信息不在名字里；
+Mihomo 从节点配置读类型，所以能分。注意 `proxy-groups` 只有 `exclude-type`
+没有 `include-type`，「只要 VLESS」得写成「排除其余全部协议」。
+
+**规则集按类型拆分。** Stash 的 rule-provider 有 `domain` / `ipcidr` /
+`classical` 三种 behavior，前两种是为海量规则优化的加载器。我们的 `.list`
+是混合格式，整份丢给 `classical` 会浪费性能，所以拆成三份各走各的：
+
+```
+domain     141,932 条
+ipcidr      14,637 条
+classical      492 条   （DOMAIN-KEYWORD 等只能走这个）
+```
+
+所有 `ipcidr` 规则集引用都带 `no-resolve` —— 不加的话每个域名请求都会为了
+判断 IP 归属触发一次本地 DNS 查询，既泄漏域名，又让被污染的解析结果影响分流。
+
+### 用 Stash 的步骤
+
+节点来自你自己的订阅，覆写只替换规则与分组，不碰节点，所以仓库里不含订阅地址。
+
+1. Stash 里正常添加你的机场订阅
+2. 配置 → 覆写 → 添加，填入：
+
+```
+https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/config/stash.stoverride
+```
+
+3. 在订阅配置上启用该覆写
+
 ## 订阅
 
 在 Shadowrocket 中：**配置 → 添加配置 → 填入下方地址**

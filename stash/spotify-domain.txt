@@ -1,0 +1,28 @@
+# 由 tools/build-stash.py 从 rule/spotify.list 生成，请勿手改。
+# behavior: domain   条数: 26
+audio4-ak-spotify-com.akamaized.net
+cdn-spotify-experiments.conductrics.com
+heads-ak-spotify-com.akamaized.net
+spotify.com.edgesuite.net
+spotify.map.fastly.net
+spotify.map.fastlylb.net
++.audio-ak-spotify-com.akamaized.net
++.byspotify.com
++.heads4-ak-spotify-com.akamaized.net
++.pscdn.co
++.scdn.co
++.spoti.fi
++.spotify-com.akamaized.net
++.spotify-everywhere.com
++.spotify.app.link
++.spotify.com
++.spotify.design
++.spotifycdn.com
++.spotifycdn.net
++.spotifycharts.com
++.spotifycodes.com
++.spotifyforbrands.com
++.spotifyjobs.com
++.spotifynewsroom.jp
++.spotilocal.com
++.tospotify.com

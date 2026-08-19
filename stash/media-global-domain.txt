@@ -1,0 +1,3 @@
+# 由 tools/build-stash.py 从 rule/media-global.list 生成，请勿手改。
+# behavior: domain   条数: 1
++.bilibili.tv

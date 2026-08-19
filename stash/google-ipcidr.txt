@@ -1,0 +1,4 @@
+# 由 tools/build-stash.py 从 rule/google.list 生成，请勿手改。
+# behavior: ipcidr   条数: 2
+173.194.0.0/16
+74.125.0.0/16

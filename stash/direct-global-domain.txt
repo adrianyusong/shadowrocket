@@ -1,0 +1,23 @@
+# 由 tools/build-stash.py 从 rule/direct-global.list 生成，请勿手改。
+# behavior: domain   条数: 21
+csgo.wmsj.cn
+dl.steam.clngaa.com
+dl.steam.ksyna.com
+dota2.wmsj.cn
+st.dl.bscstorage.net
+st.dl.eccdnx.com
+st.dl.pinyuncloud.com
+steampipe.steamcontent.tnkjmec.com
+steampowered.com.8686c.com
+steamstatic.com.8686c.com
+wmsjsteam.com
+xz.pphimalayanrt.com
++.cm.steampowered.com
++.steamchina.com
++.steamcontent.com
++.steamserver.net
++.steamusercontent.com
++.ooklaserver.net
++.speed.cloudflare.com
++.speed.dler.io
++.qbittorrent.org
