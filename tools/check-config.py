@@ -302,6 +302,81 @@ def check_no_resolve():
              '会为域名请求触发本地 DNS 解析' % (kept, total))
 
 
+def _rewrite_hosts(patterns):
+    r"""从重写规则里提取域名，用于核对 MITM 覆盖。
+
+    输入形如 ^https?://(www\.)?g\.cn https://www.google.com 302
+    只取第一段（匹配模式），剥掉正则转义与协议前缀后得到 g.cn。
+    """
+    hosts = set()
+    for pat in patterns:
+        first = str(pat).split()[0]
+        s = first.replace(chr(92), "")          # 去掉正则转义反斜杠
+        s = s.lstrip("^")
+        if "://" in s:
+            s = s.split("://", 1)[1]
+        s = re.sub(r"^\([^)]*\)\?*", "", s)      # 去掉 (www.)? 这类可选分组
+        s = s.split("/")[0].split("?")[0].strip(".")
+        if "." in s:
+            hosts.add(s)
+    return hosts
+
+def _mitm_covers(mitm, host):
+    for entry in mitm:
+        e = entry.strip().strip('"')
+        if e == host:
+            return True
+        if e.startswith('*.') and (host == e[2:] or host.endswith(e[1:])):
+            return True
+    return False
+
+
+def check_rewrite_mitm(cfg):
+    """重写规则涉及的域名必须在 MITM 列表里，否则规则从不触发。
+
+    这正是本仓库删掉过又加回来的那两条 g.cn 重写：当初 hostname 为空，
+    规则是死代码。只看「MITM enable = true」不够，必须逐域名核对。
+    """
+    # --- Shadowrocket ---
+    inside = None
+    rewrites, mitm_hosts, enabled = [], [], False
+    for line in cfg.splitlines():
+        s = line.strip()
+        if s.startswith('[') and s.endswith(']'):
+            inside = s
+            continue
+        if not s or s.startswith('#'):
+            continue
+        if inside == '[URL Rewrite]':
+            rewrites.append(s)
+        elif inside == '[MITM]':
+            if s.startswith('hostname'):
+                mitm_hosts = [x.strip() for x in s.split('=', 1)[1].split(',') if x.strip()]
+            elif s.startswith('enable'):
+                enabled = s.split('=', 1)[1].strip().lower() == 'true'
+    if rewrites and not enabled:
+        fail('[URL Rewrite] 有规则但 [MITM] enable 不为 true，规则不会触发')
+    for host in _rewrite_hosts(rewrites):
+        if not _mitm_covers(mitm_hosts, host):
+            fail('[URL Rewrite] 涉及 %s，但它不在 [MITM] hostname 列表里，规则是死代码'
+                 % host)
+
+    # --- Stash ---
+    if not os.path.exists(STASH_OVERRIDE):
+        return
+    try:
+        import yaml
+        doc = yaml.safe_load(io.open(STASH_OVERRIDE, encoding='utf-8').read())
+    except Exception:
+        return
+    http = (doc or {}).get('http') or {}
+    smitm = http.get('mitm') or []
+    for host in _rewrite_hosts(http.get('url-rewrite') or []):
+        if not _mitm_covers(smitm, host):
+            fail('Stash url-rewrite 涉及 %s，但不在 http.mitm 列表里，规则是死代码'
+                 % host)
+
+
 def check_workflows():
     """GitHub 只在推送后才报 YAML 错误，本地必须先挡住。"""
     paths = sorted(glob.glob(os.path.join(ROOT, '.github', 'workflows', '*.yml'))
@@ -406,6 +481,7 @@ def main():
     check_workflows()
     check_no_resolve()
     check_skip_proxy(cfg)
+    check_rewrite_mitm(cfg)
     rules = load_rules()
     check_keywords(rules)
     check_no_block(rules, cfg)

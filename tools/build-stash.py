@@ -249,6 +249,24 @@ def main():
     A('      - https://doh.pub/dns-query')
     A('')
 
+    # ---- http: mitm + url-rewrite ----
+    A('# HTTP 引擎。本覆写自身只做一条重写，iRingo 等覆写各自带 mitm 与 script，')
+    A('# 叠加时会合并，不需要在此手抄它们的域名。')
+    A('http:')
+    A('  # 重写要生效必须同时满足：域名在 mitm 列表里 + 证书已安装并信任。')
+    A('  # 只列本覆写自己需要解密的域名，列表越小性能与风险越低。')
+    A('  mitm:')
+    A('    - "g.cn"')
+    A('    - "*.g.cn"')
+    A('    - "www.google.cn"')
+    A('    - "*.google.cn"')
+    A('  # google.cn / g.cn 是 Google 中国的旧域名，2010 年退出后只剩跳转落地页。')
+    A('  # 重写成 www.google.com，让旧书签、二维码、App 内链接直接落到真正的 Google。')
+    A('  url-rewrite:')
+    A(r'    - ^https?://(www\.)?g\.cn https://www.google.com 302')
+    A(r'    - ^https?://(www\.)?google\.cn https://www.google.com 302')
+    A('')
+
     # ---- proxy-groups ----
     A('# 分组用 #!replace 整段替换，否则会与订阅自带的分组混在一起。')
     A('proxy-groups: #!replace')

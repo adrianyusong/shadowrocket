@@ -52,6 +52,22 @@ dns: #!replace
       - https://dns.alidns.com/dns-query
       - https://doh.pub/dns-query
 
+# HTTP 引擎。本覆写自身只做一条重写，iRingo 等覆写各自带 mitm 与 script，
+# 叠加时会合并，不需要在此手抄它们的域名。
+http:
+  # 重写要生效必须同时满足：域名在 mitm 列表里 + 证书已安装并信任。
+  # 只列本覆写自己需要解密的域名，列表越小性能与风险越低。
+  mitm:
+    - "g.cn"
+    - "*.g.cn"
+    - "www.google.cn"
+    - "*.google.cn"
+  # google.cn / g.cn 是 Google 中国的旧域名，2010 年退出后只剩跳转落地页。
+  # 重写成 www.google.com，让旧书签、二维码、App 内链接直接落到真正的 Google。
+  url-rewrite:
+    - ^https?://(www\.)?g\.cn https://www.google.com 302
+    - ^https?://(www\.)?google\.cn https://www.google.com 302
+
 # 分组用 #!replace 整段替换，否则会与订阅自带的分组混在一起。
 proxy-groups: #!replace
   # 主策略。候选里同时给出协议、线路属性、地区三个维度，按需切换。
