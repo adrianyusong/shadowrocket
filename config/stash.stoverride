@@ -61,6 +61,7 @@ proxy-groups: #!replace
       - "♻️ 自动选择"
       - "🔯 故障转移"
       - "🔮 负载均衡"
+      - "🔧 手动选择"
       - "🅥 VLESS"
       - "🅗 Hysteria2"
       - "🅣 Trojan"
@@ -96,6 +97,10 @@ proxy-groups: #!replace
     url: "http://www.gstatic.com/generate_204"
     interval: 300
     strategy: consistent-hashing
+  # 手动挑单个节点用。上面几组都是自动的，没有这一组就只能选组不能选节点。
+  - name: "🔧 手动选择"
+    type: select
+    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|群组|群組|直连|直連|Expire|Traffic|Reset|Website)).*$"
   # 协议分组。proxy-groups 只有 exclude-type 没有 include-type，
   # 所以「只要某协议」写成「排除其余全部」。这是 Shadowrocket 做不到的维度。
   - name: "🅥 VLESS"

@@ -263,7 +263,7 @@ def main():
             for p in proxies:
                 A('      - %s' % q(p))
 
-    main_cands = (['♻️ 自动选择', '🔯 故障转移', '🔮 负载均衡']
+    main_cands = (['♻️ 自动选择', '🔯 故障转移', '🔮 负载均衡', '🔧 手动选择']
                   + [n for n, _ in PROTOS] + [n for n, _ in ATTRS]
                   + [n for n, _ in REGIONS] + ['DIRECT'])
     A('  # 主策略。候选里同时给出协议、线路属性、地区三个维度，按需切换。')
@@ -276,6 +276,9 @@ def main():
         url=q(TEST_URL), interval=300, lazy='true')
     grp('🔮 负载均衡', 'load-balance', None, filter=q(AUTO_FILTER),
         url=q(TEST_URL), interval=300, strategy='consistent-hashing')
+
+    A('  # 手动挑单个节点用。上面几组都是自动的，没有这一组就只能选组不能选节点。')
+    grp('🔧 手动选择', 'select', None, filter=q(AUTO_FILTER))
 
     A('  # 协议分组。proxy-groups 只有 exclude-type 没有 include-type，')
     A('  # 所以「只要某协议」写成「排除其余全部」。这是 Shadowrocket 做不到的维度。')
