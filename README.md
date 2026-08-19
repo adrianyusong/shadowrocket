@@ -57,6 +57,37 @@ https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/config/stash.st
 
 覆写不会自己生效，要在对应的订阅配置里勾选。
 
+### 为什么覆写里没有 rewrite / mitm / script
+
+因为本仓库没有这类内容可放。Shadowrocket 那边的 `[URL Rewrite]` 两条早已删除
+（`g.cn` 走 HTTPS，没有 MITM 根本不触发，是死代码），`[MITM] hostname` 是空的
+——实际域名来自 iRingo 等**模块**，`script/` 目录也一直是空的。
+
+写空段是装饰不是功能，而且 MITM 本身有代价：要装并信任 CA、解密 HTTPS、耗电，
+没内容时开启是净损失。
+
+**iRingo 官方直接发布 `.stoverride`**，自带 `rules` + `http.mitm` +
+`http.script` + `script-providers`，在 Stash 里作为独立覆写叠加即可：
+
+| 模块 | 地址 |
+|---|---|
+| WeatherKit | `https://github.com/NSRingo/WeatherKit/releases/latest/download/iRingo.WeatherKit.stoverride` |
+| LocationService | `https://github.com/NSRingo/LocationServices/releases/latest/download/iRingo.LocationService.stoverride` |
+| Siri | `https://github.com/NSRingo/Siri/releases/latest/download/iRingo.Siri.stoverride` |
+| Spotlight | `https://github.com/NSRingo/Siri/releases/latest/download/iRingo.Spotlight.stoverride` |
+| TestFlight | `https://github.com/NSRingo/TestFlight/releases/latest/download/iRingo.TestFlight.stoverride` |
+| News | `https://github.com/NSRingo/News/releases/latest/download/iRingo.News.stoverride` |
+| TV | `https://github.com/NSRingo/TV/releases/latest/download/iRingo.TV.stoverride` |
+
+**叠加时的一个注意点**：本覆写的 `rules` 带 `#!replace`，且以 `MATCH` 收尾。
+iRingo 的覆写各自带几条 `REJECT-DROP`（如 `weather-analytics-events.apple.com`），
+若本覆写排在它们之后生效，那几条会被 `MATCH` 之前的规则抢先命中而失效。
+
+影响有限——iRingo 的核心功能靠 `http.mitm` 与 `http.script`，与 `rules` 无关，
+不受顺序影响。只有那几条埋点拦截可能被遮蔽。要确认的话，在 Data 里看
+`weather-analytics-events.apple.com` 是否显示 REJECT-DROP；被遮蔽了就把
+iRingo 的覆写排到本覆写之前。
+
 ### 分组怎么用
 
 `🚀 节点选择` 的候选全是分组，不含单个节点。要手动指定某个具体节点，用
