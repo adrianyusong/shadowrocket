@@ -1,0 +1,60 @@
+# 多订阅合并模板 —— 复制到本地填写，不要提交真实地址
+#
+# Stash 一个配置对应一个订阅。要把第二、第三家机场的节点并进来，
+# 用 proxy-providers 把它们作为「代理集合」引入。
+#
+# 为什么不用改主覆写：stash.stoverride 里所有地区 / 协议 / 线路属性分组
+# 都写了 include-all: true，其定义是「包含全部出站代理和代理集合」——
+# 也就是 provider 的节点会自动流进这些分组，无需逐个添加。
+#
+# 用法：
+#   1. 把本文件内容复制一份，替换成你的真实订阅地址
+#   2. Stash -> 配置 -> 覆写 -> 新建本地覆写，粘贴进去
+#   3. 与 stash.stoverride 一起在同一份订阅配置上启用
+#
+# 订阅地址等同凭据，只保留在设备上。若要存本地文件，
+# 命名为 *.local.stoverride —— 该模式已在 .gitignore 中排除。
+
+name: 多订阅合并
+desc: 把额外机场作为 proxy-provider 引入，节点自动并入主覆写的各分组
+category: proxies
+
+proxy-providers:
+  # 名称随意，只在配置内部引用。建议用机场名，便于在日志里辨认来源。
+  airport-b:
+    type: http
+    # 必须是 Clash / Stash 格式的订阅地址。
+    # 机场给 Shadowrocket 的 base64 分享链接在这里读不了。
+    url: "https://例子.com/subscribe?token=你的令牌&flag=clash"
+    # 本地缓存路径。Stash 启动时先读缓存，拉取成功后覆盖。
+    # 路径被限制在 Stash 管理的资源目录内。
+    path: ./providers/airport-b.yaml
+    # 订阅更新间隔，单位秒。3600 = 每小时。
+    interval: 3600
+    # 健康检查。不开的话 url-test / fallback 类分组无法判断这批节点的可用性。
+    health-check:
+      enable: true
+      url: https://www.gstatic.com/generate_204
+      interval: 300
+
+  # 第三家照抄一份，改名字和地址即可。
+  # airport-c:
+  #   type: http
+  #   url: "https://另一家.com/sub?flag=clash"
+  #   path: ./providers/airport-c.yaml
+  #   interval: 3600
+  #   health-check:
+  #     enable: true
+  #     url: https://www.gstatic.com/generate_204
+  #     interval: 300
+
+# 两家机场若有同名节点会互相冲突。较新的 Mihomo 内核支持给 provider 的节点
+# 统一加前缀来区分，写法如下——你的 Stash 版本是否支持需要实测，
+# 加上去若分组变空就说明不支持，删掉即可：
+#
+#   airport-b:
+#     override:
+#       additional-prefix: "[B] "
+#
+# 加前缀后要注意：主覆写的地区分组靠节点名正则匹配，前缀不影响匹配
+# （正则是搜索不是全匹配），但「🔧 手动选择」列表里会带上前缀。

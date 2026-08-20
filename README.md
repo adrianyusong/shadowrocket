@@ -88,6 +88,41 @@ iRingo 的覆写各自带几条 `REJECT-DROP`（如 `weather-analytics-events.ap
 `weather-analytics-events.apple.com` 是否显示 REJECT-DROP；被遮蔽了就把
 iRingo 的覆写排到本覆写之前。
 
+### 合并多个订阅
+
+Stash 一个配置对应一个订阅。要把第二、第三家机场并进来，用 `proxy-providers`
+把它们作为「代理集合」引入。
+
+**主覆写不用改** —— 所有地区 / 协议 / 线路属性分组都写了 `include-all: true`，
+其定义是「包含全部出站代理**和代理集合**」，provider 的节点会自动流进这些分组。
+
+模板见 [`config/stash-providers.example.stoverride`](config/stash-providers.example.stoverride)：
+
+```yaml
+proxy-providers:
+  airport-b:
+    type: http
+    url: "第二家的 Clash 格式订阅地址"
+    path: ./providers/airport-b.yaml
+    interval: 3600
+    health-check:
+      enable: true
+      url: https://www.gstatic.com/generate_204
+      interval: 300
+```
+
+复制模板、填入真实地址、在 Stash 里新建**本地覆写**粘贴进去，与主覆写一起在
+同一份订阅配置上启用。
+
+**订阅地址等同凭据，只留在设备上。** 要存本地文件就命名为 `*.local.stoverride`，
+该模式已在 `.gitignore` 中排除。
+
+`health-check` 不能省：不开的话 `url-test` / `fallback` 类分组无法判断这批
+节点的可用性。
+
+两家若有同名节点会冲突，可用 `override.additional-prefix` 加前缀区分——
+是否支持取决于内核版本，加上去若分组变空就说明不支持。
+
 ### 分组怎么用
 
 `🚀 节点选择` 的候选全是分组，不含单个节点。要手动指定某个具体节点，用

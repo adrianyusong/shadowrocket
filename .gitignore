@@ -2,6 +2,8 @@
 # 含机场订阅链接、服务器地址、密码 / UUID 的真实配置
 *.local.conf
 *.private.conf
+*.local.stoverride
+*.private.stoverride
 secrets/
 subscription*.txt
 
