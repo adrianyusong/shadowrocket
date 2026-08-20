@@ -94,8 +94,11 @@ proxy-groups: #!replace
       - "🇰🇷 韩国"
       - "DIRECT"
   # 自动测速类。filter 排除机场的信息类伪节点。
+  # include-all 不可省：filter / exclude-type 只对 use 引入的 provider 或
+  # include-all 之后的全体节点生效，两者都没有时组内无节点可筛，会是空组。
   - name: "♻️ 自动选择"
     type: url-test
+    include-all: true
     filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|群组|群組|直连|直連|Expire|Traffic|Reset|Website)).*$"
     url: "http://www.gstatic.com/generate_204"
     interval: 300
@@ -103,12 +106,14 @@ proxy-groups: #!replace
     lazy: true
   - name: "🔯 故障转移"
     type: fallback
+    include-all: true
     filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|群组|群組|直连|直連|Expire|Traffic|Reset|Website)).*$"
     url: "http://www.gstatic.com/generate_204"
     interval: 300
     lazy: true
   - name: "🔮 负载均衡"
     type: load-balance
+    include-all: true
     filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|群组|群組|直连|直連|Expire|Traffic|Reset|Website)).*$"
     url: "http://www.gstatic.com/generate_204"
     interval: 300
@@ -116,11 +121,13 @@ proxy-groups: #!replace
   # 手动挑单个节点用。上面几组都是自动的，没有这一组就只能选组不能选节点。
   - name: "🔧 手动选择"
     type: select
+    include-all: true
     filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|群组|群組|直连|直連|Expire|Traffic|Reset|Website)).*$"
   # 协议分组。proxy-groups 只有 exclude-type 没有 include-type，
   # 所以「只要某协议」写成「排除其余全部」。这是 Shadowrocket 做不到的维度。
   - name: "🅥 VLESS"
     type: url-test
+    include-all: true
     exclude-type: "ss|ssr|vmess|trojan|hysteria|hysteria2|tuic|wireguard|snell|http|socks5|anytls|ssh"
     url: "http://www.gstatic.com/generate_204"
     interval: 600
@@ -128,6 +135,7 @@ proxy-groups: #!replace
     lazy: true
   - name: "🅗 Hysteria2"
     type: url-test
+    include-all: true
     exclude-type: "ss|ssr|vmess|vless|trojan|tuic|wireguard|snell|http|socks5|anytls|ssh"
     url: "http://www.gstatic.com/generate_204"
     interval: 600
@@ -135,6 +143,7 @@ proxy-groups: #!replace
     lazy: true
   - name: "🅣 Trojan"
     type: url-test
+    include-all: true
     exclude-type: "ss|ssr|vmess|vless|hysteria|hysteria2|tuic|wireguard|snell|http|socks5|anytls|ssh"
     url: "http://www.gstatic.com/generate_204"
     interval: 600
@@ -142,6 +151,7 @@ proxy-groups: #!replace
     lazy: true
   - name: "🅢 Shadowsocks"
     type: url-test
+    include-all: true
     exclude-type: "vmess|vless|trojan|hysteria|hysteria2|tuic|wireguard|snell|http|socks5|anytls|ssh"
     url: "http://www.gstatic.com/generate_204"
     interval: 600
@@ -150,6 +160,7 @@ proxy-groups: #!replace
   # 线路属性分组，与地区维度正交。
   - name: "🏠 住宅IP"
     type: url-test
+    include-all: true
     filter: "(?i)(住宅|家宽|家寬|原生|Residential)"
     url: "http://www.gstatic.com/generate_204"
     interval: 600
@@ -157,6 +168,7 @@ proxy-groups: #!replace
     lazy: true
   - name: "🛣️ 专线"
     type: url-test
+    include-all: true
     filter: "(?i)(专线|專線|IPLC|IEPL)"
     url: "http://www.gstatic.com/generate_204"
     interval: 600
@@ -164,6 +176,7 @@ proxy-groups: #!replace
     lazy: true
   - name: "🎞️ 流媒体节点"
     type: url-test
+    include-all: true
     filter: "(?i)(流媒体|流媒體)"
     url: "http://www.gstatic.com/generate_204"
     interval: 600
@@ -171,6 +184,7 @@ proxy-groups: #!replace
     lazy: true
   - name: "💴 低倍率"
     type: url-test
+    include-all: true
     filter: "(?i)(?<![0-9.])0\\.[0-9]+ ?x"
     url: "http://www.gstatic.com/generate_204"
     interval: 600
@@ -179,6 +193,7 @@ proxy-groups: #!replace
   # 地区分组。
   - name: "🇭🇰 香港"
     type: url-test
+    include-all: true
     filter: "(?i)(香港|港岛|深港|沪港|Hong ?Kong|(?<![A-Za-z])(HK|HKG)(?![A-Za-z]))"
     url: "http://www.gstatic.com/generate_204"
     interval: 600
@@ -186,6 +201,7 @@ proxy-groups: #!replace
     lazy: true
   - name: "🇹🇼 台湾"
     type: url-test
+    include-all: true
     filter: "(?i)(台湾|台灣|台北|臺灣|Taiwan|(?<![A-Za-z])(TW|TPE)(?![A-Za-z]))"
     url: "http://www.gstatic.com/generate_204"
     interval: 600
@@ -193,6 +209,7 @@ proxy-groups: #!replace
     lazy: true
   - name: "🇯🇵 日本"
     type: url-test
+    include-all: true
     filter: "(?i)(日本|東京|东京|大阪|名古屋|埼玉|Japan|(?<![A-Za-z])(JP|JPN|NRT|KIX)(?![A-Za-z]))"
     url: "http://www.gstatic.com/generate_204"
     interval: 600
@@ -200,6 +217,7 @@ proxy-groups: #!replace
     lazy: true
   - name: "🇸🇬 狮城"
     type: url-test
+    include-all: true
     filter: "(?i)(新加坡|狮城|獅城|Singapore|(?<![A-Za-z])(SG|SIN)(?![A-Za-z]))"
     url: "http://www.gstatic.com/generate_204"
     interval: 600
@@ -207,6 +225,7 @@ proxy-groups: #!replace
     lazy: true
   - name: "🇺🇲 美国"
     type: url-test
+    include-all: true
     filter: "(?i)(美国|美國|美西|美东|美東|洛杉矶|圣何塞|西雅图|达拉斯|凤凰城|United ?States|(?<![A-Za-z])(US|USA|LAX|SJC)(?![A-Za-z]))"
     url: "http://www.gstatic.com/generate_204"
     interval: 600
@@ -214,6 +233,7 @@ proxy-groups: #!replace
     lazy: true
   - name: "🇰🇷 韩国"
     type: url-test
+    include-all: true
     filter: "(?i)(韩国|韓國|首尔|首爾|Korea|(?<![A-Za-z])(KR|ICN)(?![A-Za-z]))"
     url: "http://www.gstatic.com/generate_204"
     interval: 600

@@ -444,6 +444,18 @@ def check_stash():
         if parts[0] == 'RULE-SET' and parts[1] not in provs:
             fail('Stash 规则引用不存在的规则集: %s' % parts[1])
 
+    # filter / exclude-type 只对 use 引入的 provider 或 include-all 之后的
+    # 全体节点生效。两者都没有时组内无节点可筛，在 App 里表现为空组——
+    # 这正是首个 Stash 版本踩的坑：18 个分组全空。
+    SOURCES = ("include-all", "include-all-proxies", "include-all-providers",
+               "use", "proxies")
+    for g in groups:
+        if not ("filter" in g or "exclude-type" in g):
+            continue
+        if not any(g.get(k) for k in SOURCES):
+            fail("Stash 分组 %s 用了 filter/exclude-type 却没有节点来源"
+                 "（include-all / use / proxies），会是空组" % g.get("name"))
+
     for n in names:
         referenced = n in used or any(n in (g.get('proxies') or []) for g in groups)
         if not referenced:

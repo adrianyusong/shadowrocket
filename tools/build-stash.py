@@ -288,30 +288,32 @@ def main():
     grp('🚀 节点选择', 'select', main_cands)
 
     A('  # 自动测速类。filter 排除机场的信息类伪节点。')
-    grp('♻️ 自动选择', 'url-test', None, filter=q(AUTO_FILTER),
+    A('  # include-all 不可省：filter / exclude-type 只对 use 引入的 provider 或')
+    A('  # include-all 之后的全体节点生效，两者都没有时组内无节点可筛，会是空组。')
+    grp('♻️ 自动选择', 'url-test', None, include_all='true', filter=q(AUTO_FILTER),
         url=q(TEST_URL), interval=300, tolerance=100, lazy='true')
-    grp('🔯 故障转移', 'fallback', None, filter=q(AUTO_FILTER),
+    grp('🔯 故障转移', 'fallback', None, include_all='true', filter=q(AUTO_FILTER),
         url=q(TEST_URL), interval=300, lazy='true')
-    grp('🔮 负载均衡', 'load-balance', None, filter=q(AUTO_FILTER),
+    grp('🔮 负载均衡', 'load-balance', None, include_all='true', filter=q(AUTO_FILTER),
         url=q(TEST_URL), interval=300, strategy='consistent-hashing')
 
     A('  # 手动挑单个节点用。上面几组都是自动的，没有这一组就只能选组不能选节点。')
-    grp('🔧 手动选择', 'select', None, filter=q(AUTO_FILTER))
+    grp('🔧 手动选择', 'select', None, include_all='true', filter=q(AUTO_FILTER))
 
     A('  # 协议分组。proxy-groups 只有 exclude-type 没有 include-type，')
     A('  # 所以「只要某协议」写成「排除其余全部」。这是 Shadowrocket 做不到的维度。')
     for name, ex in PROTOS:
-        grp(name, 'url-test', None, exclude_type=q(ex),
+        grp(name, 'url-test', None, include_all='true', exclude_type=q(ex),
             url=q(TEST_URL), interval=600, tolerance=200, lazy='true')
 
     A('  # 线路属性分组，与地区维度正交。')
     for name, f in ATTRS:
-        grp(name, 'url-test', None, filter=q(f),
+        grp(name, 'url-test', None, include_all='true', filter=q(f),
             url=q(TEST_URL), interval=600, tolerance=200, lazy='true')
 
     A('  # 地区分组。')
     for name, f in REGIONS:
-        grp(name, 'url-test', None, filter=q(f),
+        grp(name, 'url-test', None, include_all='true', filter=q(f),
             url=q(TEST_URL), interval=600, tolerance=200, lazy='true')
 
     A('  # AI 对 IP 风控极严。住宅 IP 排首位——机房 IP 是判定代理的首要特征。')
