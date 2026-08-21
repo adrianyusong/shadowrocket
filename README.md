@@ -15,9 +15,17 @@ Stash 那套再由 `build-stash.py` 从中派生。改上游只需改一处。
 
 ### Stash 独有的两点
 
-**协议分组。** Shadowrocket 只能按节点名正则筛选，而协议信息不在名字里；
-Mihomo 从节点配置读类型，所以能分。注意 `proxy-groups` 只有 `exclude-type`
-没有 `include-type`，「只要 VLESS」得写成「排除其余全部协议」。
+**规则集按类型拆分。**
+
+> **更正**：早先此处写「Stash 能做协议分组」，是错的。那是查 Mihomo 文档得出的
+> 结论，而 Stash 兼容 Clash Premium 但引擎自研 —— 其官方文档的 `proxy-groups`
+> 选项里**没有 `exclude-type`**（只有 `filter` / `include-all` / `interval` /
+> `lazy` / `strategy` 等）。不支持的选项不报错、只静默忽略，于是「VLESS」组
+> 实际等于「全部节点」，Hy2 混在里面。相关分组已全部移除。
+>
+> `filter` 只能匹配节点名，而机场节点名里没有协议信息，所以这个维度在 Stash 上
+> 与 Shadowrocket 同样受限。若机场提供按协议区分的订阅地址，可用
+> `proxy-providers` 分别引入再 `use:` 指向，那是另一条路。
 
 **规则集按类型拆分。** Stash 的 rule-provider 有 `domain` / `ipcidr` /
 `classical` 三种 behavior，前两种是为海量规则优化的加载器。我们的 `.list`
@@ -133,17 +141,11 @@ proxy-providers:
 
 | 维度 | 分组 |
 |---|---|
-| 协议 | `🅥 VLESS` `🅗 Hysteria2` `🅣 Trojan` `🅢 Shadowsocks` |
 | 线路属性 | `🏠 住宅IP` `🛣️ 专线` `🎞️ 流媒体节点` `💴 低倍率` |
 | 地区 | 港 / 台 / 日 / 新 / 美 / 韩 / 英 |
-| 地区 × 协议 | `🇭🇰 香港 VLESS`、`🇯🇵 日本 Hy2` 等 14 个 |
 
-组合分组把 `filter`（地区名正则）与 `exclude-type`（协议）写在同一个组里取交集：
-先按名字筛出该地区节点，再排除该协议之外的全部类型。
-
-只为机场实际拥有的协议生成 —— 每多一种协议就多 7 个组，而没有对应节点的组合
-是空的，纯属噪音。要加 Trojan / Shadowsocks，在 `tools/build-stash.py` 的
-`COMBO_PROTOS` 里补一行即可。
+**协议维度做不到**，原因见上方更正。`tools/check-config.py` 现在会拒绝任何
+Stash 未记载的 `proxy-groups` 选项，防止再写出这类静默失效的配置。
 
 ## 订阅
 

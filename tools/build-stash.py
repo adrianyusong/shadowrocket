@@ -38,17 +38,6 @@ EXCLUDE_INFO = ('官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|
 # 自动测速类分组的 filter：排除上面那些信息类伪节点。
 AUTO_FILTER = '(?i)^(?!.*(' + EXCLUDE_INFO + ')).*$'
 
-# Mihomo 的节点类型标识，用于 exclude-type。
-# proxy-groups 只有 exclude-type 没有 include-type，所以「只要某协议」
-# 得写成「排除其余全部」。
-ALL_TYPES = ['ss', 'ssr', 'vmess', 'vless', 'trojan', 'hysteria', 'hysteria2',
-             'tuic', 'wireguard', 'snell', 'http', 'socks5', 'anytls', 'ssh']
-
-
-def only_type(*keep):
-    """生成 exclude-type 值：排除 keep 之外的全部协议。"""
-    return '|'.join(t for t in ALL_TYPES if t not in keep)
-
 
 # 地区分组的节点名正则。英文缩写一律用逆序环视包裹——裸 US 在忽略大小写下
 # 会匹配 Russia / Australia / Brussels / Plus，把俄罗斯澳洲节点混进美国组。
@@ -70,21 +59,20 @@ ATTRS = [
     ('💴 低倍率', r'(?i)(?<![0-9.])0\.[0-9]+ ?x'),
 ]
 
-# 协议分组。Shadowrocket 做不到这个维度——它只能匹配节点名，
-# 而协议信息不在名字里。Mihomo 从节点配置读类型，所以能分。
-PROTOS = [
-    ('🅥 VLESS', only_type('vless')),
-    ('🅗 Hysteria2', only_type('hysteria2', 'hysteria')),
-    ('🅣 Trojan', only_type('trojan')),
-    ('🅢 Shadowsocks', only_type('ss', 'ssr')),
-]
-
-# 地区 x 协议 的组合分组。只列机场实际有的协议——每多一种就多 6 个组，
-# 而没有对应节点的组会是空的，纯属噪音。要加 Trojan / SS 就在这里补一行。
-COMBO_PROTOS = [
-    ('VLESS', only_type('vless')),
-    ('Hy2', only_type('hysteria2', 'hysteria')),
-]
+# 协议分组：Stash 做不到，已移除。
+#
+# 曾用 exclude-type 实现，但 Stash 官方文档的 proxy-groups 选项里没有这一项
+# （只有 filter / include-all / interval / lazy / strategy 等）。当初是查
+# Mihomo 文档确认的，而 Stash 兼容 Clash Premium 但引擎自研，未实现它。
+#
+# 更麻烦的是：exclude-type 不被支持时不报错、只静默忽略，于是「VLESS」组
+# 实际等于「全部节点」，Hy2 混在里面。是在设备上用出来才发现的。
+#
+# filter 只能匹配节点名，而机场的节点名里没有协议信息（13 个真实节点名实测
+# 0 个含协议关键词），所以这个维度在 Stash 上与 Shadowrocket 同样受限。
+#
+# 若机场提供按协议区分的订阅地址，可用 proxy-providers 分别引入再 use: 指向，
+# 那是另一条可行路径。
 
 TEST_URL = 'http://www.gstatic.com/generate_204'
 
@@ -289,12 +277,8 @@ def main():
             for p in proxies:
                 A('      - %s' % q(p))
 
-    combos = [('%s %s' % (rn, pn), rf, pe)
-              for rn, rf in REGIONS for pn, pe in COMBO_PROTOS]
     main_cands = (['♻️ 自动选择', '🔯 故障转移', '🔮 负载均衡', '🔧 手动选择']
-                  + [n for n, _ in PROTOS] + [n for n, _ in ATTRS]
-                  + [n for n, _ in REGIONS] + [n for n, _, _ in combos]
-                  + ['DIRECT'])
+                  + [n for n, _ in ATTRS] + [n for n, _ in REGIONS] + ['DIRECT'])
     A('  # 主策略。候选里同时给出协议、线路属性、地区三个维度，按需切换。')
     grp('🚀 节点选择', 'select', main_cands)
 
@@ -311,12 +295,6 @@ def main():
     A('  # 手动挑单个节点用。上面几组都是自动的，没有这一组就只能选组不能选节点。')
     grp('🔧 手动选择', 'select', None, include_all='true', filter=q(AUTO_FILTER))
 
-    A('  # 协议分组。proxy-groups 只有 exclude-type 没有 include-type，')
-    A('  # 所以「只要某协议」写成「排除其余全部」。这是 Shadowrocket 做不到的维度。')
-    for name, ex in PROTOS:
-        grp(name, 'url-test', None, include_all='true', exclude_type=q(ex),
-            url=q(TEST_URL), interval=600, tolerance=200, lazy='true')
-
     A('  # 线路属性分组，与地区维度正交。')
     for name, f in ATTRS:
         grp(name, 'url-test', None, include_all='true', filter=q(f),
@@ -327,18 +305,13 @@ def main():
         grp(name, 'url-test', None, include_all='true', filter=q(f),
             url=q(TEST_URL), interval=600, tolerance=200, lazy='true')
 
-    A('  # 地区 x 协议 组合。filter 与 exclude-type 同时写在一个组里即取交集：')
-    A('  # 先按名字筛出该地区的节点，再排除该协议之外的全部类型。')
-    A('  # 没有对应节点的组合会是空组，属正常——机场没有那种协议的该地区节点。')
-    for cname, rf, pe in combos:
-        grp(cname, 'url-test', None, include_all='true',
-            filter=q(rf), exclude_type=q(pe),
-            url=q(TEST_URL), interval=600, tolerance=200, lazy='true')
-
     A('  # AI 对 IP 风控极严。住宅 IP 排首位——机房 IP 是判定代理的首要特征。')
+    A('  # 无法按协议指定（Stash 不支持 exclude-type，见文件头说明），')
+    A('  # 要钉死某个具体节点就用 🔧 手动选择，它列出全部真实节点。')
     A('  # 候选里刻意不放 🚀 节点选择，避免间接落到负载均衡上每请求换出口。')
     grp('🤖 AI 服务', 'select',
-        ['🏠 住宅IP', '🛣️ 专线', '🇺🇲 美国', '🇯🇵 日本', '🇸🇬 狮城', 'DIRECT'])
+        ['🏠 住宅IP', '🛣️ 专线', '🔧 手动选择',
+         '🇺🇲 美国', '🇯🇵 日本', '🇸🇬 狮城', '🇬🇧 英国', 'DIRECT'])
 
     A('  # 流媒体对 IP 跳变敏感，机场自标的流媒体节点排首位。')
     for n in ['📹 YOUTUBE', '🎥 NETFLIX', '🎬 DISNEY+', '🎦 HBO', '📦 PRIMEVIDEO']:

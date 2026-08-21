@@ -406,6 +406,15 @@ STASH_DIR = os.path.join(ROOT, 'stash')
 CLASH_BUILTIN = {'DIRECT', 'REJECT', 'REJECT-DROP', 'PASS', 'COMPATIBLE'}
 
 
+# Stash 官方文档列出的 proxy-groups 选项。不在其中的会被静默忽略——
+# exclude-type 就是这样：写了不报错，但分组里混进了本该排除的协议节点。
+STASH_GROUP_KEYS = {
+    "name", "type", "proxies", "interval", "lazy", "ssid-policy",
+    "include-all", "filter", "strategy", "url", "tolerance", "timeout",
+    "benchmark-url", "benchmark-timeout", "benchmark-disabled", "hidden", "icon",
+}
+
+
 def check_stash():
     """校验 Stash 覆写文件。与 Shadowrocket 配置分开，但共用 rule/*.list。"""
     if not os.path.exists(STASH_OVERRIDE):
@@ -455,6 +464,13 @@ def check_stash():
         if not any(g.get(k) for k in SOURCES):
             fail("Stash 分组 %s 用了 filter/exclude-type 却没有节点来源"
                  "（include-all / use / proxies），会是空组" % g.get("name"))
+
+    # 未被 Stash 支持的选项不会报错，只会静默失效，属于最难查的一类问题。
+    for g in groups:
+        for key in g:
+            if key not in STASH_GROUP_KEYS:
+                fail("Stash 分组 %s 用了 Stash 未记载的选项 %s，"
+                     "该选项会被静默忽略" % (g.get("name"), key))
 
     for n in names:
         referenced = n in used or any(n in (g.get('proxies') or []) for g in groups)
