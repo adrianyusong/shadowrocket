@@ -92,6 +92,21 @@ proxy-groups: #!replace
       - "🇸🇬 狮城"
       - "🇺🇲 美国"
       - "🇰🇷 韩国"
+      - "🇬🇧 英国"
+      - "🇭🇰 香港 VLESS"
+      - "🇭🇰 香港 Hy2"
+      - "🇹🇼 台湾 VLESS"
+      - "🇹🇼 台湾 Hy2"
+      - "🇯🇵 日本 VLESS"
+      - "🇯🇵 日本 Hy2"
+      - "🇸🇬 狮城 VLESS"
+      - "🇸🇬 狮城 Hy2"
+      - "🇺🇲 美国 VLESS"
+      - "🇺🇲 美国 Hy2"
+      - "🇰🇷 韩国 VLESS"
+      - "🇰🇷 韩国 Hy2"
+      - "🇬🇧 英国 VLESS"
+      - "🇬🇧 英国 Hy2"
       - "DIRECT"
   # 自动测速类。filter 排除机场的信息类伪节点。
   # include-all 不可省：filter / exclude-type 只对 use 引入的 provider 或
@@ -235,6 +250,143 @@ proxy-groups: #!replace
     type: url-test
     include-all: true
     filter: "(?i)(韩国|韓國|首尔|首爾|Korea|(?<![A-Za-z])(KR|ICN)(?![A-Za-z]))"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🇬🇧 英国"
+    type: url-test
+    include-all: true
+    filter: "(?i)(英国|英國|伦敦|倫敦|London|(?<![A-Za-z])(UK|GB|LHR)(?![A-Za-z]))"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  # 地区 x 协议 组合。filter 与 exclude-type 同时写在一个组里即取交集：
+  # 先按名字筛出该地区的节点，再排除该协议之外的全部类型。
+  # 没有对应节点的组合会是空组，属正常——机场没有那种协议的该地区节点。
+  - name: "🇭🇰 香港 VLESS"
+    type: url-test
+    include-all: true
+    filter: "(?i)(香港|港岛|深港|沪港|Hong ?Kong|(?<![A-Za-z])(HK|HKG)(?![A-Za-z]))"
+    exclude-type: "ss|ssr|vmess|trojan|hysteria|hysteria2|tuic|wireguard|snell|http|socks5|anytls|ssh"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🇭🇰 香港 Hy2"
+    type: url-test
+    include-all: true
+    filter: "(?i)(香港|港岛|深港|沪港|Hong ?Kong|(?<![A-Za-z])(HK|HKG)(?![A-Za-z]))"
+    exclude-type: "ss|ssr|vmess|vless|trojan|tuic|wireguard|snell|http|socks5|anytls|ssh"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🇹🇼 台湾 VLESS"
+    type: url-test
+    include-all: true
+    filter: "(?i)(台湾|台灣|台北|臺灣|Taiwan|(?<![A-Za-z])(TW|TPE)(?![A-Za-z]))"
+    exclude-type: "ss|ssr|vmess|trojan|hysteria|hysteria2|tuic|wireguard|snell|http|socks5|anytls|ssh"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🇹🇼 台湾 Hy2"
+    type: url-test
+    include-all: true
+    filter: "(?i)(台湾|台灣|台北|臺灣|Taiwan|(?<![A-Za-z])(TW|TPE)(?![A-Za-z]))"
+    exclude-type: "ss|ssr|vmess|vless|trojan|tuic|wireguard|snell|http|socks5|anytls|ssh"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🇯🇵 日本 VLESS"
+    type: url-test
+    include-all: true
+    filter: "(?i)(日本|東京|东京|大阪|名古屋|埼玉|Japan|(?<![A-Za-z])(JP|JPN|NRT|KIX)(?![A-Za-z]))"
+    exclude-type: "ss|ssr|vmess|trojan|hysteria|hysteria2|tuic|wireguard|snell|http|socks5|anytls|ssh"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🇯🇵 日本 Hy2"
+    type: url-test
+    include-all: true
+    filter: "(?i)(日本|東京|东京|大阪|名古屋|埼玉|Japan|(?<![A-Za-z])(JP|JPN|NRT|KIX)(?![A-Za-z]))"
+    exclude-type: "ss|ssr|vmess|vless|trojan|tuic|wireguard|snell|http|socks5|anytls|ssh"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🇸🇬 狮城 VLESS"
+    type: url-test
+    include-all: true
+    filter: "(?i)(新加坡|狮城|獅城|Singapore|(?<![A-Za-z])(SG|SIN)(?![A-Za-z]))"
+    exclude-type: "ss|ssr|vmess|trojan|hysteria|hysteria2|tuic|wireguard|snell|http|socks5|anytls|ssh"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🇸🇬 狮城 Hy2"
+    type: url-test
+    include-all: true
+    filter: "(?i)(新加坡|狮城|獅城|Singapore|(?<![A-Za-z])(SG|SIN)(?![A-Za-z]))"
+    exclude-type: "ss|ssr|vmess|vless|trojan|tuic|wireguard|snell|http|socks5|anytls|ssh"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🇺🇲 美国 VLESS"
+    type: url-test
+    include-all: true
+    filter: "(?i)(美国|美國|美西|美东|美東|洛杉矶|圣何塞|西雅图|达拉斯|凤凰城|United ?States|(?<![A-Za-z])(US|USA|LAX|SJC)(?![A-Za-z]))"
+    exclude-type: "ss|ssr|vmess|trojan|hysteria|hysteria2|tuic|wireguard|snell|http|socks5|anytls|ssh"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🇺🇲 美国 Hy2"
+    type: url-test
+    include-all: true
+    filter: "(?i)(美国|美國|美西|美东|美東|洛杉矶|圣何塞|西雅图|达拉斯|凤凰城|United ?States|(?<![A-Za-z])(US|USA|LAX|SJC)(?![A-Za-z]))"
+    exclude-type: "ss|ssr|vmess|vless|trojan|tuic|wireguard|snell|http|socks5|anytls|ssh"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🇰🇷 韩国 VLESS"
+    type: url-test
+    include-all: true
+    filter: "(?i)(韩国|韓國|首尔|首爾|Korea|(?<![A-Za-z])(KR|ICN)(?![A-Za-z]))"
+    exclude-type: "ss|ssr|vmess|trojan|hysteria|hysteria2|tuic|wireguard|snell|http|socks5|anytls|ssh"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🇰🇷 韩国 Hy2"
+    type: url-test
+    include-all: true
+    filter: "(?i)(韩国|韓國|首尔|首爾|Korea|(?<![A-Za-z])(KR|ICN)(?![A-Za-z]))"
+    exclude-type: "ss|ssr|vmess|vless|trojan|tuic|wireguard|snell|http|socks5|anytls|ssh"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🇬🇧 英国 VLESS"
+    type: url-test
+    include-all: true
+    filter: "(?i)(英国|英國|伦敦|倫敦|London|(?<![A-Za-z])(UK|GB|LHR)(?![A-Za-z]))"
+    exclude-type: "ss|ssr|vmess|trojan|hysteria|hysteria2|tuic|wireguard|snell|http|socks5|anytls|ssh"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "🇬🇧 英国 Hy2"
+    type: url-test
+    include-all: true
+    filter: "(?i)(英国|英國|伦敦|倫敦|London|(?<![A-Za-z])(UK|GB|LHR)(?![A-Za-z]))"
+    exclude-type: "ss|ssr|vmess|vless|trojan|tuic|wireguard|snell|http|socks5|anytls|ssh"
     url: "http://www.gstatic.com/generate_204"
     interval: 600
     tolerance: 200

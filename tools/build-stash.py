@@ -59,6 +59,7 @@ REGIONS = [
     ('🇸🇬 狮城', r'(?i)(新加坡|狮城|獅城|Singapore|(?<![A-Za-z])(SG|SIN)(?![A-Za-z]))'),
     ('🇺🇲 美国', r'(?i)(美国|美國|美西|美东|美東|洛杉矶|圣何塞|西雅图|达拉斯|凤凰城|United ?States|(?<![A-Za-z])(US|USA|LAX|SJC)(?![A-Za-z]))'),
     ('🇰🇷 韩国', r'(?i)(韩国|韓國|首尔|首爾|Korea|(?<![A-Za-z])(KR|ICN)(?![A-Za-z]))'),
+    ('🇬🇧 英国', r'(?i)(英国|英國|伦敦|倫敦|London|(?<![A-Za-z])(UK|GB|LHR)(?![A-Za-z]))'),
 ]
 
 # 线路属性分组。取自节点名的实际标签，与地区维度正交。
@@ -76,6 +77,13 @@ PROTOS = [
     ('🅗 Hysteria2', only_type('hysteria2', 'hysteria')),
     ('🅣 Trojan', only_type('trojan')),
     ('🅢 Shadowsocks', only_type('ss', 'ssr')),
+]
+
+# 地区 x 协议 的组合分组。只列机场实际有的协议——每多一种就多 6 个组，
+# 而没有对应节点的组会是空的，纯属噪音。要加 Trojan / SS 就在这里补一行。
+COMBO_PROTOS = [
+    ('VLESS', only_type('vless')),
+    ('Hy2', only_type('hysteria2', 'hysteria')),
 ]
 
 TEST_URL = 'http://www.gstatic.com/generate_204'
@@ -281,9 +289,12 @@ def main():
             for p in proxies:
                 A('      - %s' % q(p))
 
+    combos = [('%s %s' % (rn, pn), rf, pe)
+              for rn, rf in REGIONS for pn, pe in COMBO_PROTOS]
     main_cands = (['♻️ 自动选择', '🔯 故障转移', '🔮 负载均衡', '🔧 手动选择']
                   + [n for n, _ in PROTOS] + [n for n, _ in ATTRS]
-                  + [n for n, _ in REGIONS] + ['DIRECT'])
+                  + [n for n, _ in REGIONS] + [n for n, _, _ in combos]
+                  + ['DIRECT'])
     A('  # 主策略。候选里同时给出协议、线路属性、地区三个维度，按需切换。')
     grp('🚀 节点选择', 'select', main_cands)
 
@@ -314,6 +325,14 @@ def main():
     A('  # 地区分组。')
     for name, f in REGIONS:
         grp(name, 'url-test', None, include_all='true', filter=q(f),
+            url=q(TEST_URL), interval=600, tolerance=200, lazy='true')
+
+    A('  # 地区 x 协议 组合。filter 与 exclude-type 同时写在一个组里即取交集：')
+    A('  # 先按名字筛出该地区的节点，再排除该协议之外的全部类型。')
+    A('  # 没有对应节点的组合会是空组，属正常——机场没有那种协议的该地区节点。')
+    for cname, rf, pe in combos:
+        grp(cname, 'url-test', None, include_all='true',
+            filter=q(rf), exclude_type=q(pe),
             url=q(TEST_URL), interval=600, tolerance=200, lazy='true')
 
     A('  # AI 对 IP 风控极严。住宅 IP 排首位——机房 IP 是判定代理的首要特征。')
