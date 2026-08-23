@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/proxy.list 生成，请勿手改。
-# behavior: domain   条数: 31062
+# behavior: domain   条数: 31077
 +.a2z.com
 +.aboutamazon.cn
 +.aboutamazon.co.uk
@@ -1234,6 +1234,7 @@ login.microsoftonline.com
 +.592r.com
 +.59mvmv.com
 +.5axis-machining.com
++.5ch.io
 +.5ch.net
 +.5fang.cc
 +.5itv.tv
@@ -2341,6 +2342,7 @@ login.microsoftonline.com
 +.amazonaws.org
 +.amazoncognito.com
 +.amazonses.com
++.amazonwebservices.com
 +.ambs.ac.uk
 +.amc.com
 +.amcn.com
@@ -5305,7 +5307,6 @@ login.microsoftonline.com
 +.chase.ac.uk
 +.chasestudy.ac.uk
 +.chatango.com
-+.chatgpt.site
 +.chatgptvideo.xyz
 +.chatgptvideob.buzz
 +.chatsex.xxx
@@ -7037,6 +7038,7 @@ login.microsoftonline.com
 +.dream-cdt.ac.uk
 +.dreambmw.ca
 +.dreamforce.com
++.dreamgen.com
 +.dreammovies.com
 +.dreamorder.com
 +.dreamteamfc.com
@@ -8265,6 +8267,7 @@ login.microsoftonline.com
 +.fans17.com
 +.fans66.tw
 +.fansking.tw
++.fansly.com
 +.fansnudes.com
 +.fansone.co
 +.fanspot.jp
@@ -15423,6 +15426,8 @@ login.microsoftonline.com
 +.nicis.ac.uk
 +.nickscipio.com
 +.nicky.xxx
++.nico.ms
++.nicochannel.jp
 +.nicodic.jp
 +.nicolepeters.com
 +.nicomanga.jp
@@ -15678,6 +15683,7 @@ login.microsoftonline.com
 +.nonstopfap.com
 +.noodlemagazine.com
 +.noosferabank.ru
++.nordcdn.com
 +.norfolkcove.ac.uk
 +.norland.ac.uk
 +.normanmanagedservices.ac.uk
@@ -15717,6 +15723,7 @@ login.microsoftonline.com
 +.northumbria.ac.uk
 +.norton.com
 +.norwichresearchpark.ac.uk
++.notegpt.io
 +.noticias-rt.com
 +.notimundo.press
 +.notion-static.com
@@ -15740,6 +15747,7 @@ login.microsoftonline.com
 +.nottinghamtrentadfs.ac.uk
 +.nottm-coll.ac.uk
 +.nottsmaternity.ac.uk
++.novelai.net
 +.novella.ac.uk
 +.noveltrove.com
 +.novids.com
@@ -18662,7 +18670,6 @@ login.microsoftonline.com
 +.sayeasy.eu
 +.sb-mobile.jp
 +.sb-telecom.net
-+.sb.sb
 +.sb24.com
 +.sbank.ir
 +.sbc.ac.uk
@@ -20532,6 +20539,7 @@ login.microsoftonline.com
 +.talantix.ru
 +.talentlens.com
 +.taleofthenight.com
++.talkai.info
 +.talkinghealthmatters.ac.uk
 +.talkingkotlin.com
 +.talksport.com
@@ -23165,7 +23173,6 @@ login.microsoftonline.com
 +.windsor-forest.ac.uk
 +.windsurf.build
 +.windsurf.com
-+.windy.com
 +.wing.com
 +.wink.am
 +.wink.ru
@@ -25232,6 +25239,7 @@ login.microsoftonline.com
 +.breaking911.com
 +.breakingtweets.com
 +.breakwall.net
++.briarproject.org
 +.briefdream.com
 +.briian.com
 +.brill.com
@@ -25444,6 +25452,7 @@ login.microsoftonline.com
 +.chaos.social
 +.chapm25.com
 +.character.ai
++.chatgpt.site
 +.chatnook.com
 +.chatpdf.com
 +.chaturbate.com
@@ -26997,6 +27006,7 @@ login.microsoftonline.com
 +.himemix.com
 +.himemix.net
 +.hindustantimes.com
++.historylines.net
 +.hitbtc.com
 +.hitomi.la
 +.hitun.io
@@ -27599,6 +27609,7 @@ login.microsoftonline.com
 +.kir.jp
 +.kissjav.com
 +.kiwi.kz
++.kiwix.org
 +.kk-whys.co.jp
 +.kkbox.com
 +.kknews.cc
@@ -27914,6 +27925,7 @@ login.microsoftonline.com
 +.mayimayi.com
 +.mcadforums.com
 +.mcaf.ee
++.mceindex.com
 +.mcfog.com
 +.mcreasite.com
 +.mcusercontent.com
@@ -28487,6 +28499,7 @@ login.microsoftonline.com
 +.okpool.me
 +.okx.com
 +.old-cat.net
++.oldmapsonline.org
 +.olehdtv.com
 +.olelive.com
 +.olevod.com
@@ -29182,6 +29195,7 @@ login.microsoftonline.com
 +.savevid.com
 +.say2.info
 +.sb-cd.com
++.sb.sb
 +.sbme.me
 +.sbs.com.au
 +.sbti.unun.dev
@@ -30675,6 +30689,7 @@ login.microsoftonline.com
 +.wilsoncenter.org
 +.windowsphoneme.com
 +.windscribe.com
++.windy.com
 +.wingamestore.com
 +.wingy.site
 +.winning11.com

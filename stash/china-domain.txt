@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/china.list 生成，请勿手改。
-# behavior: domain   条数: 3855
+# behavior: domain   条数: 3856
 netease.ugcvideoss.ourdvs.com
 +.163yun.com
 +.api.iplay.163.com
@@ -1564,6 +1564,7 @@ www.yxssp.com
 +.ecombdapi.com
 +.edu4399.com
 +.eduei.com
++.eeyy.com
 +.eflycloud.com
 +.ele.me
 +.elecfans.com
@@ -3808,14 +3809,15 @@ www.yxssp.com
 +.neixin.cn
 +.alipay
 +.alibaba
-+.taobao
-+.tmall
 +.anquan
 +.baidu
 +.citic
++.icbc
 +.shouji
 +.sina
 +.sohu
++.taobao
++.tmall
 +.unicom
 +.wang
 +.weibo
@@ -3854,4 +3856,3 @@ www.yxssp.com
 +.xn--xhq521b
 +.xn--zfr164b
 +.yun
-+.icbc
