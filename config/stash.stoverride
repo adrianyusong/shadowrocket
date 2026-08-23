@@ -22,20 +22,85 @@ dns: #!replace
   # fake-ip 让域名不必真正解析就能进规则匹配，是避免 DNS 泄漏的关键。
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
-  # 这些必须拿到真实 IP，走 fake-ip 会坏：局域网发现、游戏机 STUN、
-  # 系统联网检测。
+  # 收录原则：只放【走直连 + 需要真实 IP】的域名。
+  # 走代理的域名不放——对它们 fake-ip 恰恰是优点（免本地解析、免污染）。
+  # 需要真实 IP 的四类：局域网/内网发现、NTP 校时、P2P 与 STUN 打洞、
+  # 以及靠出口 IP 判定版权区域的国内音乐服务。
+  # 常见配置里的 battle.net / srv.nintendo.net / pvp.net 一类不收：
+  # 本配置把游戏平台整体送去代理，对代理域名 fake-ip 才是正解，
+  # 放进来只会白白多一次本地解析并泄漏域名。check-config.py 会拦。
   fake-ip-filter:
+  # 保留域与局域网
     - "*.lan"
     - "*.local"
-    - "+.srv.nintendo.net"
-    - "+.stun.playstation.net"
+    - "*.localdomain"
+    - "*.home.arpa"
+    - "*.invalid"
+    - "*.localhost"
+    - "*.test"
+    - "*.example"
+  # 路由器 / 智能家居管理页，域名指向局域网网关地址
+    - "*.router.asus.com"
+    - "*.linksys.com"
+    - "*.linksyssmartwifi.com"
+    - "heartbeat.belkin.com"
+  # 系统联网检测：拿到假 IP 会被判成「网络受限」，反复弹强制门户
     - "+.msftconnecttest.com"
     - "+.msftncsi.com"
+    - "+.ipv6.microsoft.com"
     - "localhost.ptlogin2.qq.com"
-    - "+.battle.net"
-    - "stun.*"
+    - "localhost.sec.qq.com"
+  # NTP 校时走 UDP 123。假 IP 对不上时间，会连锁导致 TLS 证书校验失败
     - "time.*.com"
+    - "time.*.gov"
+    - "time.*.edu.cn"
+    - "time1.*.com"
+    - "time2.*.com"
+    - "time3.*.com"
+    - "time4.*.com"
+    - "time5.*.com"
+    - "time6.*.com"
+    - "time7.*.com"
     - "ntp.*.com"
+    - "ntp1.*.com"
+    - "ntp2.*.com"
+    - "ntp3.*.com"
+    - "ntp4.*.com"
+    - "ntp5.*.com"
+    - "ntp6.*.com"
+    - "ntp7.*.com"
+    - "*.time.edu.cn"
+    - "*.ntp.org.cn"
+    - "+.pool.ntp.org"
+    - "time1.cloud.tencent.com"
+  # STUN：P2P 打洞靠真实公网 IP 回包，假 IP 会让 NAT 类型探测永远失败
+    - "stun.*"
+    - "stun.*.*"
+    - "stun.*.*.*"
+    - "+.stun.*.*"
+    - "+.stun.*.*.*"
+    - "+.stun.*.*.*.*"
+  # 国内音乐：版权区域按出口 IP 判定，假 IP 会被判成海外 -> 大量歌曲变灰
+    - "music.163.com"
+    - "*.music.163.com"
+    - "*.126.net"
+    - "y.qq.com"
+    - "*.y.qq.com"
+    - "aqqmusic.tc.qq.com"
+    - "amobile.music.tc.qq.com"
+    - "streamoc.music.tc.qq.com"
+    - "mobileoc.music.tc.qq.com"
+    - "isure.stream.qqmusic.qq.com"
+    - "dl.stream.qqmusic.qq.com"
+    - "songsearch.kugou.com"
+    - "trackercdn.kugou.com"
+    - "*.kuwo.cn"
+    - "music.migu.cn"
+    - "*.music.migu.cn"
+    - "music.taihe.com"
+    - "musicapi.taihe.com"
+  # B 站 PCDN 要真实 IP 做点对点回源
+    - "*.mcdn.bilivideo.cn"
   default-nameserver:
     - 223.5.5.5
     - 119.29.29.29
@@ -52,7 +117,7 @@ dns: #!replace
       - https://dns.alidns.com/dns-query
       - https://doh.pub/dns-query
 
-# HTTP 引擎。本覆写自身只做一条重写，iRingo 等覆写各自带 mitm 与 script，
+# HTTP 引擎。本覆写自身只做 google.cn 系列重写，iRingo 等覆写各自带 mitm 与 script，
 # 叠加时会合并，不需要在此手抄它们的域名。
 http:
   # 重写要生效必须同时满足：域名在 mitm 列表里 + 证书已安装并信任。
@@ -67,6 +132,8 @@ http:
   url-rewrite:
     - ^https?://(www\.)?g\.cn https://www.google.com 302
     - ^https?://(www\.)?google\.cn https://www.google.com 302
+  # 地图子域单独指到 Google 地图，落到 google.com 首页等于丢掉用户意图。
+    - ^https?://(ditu|maps)\.google\.cn https://maps.google.com 302
 
 # 分组用 #!replace 整段替换，否则会与订阅自带的分组混在一起。
 proxy-groups: #!replace
@@ -1048,6 +1115,19 @@ rules: #!replace
   - DOMAIN-SUFFIX,cursor.sh,🤖 AI 服务
   - DOMAIN-SUFFIX,cursor.com,🤖 AI 服务
   - DOMAIN-SUFFIX,midjourney.com,🤖 AI 服务
+  # 联网检测、局域网设备管理页、NTP 校时必须直连。
+  # 上游规则集把它们归进了微软/代理集，走代理会导致强制门户误判、
+  # 路由器后台打不开、校时失败。内联规则在规则集之前命中。
+  - DOMAIN-SUFFIX,msftconnecttest.com,🎯 全球直连
+  - DOMAIN-SUFFIX,msftncsi.com,🎯 全球直连
+  - DOMAIN-SUFFIX,ipv6.microsoft.com,🎯 全球直连
+  - DOMAIN-SUFFIX,router.asus.com,🎯 全球直连
+  - DOMAIN-SUFFIX,linksys.com,🎯 全球直连
+  - DOMAIN-SUFFIX,linksyssmartwifi.com,🎯 全球直连
+  - DOMAIN-SUFFIX,belkin.com,🎯 全球直连
+  - DOMAIN-SUFFIX,pool.ntp.org,🎯 全球直连
+  - DOMAIN-SUFFIX,ntp.org.cn,🎯 全球直连
+  - DOMAIN-SUFFIX,time.edu.cn,🎯 全球直连
   # 游戏本体下载走直连，否则几十 GB 烧机场套餐。
   - DOMAIN-SUFFIX,steampipe.akamaized.net,🎯 全球直连
   - DOMAIN-SUFFIX,steampipe-kr.akamaized.net,🎯 全球直连

@@ -377,6 +377,78 @@ def check_rewrite_mitm(cfg):
                  % host)
 
 
+# fake-ip-filter 里允许出现的策略。其余一律视为「走代理」。
+FAKEIP_OK_POLICIES = {'DIRECT', '🎯 全球直连',
+                      '🇨🇳 国内服务',
+                      '🌏 国内媒体',
+                      '🛑 广告拦截',
+                      '🍃 应用净化'}
+
+
+def _first_policy(cfg, host):
+    """按 [Rule] 的先后顺序返回 host 命中的第一条策略，没命中返回 None。
+
+    必须逐行按序判断：内联规则写在规则集之前，正是靠顺序压过上游归类。
+    """
+    if not hasattr(_first_policy, 'cache'):
+        idx = {}
+        for rtype, value, name in load_rules():
+            idx.setdefault(name, []).append((rtype, value))
+        lines = []
+        for sec, i, line in sections(cfg):
+            if sec != '[Rule]':
+                continue
+            m = re.match(r'RULE-SET,\S+/rule/(\S+?)\.list,(.+)$', line)
+            if m:
+                lines.append(('set', m.group(1), m.group(2).strip()))
+                continue
+            parts = [x.strip() for x in line.split(',')]
+            if len(parts) >= 3 and parts[0].startswith('DOMAIN'):
+                lines.append(('one', (parts[0], parts[1]), parts[2]))
+        _first_policy.cache = (idx, lines)
+    idx, lines = _first_policy.cache
+    for kind, payload, policy in lines:
+        if kind == 'one':
+            if matches(payload[0], payload[1], host):
+                return policy
+        else:
+            for rtype, value in idx.get(payload, ()):
+                if matches(rtype, value, host):
+                    return policy
+    return None
+
+
+def check_fakeip(cfg):
+    """fake-ip-filter 只能收录走直连的域名。
+
+    fake-ip 的作用是让域名不必本地解析就能进规则匹配，对走代理的域名这恰恰
+    是优点：解析交给远端，本地不留痕。把代理域名写进 fake-ip-filter 反而
+    强制了一次本地 DNS 查询——既泄漏域名，又让被污染的结果参与分流。
+    所以这张表只该放「直连 + 需要真实 IP」的域名。
+    """
+    path = os.path.join(os.path.dirname(CONFIG), 'stash.stoverride')
+    if not os.path.exists(path):
+        return
+    body = io.open(path, encoding='utf-8').read()
+    if 'fake-ip-filter:' not in body:
+        return
+    blk = body.split('fake-ip-filter:', 1)[1].split('default-nameserver:', 1)[0]
+    for line in blk.split(chr(10)):
+        line = line.strip()
+        if not line.startswith('- '):
+            continue
+        entry = line[2:].strip().strip('"')
+        core = entry.lstrip('*+').lstrip('.')
+        # 含内部通配的条目（stun.*.* / time1.*.com）无法映射到具体域名，跳过
+        if '*' in core or '.' not in core:
+            continue
+        policy = _first_policy(cfg, core)
+        if policy is not None and policy not in FAKEIP_OK_POLICIES:
+            fail('fake-ip-filter 收录了走代理的域名: %s -> %s。'
+                 '对代理域名 fake-ip 才是正解，写进这张表会多一次本地解析并泄漏域名'
+                 % (entry, policy))
+
+
 def check_workflows():
     """GitHub 只在推送后才报 YAML 错误，本地必须先挡住。"""
     paths = sorted(glob.glob(os.path.join(ROOT, '.github', 'workflows', '*.yml'))
@@ -510,6 +582,7 @@ def main():
     check_no_resolve()
     check_skip_proxy(cfg)
     check_rewrite_mitm(cfg)
+    check_fakeip(cfg)
     rules = load_rules()
     check_keywords(rules)
     check_no_block(rules, cfg)
