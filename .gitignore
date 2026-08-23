@@ -18,3 +18,7 @@ desktop.ini
 .idea/
 *.swp
 *~
+
+# Python 缓存
+__pycache__/
+*.pyc

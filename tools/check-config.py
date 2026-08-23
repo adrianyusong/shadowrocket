@@ -449,6 +449,49 @@ def check_fakeip(cfg):
                  % (entry, policy))
 
 
+def _canon_realip(entry, clash):
+    """把两种语法归一化后比较。Clash 的 +.x 等价于 Surge 的 x 与 *.x 两条。"""
+    e = entry.strip().strip('"')
+    if clash and e.startswith('+.'):
+        return {e[2:], '*.' + e[2:]}
+    return {e}
+
+
+def check_realip_parity(cfg):
+    """Shadowrocket 的 always-real-ip 必须与 Stash 的 fake-ip-filter 一致。
+
+    两份配置是同一套分流策略的两个实现，这张「必须拿到真实 IP」的表若只改一边，
+    症状是单端才出现的灰歌、校时失败、路由器后台打不开——最难归因的那类问题。
+    """
+    path = os.path.join(os.path.dirname(CONFIG), 'stash.stoverride')
+    if not os.path.exists(path):
+        return
+    body = io.open(path, encoding='utf-8').read()
+    if 'fake-ip-filter:' not in body:
+        return
+    blk = body.split('fake-ip-filter:', 1)[1].split('default-nameserver:', 1)[0]
+    stash = set()
+    for line in blk.split(chr(10)):
+        line = line.strip()
+        if line.startswith('- '):
+            stash |= _canon_realip(line[2:], True)
+
+    m = re.search(r'^always-real-ip\s*=\s*(.+)$', cfg, re.M)
+    if not m:
+        fail('config/default.conf 缺少 always-real-ip，'
+             'Stash 侧已有 %d 条 fake-ip-filter，两端不一致' % len(stash))
+        return
+    sr = set()
+    for x in m.group(1).split(','):
+        if x.strip():
+            sr |= _canon_realip(x, False)
+
+    for x in sorted(stash - sr):
+        fail('always-real-ip 缺少 Stash fake-ip-filter 里的 %s' % x)
+    for x in sorted(sr - stash):
+        fail('always-real-ip 多出 Stash fake-ip-filter 没有的 %s' % x)
+
+
 def check_workflows():
     """GitHub 只在推送后才报 YAML 错误，本地必须先挡住。"""
     paths = sorted(glob.glob(os.path.join(ROOT, '.github', 'workflows', '*.yml'))
@@ -583,6 +626,7 @@ def main():
     check_skip_proxy(cfg)
     check_rewrite_mitm(cfg)
     check_fakeip(cfg)
+    check_realip_parity(cfg)
     rules = load_rules()
     check_keywords(rules)
     check_no_block(rules, cfg)
