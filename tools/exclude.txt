@@ -29,3 +29,9 @@ DOMAIN-SUFFIX,simility.com,reject-ads
 # （候选不含 🚀 节点选择，避免落到负载均衡上每请求换出口）。
 # 只从 Twitter 策略剔除，让 AI 规则集正常接管。
 DOMAIN-SUFFIX,grok.com,twitter
+
+# blackmatrix7 的 OpenAI.list 收录了 stripe.com——OpenAI 用 Stripe 收款。
+# 但 Stripe 是通用支付处理商，任何用 Stripe 结账的网站都会被拖进 AI 组，
+# 走机房 IP 正是支付风控最敏感的特征。改由 Stripe 规则集归入支付组
+# （该组默认 DIRECT，用本地真实 IP 结账）。
+DOMAIN-SUFFIX,stripe.com,ai

@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/ai.list 生成，请勿手改。
-# behavior: domain   条数: 86
+# behavior: domain   条数: 85
 +.chat.com
 +.chatgpt.com
 +.livekit.cloud
@@ -65,7 +65,6 @@ static.cloudflareinsights.com
 +.observeit.net
 +.openaiapi-site.azureedge.net
 +.openaicom.imgix.net
-+.stripe.com
 +.turn.livekit.cloud
 cdn.usefathom.com
 makersuite.google.com

@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/china.list 生成，请勿手改。
-# behavior: classical   条数: 39
+# behavior: classical   条数: 38
 USER-AGENT,MicroMessenger*
 USER-AGENT,WeChat*
 IP-ASN,132203
@@ -37,5 +37,4 @@ USER-AGENT,eusoft_ting_en_iphone
 USER-AGENT,hide*
 USER-AGENT,ting_en
 DOMAIN-KEYWORD,hnagroup
-DOMAIN-KEYWORD,stripe
 USER-AGENT,iQIYI*

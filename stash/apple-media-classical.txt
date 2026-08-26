@@ -1,8 +1,5 @@
 # 由 tools/build-stash.py 从 rule/apple-media.list 生成，请勿手改。
-# behavior: classical   条数: 6
+# behavior: classical   条数: 3
 USER-AGENT,Music*
 USER-AGENT,AppleTV*
 USER-AGENT,com.apple.tv*
-USER-AGENT,AppleNews*
-USER-AGENT,com.apple.news*
-USER-AGENT,com.apple.trustd*

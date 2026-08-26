@@ -1,5 +1,8 @@
 # 由 tools/build-stash.py 从 rule/apple.list 生成，请勿手改。
-# behavior: classical   条数: 39
+# behavior: classical   条数: 42
+USER-AGENT,AppleNews*
+USER-AGENT,com.apple.news*
+USER-AGENT,com.apple.trustd*
 HOST-WILDCARD,*-content.icloud.com.cn
 HOST-WILDCARD,apple.*
 HOST-WILDCARD,apple.com.*

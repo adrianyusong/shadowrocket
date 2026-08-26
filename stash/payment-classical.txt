@@ -1,4 +1,5 @@
 # 由 tools/build-stash.py 从 rule/payment.list 生成，请勿手改。
-# behavior: classical   条数: 2
+# behavior: classical   条数: 3
 DOMAIN-KEYWORD,paypal
 USER-AGENT,PayPal*
+DOMAIN-KEYWORD,stripe

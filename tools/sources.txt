@@ -30,7 +30,9 @@ https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shado
 # 外区 Apple Music / TV 需要代理组，必须早于 Apple 总集
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/AppleMusic/AppleMusic.list 🎵 苹果媒体
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/AppleTV/AppleTV.list 🎵 苹果媒体
-https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/AppleProxy/AppleProxy.list 🎵 苹果媒体
+# AppleProxy 是 Apple 通用代理集（开发者站、TestFlight、Private Relay、
+# App Store、Apple News），不是媒体集。归入媒体组会把它们锁进外区节点。
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/AppleProxy/AppleProxy.list 🍎 苹果服务
 # lazy_group 用 QuantumultX 版，覆盖比 Shadowrocket 版广
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/Apple/Apple.list 🍎 苹果服务
 
@@ -81,6 +83,10 @@ https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shado
 
 # ===== 平台与工具 =====
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/PayPal/PayPal.list 💰 支付服务
+# Stripe 会被 OpenAI.list 抢走（OpenAI 用 Stripe 收款），
+# 已在 exclude.txt 从 ai 策略剔除，让这里接管。
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Stripe/Stripe.list 💰 支付服务
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/VISA/VISA.list 💰 支付服务
 # 我们没有 Amazon 组，归入节点选择
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Amazon/Amazon.list 🚀 节点选择
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/GitHub/GitHub.list 🐱 GITHUB
