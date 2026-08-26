@@ -302,11 +302,32 @@ def check_no_resolve():
              '会为域名请求触发本地 DNS 解析' % (kept, total))
 
 
+def _expand(expr):
+    """把 host 表达式里的正则分组展开成所有具体域名。
+
+    news(-todayconfig)?-edge.apple.com 展开为
+    news-edge.apple.com 与 news-todayconfig-edge.apple.com。
+    不展开的话，含可选分组的 pattern 会在后续处理中被 ? 截断而静默丢失——
+    检查看似通过，实则从未核对过那些域名。
+    """
+    m = re.search(r'\(([^()]*)\)(\?)?', expr)
+    if not m:
+        return [expr]
+    alts = m.group(1).split('|')
+    if m.group(2):                       # (x)? 允许整组缺席
+        alts = alts + ['']
+    out = []
+    for a in alts:
+        out.extend(_expand(expr[:m.start()] + a + expr[m.end():]))
+    return out
+
+
 def _rewrite_hosts(patterns):
-    r"""从重写规则里提取域名，用于核对 MITM 覆盖。
+    r"""从重写 / 脚本规则里提取域名，用于核对 MITM 覆盖。
 
     输入形如 ^https?://(www\.)?g\.cn https://www.google.com 302
     只取第一段（匹配模式），剥掉正则转义与协议前缀后得到 g.cn。
+    含分组的先展开，再逐个校验；仍带正则元字符的会显式告警而非丢弃。
     """
     hosts = set()
     for pat in patterns:
@@ -315,11 +336,18 @@ def _rewrite_hosts(patterns):
         s = s.lstrip("^")
         if "://" in s:
             s = s.split("://", 1)[1]
-        s = re.sub(r"^\([^)]*\)\?*", "", s)      # 去掉 (www.)? 这类可选分组
-        s = s.split("/")[0].split("?")[0].strip(".")
-        if "." in s:
-            hosts.add(s)
+        s = s.split("/")[0]                     # 先切掉路径，再处理分组
+        for cand in _expand(s):
+            cand = cand.strip(".")
+            if not cand:
+                continue
+            if re.search(r'[()|?*+\[\]{}^$]', cand):
+                warn('无法从 pattern 解析出域名，MITM 覆盖未被核对: %s' % first)
+                continue
+            if "." in cand:
+                hosts.add(cand)
     return hosts
+
 
 def _mitm_covers(mitm, host):
     for entry in mitm:
@@ -339,7 +367,7 @@ def check_rewrite_mitm(cfg):
     """
     # --- Shadowrocket ---
     inside = None
-    rewrites, mitm_hosts, enabled = [], [], False
+    rewrites, scripts, mitm_hosts, enabled = [], [], [], False
     for line in cfg.splitlines():
         s = line.strip()
         if s.startswith('[') and s.endswith(']'):
@@ -349,6 +377,11 @@ def check_rewrite_mitm(cfg):
             continue
         if inside == '[URL Rewrite]':
             rewrites.append(s)
+        elif inside == '[Script]':
+            # 脚本的 pattern= 与重写规则同理：域名不在 MITM 列表里就永不触发
+            m = re.search(r'pattern=(\S+?)(?:,|$)', s)
+            if m:
+                scripts.append(m.group(1))
         elif inside == '[MITM]':
             if s.startswith('hostname'):
                 mitm_hosts = [x.strip() for x in s.split('=', 1)[1].split(',') if x.strip()]
@@ -359,6 +392,13 @@ def check_rewrite_mitm(cfg):
     for host in _rewrite_hosts(rewrites):
         if not _mitm_covers(mitm_hosts, host):
             fail('[URL Rewrite] 涉及 %s，但它不在 [MITM] hostname 列表里，规则是死代码'
+                 % host)
+
+    if scripts and not enabled:
+        fail('[Script] 有脚本但 [MITM] enable 不为 true，脚本不会触发')
+    for host in _rewrite_hosts(scripts):
+        if not _mitm_covers(mitm_hosts, host):
+            fail('[Script] 的 pattern 涉及 %s，但它不在 [MITM] hostname 列表里，脚本是死代码'
                  % host)
 
     # --- Stash ---
@@ -490,6 +530,29 @@ def check_realip_parity(cfg):
         fail('always-real-ip 缺少 Stash fake-ip-filter 里的 %s' % x)
     for x in sorted(sr - stash):
         fail('always-real-ip 多出 Stash fake-ip-filter 没有的 %s' % x)
+
+
+def check_modules():
+    """module/ 下的自托管模块必须保持无脚本。
+
+    这批模块的卖点就是「纯重写」：只按 URL 拦截，不下载也不执行远端 JS。
+    上游哪天在里面塞进 script-path，同步会把它一并搬进来——那时解密后的
+    明文流量就会交给第三方代码处理，而这正是选它的理由被推翻的时刻。
+    """
+    d = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'module')
+    if not os.path.isdir(d):
+        return 0
+    n = 0
+    for fn in sorted(os.listdir(d)):
+        if not fn.endswith(('.sgmodule', '.stoverride')):
+            continue
+        n += 1
+        body = io.open(os.path.join(d, fn), encoding='utf-8').read()
+        for marker in ('script-path', '[Script]'):
+            if marker in body:
+                fail('module/%s 出现 %s——自托管模块应保持纯重写，'
+                     '引入远端脚本等于把明文流量交给第三方代码' % (fn, marker))
+    return n
 
 
 def check_workflows():
@@ -627,6 +690,7 @@ def main():
     check_rewrite_mitm(cfg)
     check_fakeip(cfg)
     check_realip_parity(cfg)
+    nmod = check_modules()
     rules = load_rules()
     check_keywords(rules)
     check_no_block(rules, cfg)
@@ -634,6 +698,8 @@ def main():
 
     print('Shadowrocket: 策略组 %d，策略引用 %d，规则 %d 条'
           % (ngroups, nrefs, len(rules)))
+    if nmod:
+        print('自托管模块:   %d 个' % nmod)
     if sgroups:
         print('Stash:        分组 %d，规则 %d 条' % (sgroups, srules))
     for w in WARNS:

@@ -28,6 +28,11 @@ jobs:
       - name: 拉取上游并合并
         run: python tools/sync-rules.py
 
+      - name: 收编自托管模块
+        # 抓取失败或条数低于下限会返回 1，让整个 workflow 停下，
+        # 而不是把陈旧或残缺的模块推给设备。
+        run: python tools/sync-modules.py
+
       - name: 生成 Stash 配置
         # 与 Shadowrocket 共用 rule/*.list，但产物完全分开
         run: python tools/build-stash.py
