@@ -443,6 +443,13 @@ def main():
     for d in ['poe.com', 'huggingface.co', 'hf.co', 'cursor.sh', 'cursor.com',
               'midjourney.com']:
         A('  - DOMAIN-SUFFIX,%s,🤖 AI 服务' % d)
+    A('  # DigiCert 是通用 CA，不只 Apple 在用。上游 AppleProxy 收录了 digicert.com，')
+    A('  # proxy 集又收录了 digicert-validation.com——大量网站的 OCSP / CRL 校验会')
+    A('  # 跟着走代理，给每次 TLS 握手多加一跳。改直连。')
+    A('  # 注意：seal / smetrics / app.updates 等追踪子域在 reject-ads 规则集里，')
+    A('  # 那个规则集排在更前面，仍会被拦截，不受这两条影响。')
+    for d in ['digicert.com', 'digicert-validation.com']:
+        A('  - DOMAIN-SUFFIX,%s,🎯 全球直连' % d)
     A('  # 联网检测、局域网设备管理页、NTP 校时必须直连。')
     A('  # 上游规则集把它们归进了微软/代理集，走代理会导致强制门户误判、')
     A('  # 路由器后台打不开、校时失败。内联规则在规则集之前命中。')
