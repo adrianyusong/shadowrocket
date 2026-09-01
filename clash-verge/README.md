@@ -13,20 +13,6 @@
 - **協議拆分**：Hysteria2 與 VLESS 各自成組，另有 fallback 型的「穩定」組
 - **分流規則**：24 個雲端規則集，涵蓋廣告攔截、HTTPDNS、國內直連、串流解鎖、AI 服務、支付與帳號綁定
 
-## 取用地址
-
-| 來源 | 網址 |
-|---|---|
-| GitHub raw | `https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/clash-verge/script.js` |
-| jsDelivr | `https://cdn.jsdelivr.net/gh/adrianyusong/shadowrocket@main/clash-verge/script.js` |
-| jsDelivr 鏡像 | `https://testingcf.jsdelivr.net/gh/adrianyusong/shadowrocket@main/clash-verge/script.js` |
-
-境內建議用 jsDelivr 鏡像那個，實測比 GitHub raw 快約三倍。
-
-> **注意**：Clash Verge 的「擴充腳本」是本機貼上的欄位，**不支援從網址自動同步**。上面的位址是給你取用與更新用的（下載後貼進去），不是訂閱連結。
->
-> jsDelivr 對 `@main` 有快取（約 12 小時），推送後若拿到舊版，改用 `@<commit-sha>` 形式即可取得指定版本。
-
 ## 使用方式
 
 1. Clash Verge Rev →「訂閱」→ 對訂閱卡片點右鍵 →「編輯擴充」→ 貼進 **Script** 欄位

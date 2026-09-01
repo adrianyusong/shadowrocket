@@ -1,0 +1,563 @@
+# Clash 配置 — 由 Clash Verge Rev 擴充腳本移植
+# 來源 https://github.com/adrianyusong/shadowrocket/tree/main/clash-verge
+#
+# 使用前必須替換 <YOUR-SUBSCRIPTION-URL> 為你的機場訂閱網址。
+
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: info
+ipv6: false
+unified-delay: true      # 送兩次探測消除握手差異，跨協議比較才公平
+tcp-concurrent: true
+geodata-mode: true
+geo-auto-update: true
+geo-update-interval: 24
+find-process-mode: 'off'  # iOS 無進程概念
+geox-url:
+  geoip: 'https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat'
+  geosite: 'https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat'
+  mmdb: 'https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb'
+  asn: 'https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/GeoLite2-ASN.mmdb'
+
+sniffer:
+  enable: true
+  force-dns-mapping: true
+  parse-pure-ip: true
+  override-destination: false
+  sniff:
+    HTTP: { ports: [80, '8080-8880'] }
+    TLS: { ports: [443, 8443] }
+    QUIC: { ports: [443, 8443] }
+
+dns:
+  enable: true
+  # 只綁本機：TUN 的 dns-hijack any:53 已經接管所有 DNS，
+  # 綁 0.0.0.0 會讓本機對區網變成開放解析器，也容易和其他佔 53 埠的服務衝突
+  listen: 0.0.0.0:1053
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter-mode: blacklist
+  # 注意：'*' 只匹配單層，子網域會漏；需要遞迴匹配一律用 '+.'
+  fake-ip-filter:
+  - '+.lan'
+  - '+.local'
+  - '+.localdomain'
+  - '+.home.arpa'
+  - '+.arpa'
+  - '+.wpad'
+  - time.*.com
+  - time.*.gov
+  - ntp.*.com
+  - '+.pool.ntp.org'
+  - '+.market.xiaomi.com'
+  - localhost.ptlogin2.qq.com
+  - '+.msftncsi.com'
+  - '+.msftconnecttest.com'
+  # STUN / NAT 穿透與遊戲主機：走 fake-ip 會讓 P2P 與連線品質偵測失敗
+  - '+.stun.*.*'
+  - '+.stun.*.*.*'
+  - '+.stun.playstation.net'
+  - '+.n.n.srv.nintendo.net'
+  - xbox.*.microsoft.com
+  - '+.xboxlive.com'
+  default-nameserver:
+  - 223.5.5.5
+  - 119.29.29.29
+  nameserver:
+  - https://doh.pub/dns-query
+  - https://dns.alidns.com/dns-query
+  proxy-server-nameserver:
+  - https://doh.pub/dns-query
+  - https://dns.alidns.com/dns-query
+  - tls://223.5.5.5
+  direct-nameserver: []
+  direct-nameserver-follow-policy: true
+  # 取代舊的 fallback + fallback-filter：直接按域名歸屬指定解析器，
+  # 不必先查一次再用 geoip 判斷要不要重查，少一個 round-trip
+  nameserver-policy:
+    '+.cloudflare-dns.com,+.dns.google,+.doh.pub,+.alidns.com':
+    - 223.5.5.5
+    - 119.29.29.29
+    'geosite:cn,private':
+    - https://doh.pub/dns-query
+    - https://dns.alidns.com/dns-query
+    'geosite:geolocation-!cn':
+    - https://cloudflare-dns.com/dns-query
+    - https://dns.google/dns-query
+  respect-rules: true
+  prefer-h3: false
+  use-hosts: true
+  use-system-hosts: true
+
+proxy-providers:
+  airport:
+    type: http
+    url: '<YOUR-SUBSCRIPTION-URL>'
+    interval: 3600
+    path: ./providers/airport.yaml
+    health-check: { enable: true, interval: 300, url: 'https://www.gstatic.com/generate_204' }
+
+proxy-groups:
+  - name: '🚀 節點選擇'
+    type: select
+    proxies: ['⚡ 全局最快', '🚄 全部 Hy2', '🌐 全部 VLESS', '🇭🇰 香港', '🇹🇼 台灣', '🇯🇵 日本', '🇸🇬 獅城', '🇺🇸 美國', '🇰🇷 韓國', '🇬🇧 英國']
+  - name: '⚡ 全局最快'
+    type: url-test
+    use: [airport]
+    filter: '专线|專線|住宅|IPLC|IEPL|Premium'
+    url: 'https://www.gstatic.com/generate_204'
+    interval: 300
+    tolerance: 100
+    lazy: true
+  - name: '🇭🇰 香港'
+    type: url-test
+    use: [airport]
+    filter: '(?i)港|HK|Hong ?Kong'
+    url: 'https://www.gstatic.com/generate_204'
+    interval: 300
+    tolerance: 100
+    lazy: true
+  - name: '🇹🇼 台灣'
+    type: url-test
+    use: [airport]
+    filter: '(?i)台[灣湾]|TW|Taiwan'
+    url: 'https://www.gstatic.com/generate_204'
+    interval: 300
+    tolerance: 100
+    lazy: true
+  - name: '🇯🇵 日本'
+    type: url-test
+    use: [airport]
+    filter: '(?i)日本|JP|Japan|[東东]京|大阪'
+    url: 'https://www.gstatic.com/generate_204'
+    interval: 300
+    tolerance: 100
+    lazy: true
+  - name: '🇸🇬 獅城'
+    type: url-test
+    use: [airport]
+    filter: '(?i)新加坡|SG|Sing|[獅狮]城'
+    url: 'https://www.gstatic.com/generate_204'
+    interval: 300
+    tolerance: 100
+    lazy: true
+  - name: '🇺🇸 美國'
+    type: url-test
+    use: [airport]
+    filter: '(?i)美[國国]|US|USA|America|洛杉[磯矶]'
+    url: 'https://www.gstatic.com/generate_204'
+    interval: 300
+    tolerance: 100
+    lazy: true
+  - name: '🇰🇷 韓國'
+    type: url-test
+    use: [airport]
+    filter: '(?i)[韓韩]|KR|Korea|首[爾尔]'
+    url: 'https://www.gstatic.com/generate_204'
+    interval: 300
+    tolerance: 100
+    lazy: true
+  - name: '🇬🇧 英國'
+    type: url-test
+    use: [airport]
+    filter: '(?i)英[國国]|GB|UK|London|[伦倫]敦'
+    url: 'https://www.gstatic.com/generate_204'
+    interval: 300
+    tolerance: 100
+    lazy: true
+  - name: '🚄 全部 Hy2'
+    type: url-test
+    use: [airport]
+    exclude-type: 'vless|vmess|ss|ssr|trojan|socks5|http'
+    url: 'https://www.gstatic.com/generate_204'
+    interval: 300
+    tolerance: 100
+    lazy: true
+  - name: '🌐 全部 VLESS'
+    type: url-test
+    use: [airport]
+    exclude-type: 'hysteria|hysteria2|ss|ssr|trojan|vmess|socks5|http'
+    url: 'https://www.gstatic.com/generate_204'
+    interval: 300
+    tolerance: 100
+    lazy: true
+  - name: '🤖 AI 服務'
+    type: select
+    proxies: ['🇯🇵 日本', '🇺🇸 美國', '🇸🇬 獅城', '🌐 全部 VLESS', '🚀 節點選擇']
+  - name: '💻 AI 編程'
+    type: select
+    proxies: ['🇯🇵 日本', '🇺🇸 美國', '🇸🇬 獅城', '🌐 全部 VLESS', '🚀 節點選擇']
+  - name: '🐙 GitHub'
+    type: select
+    proxies: ['🇺🇸 美國', '🇯🇵 日本', '🇸🇬 獅城', '🚀 節點選擇']
+  - name: '📹 YouTube'
+    type: select
+    proxies: ['🇺🇸 美國', '🇯🇵 日本', '🇸🇬 獅城', '🇭🇰 香港', '🚀 節點選擇']
+  - name: '🎥 串流媒體'
+    type: select
+    proxies: ['🚀 節點選擇', '🇭🇰 香港', '🇹🇼 台灣', '🇯🇵 日本', '🇸🇬 獅城', '🇺🇸 美國', '🇰🇷 韓國', '🇬🇧 英國']
+  - name: '🎌 巴哈姆特'
+    type: select
+    proxies: ['🇹🇼 台灣', '🚀 節點選擇']
+  - name: '🎬 Netflix'
+    type: select
+    proxies: ['🇺🇸 美國', '🇸🇬 獅城', '🚀 節點選擇']
+  - name: '🏰 Disney+'
+    type: select
+    proxies: ['🇸🇬 獅城', '🇺🇸 美國', '🚀 節點選擇']
+  - name: '🎵 Spotify'
+    type: select
+    proxies: ['🇯🇵 日本', '🇸🇬 獅城', '🚀 節點選擇']
+  - name: '📺 Prime Video'
+    type: select
+    proxies: ['🇯🇵 日本', '🇺🇸 美國', '🚀 節點選擇']
+  - name: '🔍 Google'
+    type: select
+    proxies: ['🇺🇸 美國', '🇯🇵 日本', '🇸🇬 獅城', '🚀 節點選擇']
+  - name: '📲 Telegram'
+    type: select
+    proxies: ['🚀 節點選擇', '🇭🇰 香港', '🇹🇼 台灣', '🇯🇵 日本', '🇸🇬 獅城', '🇺🇸 美國', '🇰🇷 韓國', '🇬🇧 英國']
+  - name: '🎮 遊戲平台'
+    type: select
+    proxies: ['DIRECT', '🚀 節點選擇', '🇭🇰 香港', '🇹🇼 台灣', '🇯🇵 日本', '🇸🇬 獅城', '🇺🇸 美國', '🇰🇷 韓國', '🇬🇧 英國']
+  - name: '📺 本地播放器'
+    type: select
+    proxies: ['DIRECT', '🚀 節點選擇']
+  - name: '💰 PayPal'
+    type: select
+    proxies: ['DIRECT', '🇭🇰 香港', '🇺🇸 美國', '🚀 節點選擇']
+  - name: '🍎 蘋果服務'
+    type: select
+    proxies: ['🚀 節點選擇', 'DIRECT', '🇭🇰 香港', '🇹🇼 台灣', '🇯🇵 日本', '🇸🇬 獅城', '🇺🇸 美國', '🇰🇷 韓國', '🇬🇧 英國']
+  - name: '🍎 蘋果下載'
+    type: select
+    proxies: ['DIRECT', '🚀 節點選擇']
+  - name: 'Ⓜ️ 微軟服務'
+    type: select
+    proxies: ['🚀 節點選擇', 'DIRECT']
+  - name: '🛡️ 廣告攔截'
+    type: select
+    proxies: ['REJECT', 'DIRECT']
+  - name: '🔏 隱私追蹤'
+    type: select
+    proxies: ['DIRECT', 'REJECT', '🚀 節點選擇']
+  - name: '🐟 漏網之魚'
+    type: select
+    proxies: ['🚀 節點選擇', 'DIRECT']
+
+rule-providers:
+  AdBlock:
+    type: http
+    behavior: domain
+    url: 'https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Advertising/Advertising_Domain.yaml'
+    path: './ruleset/adblock.yaml'
+    interval: 604800
+    proxy: '🚀 節點選擇'
+  Hijacking:
+    type: http
+    behavior: classical
+    url: 'https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Hijacking/Hijacking.yaml'
+    path: './ruleset/hijacking.yaml'
+    interval: 86400
+    proxy: '🚀 節點選擇'
+  HTTPDNS:
+    type: http
+    behavior: classical
+    url: 'https://testingcf.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/HTTPDNS.yaml'
+    path: './ruleset/httpdns.yaml'
+    interval: 604800
+    proxy: '🚀 節點選擇'
+  Privacy:
+    type: http
+    behavior: classical
+    url: 'https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Privacy/Privacy.yaml'
+    path: './ruleset/privacy.yaml'
+    interval: 86400
+    proxy: '🚀 節點選擇'
+  PrivacyDomain:
+    type: http
+    behavior: domain
+    url: 'https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Privacy/Privacy_Domain.yaml'
+    path: './ruleset/privacydomain.yaml'
+    interval: 86400
+    proxy: '🚀 節點選擇'
+  AliPay:
+    type: http
+    behavior: classical
+    url: 'https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/AliPay/AliPay.yaml'
+    path: './ruleset/alipay.yaml'
+    interval: 86400
+    proxy: '🚀 節點選擇'
+  ChinaMax:
+    type: http
+    behavior: domain
+    url: 'https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/ChinaMax/ChinaMax_Domain.yaml'
+    path: './ruleset/chinamax.yaml'
+    interval: 604800
+    proxy: '🚀 節點選擇'
+  GlobalMedia:
+    type: http
+    behavior: domain
+    url: 'https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/GlobalMedia/GlobalMedia_Domain.yaml'
+    path: './ruleset/globalmedia.yaml'
+    interval: 86400
+    proxy: '🚀 節點選擇'
+  YouTube:
+    type: http
+    behavior: classical
+    url: 'https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/YouTube/YouTube.yaml'
+    path: './ruleset/youtube.yaml'
+    interval: 86400
+    proxy: '🚀 節點選擇'
+  Steam:
+    type: http
+    behavior: classical
+    url: 'https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Steam/Steam.yaml'
+    path: './ruleset/steam.yaml'
+    interval: 86400
+    proxy: '🚀 節點選擇'
+  Telegram:
+    type: http
+    behavior: classical
+    url: 'https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Telegram/Telegram.yaml'
+    path: './ruleset/telegram.yaml'
+    interval: 86400
+    proxy: '🚀 節點選擇'
+  Bahamut:
+    type: http
+    behavior: classical
+    url: 'https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Bahamut/Bahamut.yaml'
+    path: './ruleset/bahamut.yaml'
+    interval: 86400
+    proxy: '🚀 節點選擇'
+  Netflix:
+    type: http
+    behavior: classical
+    url: 'https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Netflix/Netflix.yaml'
+    path: './ruleset/netflix.yaml'
+    interval: 86400
+    proxy: '🚀 節點選擇'
+  Disney:
+    type: http
+    behavior: classical
+    url: 'https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Disney/Disney.yaml'
+    path: './ruleset/disney.yaml'
+    interval: 86400
+    proxy: '🚀 節點選擇'
+  Spotify:
+    type: http
+    behavior: classical
+    url: 'https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Spotify/Spotify.yaml'
+    path: './ruleset/spotify.yaml'
+    interval: 86400
+    proxy: '🚀 節點選擇'
+  PrimeVideo:
+    type: http
+    behavior: classical
+    url: 'https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/AmazonPrimeVideo/AmazonPrimeVideo.yaml'
+    path: './ruleset/primevideo.yaml'
+    interval: 86400
+    proxy: '🚀 節點選擇'
+  Apple:
+    type: http
+    behavior: domain
+    url: 'https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Apple/Apple_Domain.yaml'
+    path: './ruleset/apple.yaml'
+    interval: 86400
+    proxy: '🚀 節點選擇'
+  Microsoft:
+    type: http
+    behavior: classical
+    url: 'https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Microsoft/Microsoft.yaml'
+    path: './ruleset/microsoft.yaml'
+    interval: 86400
+    proxy: '🚀 節點選擇'
+  OpenAI:
+    type: http
+    behavior: classical
+    url: 'https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/OpenAI/OpenAI.yaml'
+    path: './ruleset/openai.yaml'
+    interval: 86400
+    proxy: '🚀 節點選擇'
+  Gemini:
+    type: http
+    behavior: classical
+    url: 'https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Gemini/Gemini.yaml'
+    path: './ruleset/gemini.yaml'
+    interval: 86400
+    proxy: '🚀 節點選擇'
+  Claude:
+    type: http
+    behavior: classical
+    url: 'https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Claude/Claude.yaml'
+    path: './ruleset/claude.yaml'
+    interval: 86400
+    proxy: '🚀 節點選擇'
+  Copilot:
+    type: http
+    behavior: classical
+    url: 'https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Copilot/Copilot.yaml'
+    path: './ruleset/copilot.yaml'
+    interval: 86400
+    proxy: '🚀 節點選擇'
+  Google:
+    type: http
+    behavior: classical
+    url: 'https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Google/Google.yaml'
+    path: './ruleset/google.yaml'
+    interval: 86400
+    proxy: '🚀 節點選擇'
+  GitHub:
+    type: http
+    behavior: classical
+    url: 'https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/GitHub/GitHub.yaml'
+    path: './ruleset/github.yaml'
+    interval: 86400
+    proxy: '🚀 節點選擇'
+
+rules:
+  - 'GEOIP,private,DIRECT,no-resolve'
+  - 'DOMAIN-SUFFIX,local,DIRECT'
+  - 'DOMAIN-SUFFIX,localhost,DIRECT'
+  - 'DOMAIN,router.asus.com,DIRECT'
+  - 'DOMAIN,miwifi.com,DIRECT'
+  - 'DOMAIN,tplogin.cn,DIRECT'
+  - 'DOMAIN,tendawifi.com,DIRECT'
+  - 'DOMAIN,wifi.vivo.com,DIRECT'
+  - 'DOMAIN,p.to,DIRECT'
+  - 'DOMAIN-SUFFIX,wpad.net,REJECT'
+  - 'DOMAIN,garysclub.sharewithyou.dpdns.org,🚀 節點選擇'
+  - 'DOMAIN-SUFFIX,githubusercontent.com,🐙 GitHub'
+  - 'DOMAIN,bit.ly,🚀 節點選擇'
+  - 'DOMAIN-SUFFIX,fanmingming.cn,🚀 節點選擇'
+  - 'DOMAIN-SUFFIX,sentry.io,🚀 節點選擇'
+  - 'DOMAIN-SUFFIX,mtalk.google.com,🔍 Google'
+  - 'DOMAIN-SUFFIX,gcm-http.googleapis.com,🔍 Google'
+  - 'DOMAIN-SUFFIX,fcm.googleapis.com,🔍 Google'
+  - 'DOMAIN-SUFFIX,safebrowsing.googleapis.com,🔍 Google'
+  - 'DOMAIN-SUFFIX,pki.goog,🔍 Google'
+  - 'DOMAIN-SUFFIX,paypal.com,💰 PayPal'
+  - 'DOMAIN-SUFFIX,paypalobjects.com,💰 PayPal'
+  - 'DOMAIN-SUFFIX,paypal.cn,💰 PayPal'
+  - 'DOMAIN-SUFFIX,braintreegateway.com,💰 PayPal'
+  - 'DOMAIN-SUFFIX,braintree-api.com,💰 PayPal'
+  - 'DOMAIN-SUFFIX,stripe.com,💰 PayPal'
+  - 'DOMAIN-SUFFIX,stripecdn.com,💰 PayPal'
+  - 'DOMAIN-SUFFIX,stripe.network,💰 PayPal'
+  - 'DOMAIN-SUFFIX,statsigapi.net,REJECT-DROP'
+  - 'RULE-SET,AdBlock,🛡️ 廣告攔截'
+  - 'RULE-SET,Hijacking,🛡️ 廣告攔截'
+  - 'RULE-SET,HTTPDNS,🛡️ 廣告攔截'
+  - 'RULE-SET,AliPay,DIRECT'
+  - 'DOMAIN-SUFFIX,alipay.com,DIRECT'
+  - 'DOMAIN-SUFFIX,alipayobjects.com,DIRECT'
+  - 'DOMAIN-SUFFIX,alipaydns.com,DIRECT'
+  - 'DOMAIN-SUFFIX,alipay.cn,DIRECT'
+  - 'DOMAIN-SUFFIX,mybank.cn,DIRECT'
+  - 'DOMAIN-SUFFIX,95599.cn,DIRECT'
+  - 'DOMAIN-SUFFIX,abchina.com,DIRECT'
+  - 'DOMAIN-SUFFIX,icbc.com.cn,DIRECT'
+  - 'DOMAIN-SUFFIX,ccb.com,DIRECT'
+  - 'DOMAIN-SUFFIX,boc.cn,DIRECT'
+  - 'DOMAIN-SUFFIX,bankcomm.com,DIRECT'
+  - 'DOMAIN-SUFFIX,psbc.com,DIRECT'
+  - 'DOMAIN-SUFFIX,cmbchina.com,DIRECT'
+  - 'DOMAIN-SUFFIX,cib.com.cn,DIRECT'
+  - 'DOMAIN-SUFFIX,spdb.com.cn,DIRECT'
+  - 'DOMAIN-SUFFIX,bankofbeijing.com.cn,DIRECT'
+  - 'DOMAIN-SUFFIX,cgbchina.com.cn,DIRECT'
+  - 'DOMAIN-SUFFIX,pingan.com,DIRECT'
+  - 'DOMAIN-SUFFIX,webank.com,DIRECT'
+  - 'DOMAIN-SUFFIX,unionpay.com,DIRECT'
+  - 'DOMAIN-SUFFIX,95516.com,DIRECT'
+  - 'DOMAIN-SUFFIX,tenpay.com,DIRECT'
+  - 'DOMAIN-SUFFIX,wx.qq.com,DIRECT'
+  - 'DOMAIN-SUFFIX,weixin.qq.com,DIRECT'
+  - 'DOMAIN-SUFFIX,pay.weixin.qq.com,DIRECT'
+  - 'DOMAIN-SUFFIX,gov.cn,DIRECT'
+  - 'DOMAIN-SUFFIX,12306.cn,DIRECT'
+  - 'DOMAIN-SUFFIX,12306.com,DIRECT'
+  - 'DOMAIN-SUFFIX,rails.com.cn,DIRECT'
+  - 'DOMAIN-SUFFIX,chinatax.gov.cn,DIRECT'
+  - 'DOMAIN-SUFFIX,nhsa.gov.cn,DIRECT'
+  - 'DOMAIN-SUFFIX,gjzwfw.gov.cn,DIRECT'
+  - 'DOMAIN-SUFFIX,www.gov.cn,DIRECT'
+  - 'DOMAIN-SUFFIX,12333.gov.cn,DIRECT'
+  - 'DOMAIN-SUFFIX,beijing.gov.cn,DIRECT'
+  - 'RULE-SET,Privacy,🔏 隱私追蹤'
+  - 'RULE-SET,PrivacyDomain,🔏 隱私追蹤'
+  - 'RULE-SET,ChinaMax,DIRECT'
+  - 'DOMAIN-SUFFIX,antigravity.google.com,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,antigravity-pa.googleapis.com,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,aistudio.google.com,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,alkalimakersuite-pa.googleapis.com,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,generativelanguage.googleapis.com,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,daily-cloudcode-pa.googleapis.com,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,cloudcode-pa.googleapis.com,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,aiplatform.googleapis.com,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,notebooklm.google,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,notebooklm.google.com,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,gemini.google.com,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,bard.google.com,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,deepmind.google,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,deepmind.com,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,cursor.sh,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,cursor.com,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,cursorapi.com,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,cursor.so,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,cursorai.com,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,anthropic.com,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,claude.ai,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,claudeusercontent.com,💻 AI 編程'
+  - 'DOMAIN-KEYWORD,datadoghq,💻 AI 編程'
+  - 'DOMAIN-KEYWORD,antigravity,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,vscode.dev,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,vscode-cdn.net,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,vscode-unpkg.net,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,vsassets.io,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,gallerycdn.vsassets.io,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,update.code.visualstudio.com,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,az764295.vo.msecnd.net,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,copilot.github.com,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,githubcopilot.com,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,default.exp-tas.com,💻 AI 編程'
+  - 'DOMAIN-SUFFIX,auth0.com,🚀 節點選擇'
+  - 'DOMAIN-SUFFIX,algolia.net,🚀 節點選擇'
+  - 'RULE-SET,OpenAI,🤖 AI 服務'
+  - 'RULE-SET,Gemini,🤖 AI 服務'
+  - 'RULE-SET,Claude,🤖 AI 服務'
+  - 'RULE-SET,Copilot,🤖 AI 服務'
+  - 'RULE-SET,GitHub,🐙 GitHub'
+  - 'DOMAIN-SUFFIX,github.com,🐙 GitHub'
+  - 'DOMAIN-SUFFIX,githubusercontent.com,🐙 GitHub'
+  - 'DOMAIN-SUFFIX,githubassets.com,🐙 GitHub'
+  - 'DOMAIN-SUFFIX,ghcr.io,🐙 GitHub'
+  - 'DOMAIN-SUFFIX,npm.pkg.github.com,🐙 GitHub'
+  - 'RULE-SET,YouTube,📹 YouTube'
+  - 'RULE-SET,Google,🔍 Google'
+  - 'RULE-SET,Telegram,📲 Telegram'
+  - 'RULE-SET,Steam,🎮 遊戲平台'
+  - 'DOMAIN-SUFFIX,90zhibo.net,🎥 串流媒體'
+  - 'DOMAIN-SUFFIX,90zhibo.com,🎥 串流媒體'
+  - 'RULE-SET,Bahamut,🎌 巴哈姆特'
+  - 'RULE-SET,Netflix,🎬 Netflix'
+  - 'RULE-SET,Disney,🏰 Disney+'
+  - 'RULE-SET,Spotify,🎵 Spotify'
+  - 'RULE-SET,PrimeVideo,📺 Prime Video'
+  - 'RULE-SET,GlobalMedia,🎥 串流媒體'
+  - 'DOMAIN,iosapps.itunes.apple.com,🍎 蘋果下載'
+  - 'DOMAIN,osxapps.itunes.apple.com,🍎 蘋果下載'
+  - 'DOMAIN,updates-http.cdn-apple.com,🍎 蘋果下載'
+  - 'DOMAIN-SUFFIX,ls.apple.com,🍎 蘋果下載'
+  - 'DOMAIN-SUFFIX,swcdn.apple.com,🍎 蘋果下載'
+  - 'DOMAIN-SUFFIX,appldnld.apple.com,🍎 蘋果下載'
+  - 'RULE-SET,Apple,🍎 蘋果服務'
+  - 'RULE-SET,Microsoft,Ⓜ️ 微軟服務'
+  - 'DOMAIN-SUFFIX,qidian.com,DIRECT'
+  - 'DOMAIN-SUFFIX,yuewen.com,DIRECT'
+  - 'GEOSITE,geolocation-!cn,🚀 節點選擇'
+  - 'GEOSITE,cn,DIRECT'
+  - 'GEOIP,cn,DIRECT'
+  - 'MATCH,🐟 漏網之魚'
