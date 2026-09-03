@@ -4,7 +4,7 @@
 
 ## 订阅地址
 
-复制对应客户端的地址即可，无需下载文件。
+复制对应客户端的地址即可。唯一例外是 Clash 那份 —— 它是模板，必须先填入你自己的订阅地址，见下。
 
 ### Shadowrocket
 
@@ -36,13 +36,25 @@ https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/config/stash-pr
 
 ### Clash for Apple / Clash Verge
 
-完整 mihomo 配置。**订阅地址是占位符，取回后必须替换**（见文件头部说明）：
+> **这份不能直接订阅。** 它是完整 mihomo 配置，`proxy-providers` 的 url 是占位符，
+> 直接填进 App 会得到 `DNS lookup failed / Provider "airport"` —— 占位域名本就解析不了。
 
 ```
 https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/config/clash.yaml
 ```
 
-Clash Verge Rev 另有一份扩展脚本，从节点属性动态重建分组：
+**Clash for Apple（iOS）**：Profile 导入后**不能在 App 内编辑**（详情页只有
+update / rename / export / remove），所以必须先改好再导入：
+
+1. 在电脑上下载 `clash.yaml`，把 `proxy-providers.airport.url` 换成你自己的
+   Clash 格式订阅地址
+2. 存成 `*.local.yaml`，放进 iCloud Drive 或 AirDrop 传到手机
+3. Clash → Add Profile → **配置文件**（不是 Subscription link）
+
+想保留自动更新就把改好的文件放进**私有**仓库再订阅那个 raw 地址 ——
+文件里带着你的订阅地址，绝不能放公开仓库。
+
+**Clash Verge**：直接改本地文件，或用下面的扩展脚本从节点属性动态重建分组：
 
 ```
 https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/clash-verge/script.js

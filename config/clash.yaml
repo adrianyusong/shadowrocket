@@ -2,8 +2,21 @@
 # 由 tools/build-clash.py 生成，请勿手改——下次同步会覆盖。
 # https://github.com/adrianyusong/shadowrocket
 #
-# 【必须先做】把下面 proxy-providers 里的订阅地址换成你自己的，
-# 另存为 *.local.yaml（该模式已在 .gitignore 排除）。订阅地址等同凭据。
+# ============================================================
+# 这是模板，不是可直接订阅的地址。
+#
+# 下面 proxy-providers 的 url 是占位符，直接订阅本文件会得到
+# 「DNS lookup failed / Provider airport」——占位域名本就解析不了。
+#
+# Clash for Apple 的 Profile 导入后不能在 App 内编辑（详情页只有
+# update / rename / export / remove），所以必须先改好再导入：
+#   1. 在电脑上下载本文件，把 url 换成你自己的订阅地址
+#   2. 存成 *.local.yaml，放进 iCloud Drive 或用 AirDrop 传到手机
+#   3. Clash → Add Profile → 选「配置文件」导入
+# Clash Verge 直接改本地文件即可。
+#
+# 订阅地址等同凭据，*.local.yaml 已在 .gitignore 排除，别提交。
+# ============================================================
 #
 # 与 Shadowrocket 配置的差异：mihomo 没有 MITM，所以这份配置里
 # 没有 iRingo MapKit/News、没有 URL 重写去广告、没有 g.cn 跳转。
