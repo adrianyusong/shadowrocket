@@ -3,6 +3,8 @@
 *.local.conf
 *.private.conf
 *.local.stoverride
+*.local.yaml
+*.private.yaml
 *.private.stoverride
 secrets/
 subscription*.txt

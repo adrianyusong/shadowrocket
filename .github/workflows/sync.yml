@@ -37,6 +37,11 @@ jobs:
         # 与 Shadowrocket 共用 rule/*.list，但产物完全分开
         run: python tools/build-stash.py
 
+      - name: 生成 Clash 配置
+        # 完整 mihomo YAML，给 Clash for Apple / Clash Verge 用。
+        # 策略组与规则集从 build-stash.py 导入，不会与 Stash 那份漂移。
+        run: python tools/build-clash.py
+
       - name: 校验配置与规则
         # 校验失败就不提交，避免把坏规则推给正在订阅的设备
         run: python tools/check-config.py

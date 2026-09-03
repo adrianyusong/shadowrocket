@@ -555,6 +555,75 @@ def check_modules():
     return n
 
 
+def check_clash():
+    """校验 config/clash.yaml：语法、引用完整性、协议分组的类型名写法。
+
+    协议分组那一项是本仓库踩过的坑的延续：Stash 上 exclude-type 被静默忽略，
+    Hy2 混进 VLESS 组，是在设备上用出来才发现的。mihomo 实现了它，但
+    group 层比较的是 AdapterType.String()（Vless / Shadowsocks），
+    不是配置里的 type: 值（vless / ss）。写成 ss 排不掉 SS 节点，
+    而且同样不报错——又是一次静默失效。
+    """
+    path = os.path.join(os.path.dirname(CONFIG), 'clash.yaml')
+    if not os.path.exists(path):
+        return 0
+    try:
+        import yaml
+    except ImportError:
+        warn('未安装 PyYAML，跳过 clash.yaml 校验')
+        return 0
+    try:
+        d = yaml.safe_load(io.open(path, encoding='utf-8').read())
+    except Exception as e:                                   # noqa: BLE001
+        fail('config/clash.yaml 不是合法 YAML: %s' % e)
+        return 0
+
+    groups = d.get('proxy-groups') or []
+    names = [g.get('name') for g in groups]
+    dup = {x for x in names if names.count(x) > 1}
+    for x in sorted(dup):
+        fail('clash.yaml 有同名分组: %s' % x)
+    nameset = set(names)
+    builtin = {'DIRECT', 'REJECT', 'REJECT-DROP', 'PASS', 'COMPATIBLE'}
+
+    for g in groups:
+        for pr in g.get('proxies') or []:
+            if pr not in nameset and pr not in builtin:
+                fail('clash.yaml 分组 %s 引用了不存在的策略 %s' % (g.get('name'), pr))
+
+    providers = set(d.get('rule-providers') or {})
+    for pname in providers:
+        fn = os.path.join(os.path.dirname(os.path.dirname(CONFIG)), 'stash',
+                          pname + '.txt')
+        if not os.path.exists(fn):
+            fail('clash.yaml 的 rule-provider %s 没有对应的 stash/%s.txt'
+                 % (pname, pname))
+
+    for r in d.get('rules') or []:
+        parts = [x.strip() for x in str(r).split(',')]
+        if parts[0] == 'RULE-SET' and parts[1] not in providers:
+            fail('clash.yaml 规则引用了未定义的 rule-provider: %s' % parts[1])
+        tgt = parts[1] if parts[0] == 'MATCH' else (
+            parts[2] if len(parts) > 2 else None)
+        if tgt and tgt not in nameset and tgt not in builtin:
+            fail('clash.yaml 规则指向了不存在的策略: %s' % tgt)
+
+    # exclude-type 必须用 AdapterType 名。小写的 ss / vless 之类会静默失效。
+    adapter_types = {'Shadowsocks', 'ShadowsocksR', 'Snell', 'Socks5', 'Http',
+                     'Vmess', 'Vless', 'Trojan', 'Hysteria', 'Hysteria2',
+                     'WireGuard', 'Tuic', 'Ssh', 'Mieru', 'AnyTLS'}
+    for g in groups:
+        et = g.get('exclude-type')
+        if not et:
+            continue
+        for t in str(et).split('|'):
+            if t not in adapter_types:
+                fail('clash.yaml 分组 %s 的 exclude-type 含 %s，'
+                     '不是 AdapterType 名（应写 Shadowsocks 而非 ss），会静默失效'
+                     % (g.get('name'), t))
+    return len(groups)
+
+
 def check_workflows():
     """GitHub 只在推送后才报 YAML 错误，本地必须先挡住。"""
     paths = sorted(glob.glob(os.path.join(ROOT, '.github', 'workflows', '*.yml'))
@@ -691,6 +760,7 @@ def main():
     check_fakeip(cfg)
     check_realip_parity(cfg)
     nmod = check_modules()
+    nclash = check_clash()
     rules = load_rules()
     check_keywords(rules)
     check_no_block(rules, cfg)
@@ -700,6 +770,8 @@ def main():
           % (ngroups, nrefs, len(rules)))
     if nmod:
         print('自托管模块:   %d 个' % nmod)
+    if nclash:
+        print('Clash:        分组 %d' % nclash)
     if sgroups:
         print('Stash:        分组 %d，规则 %d 条' % (sgroups, srules))
     for w in WARNS:
