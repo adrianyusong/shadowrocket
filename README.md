@@ -1,17 +1,79 @@
 # Shadowrocket 配置
 
-个人的 Shadowrocket 规则、模块与脚本集合。
+个人的代理规则、模块与脚本集合。Shadowrocket / Stash / Clash 三份配置共用一套规则数据。
 
-## 两套配置，共用一份规则
+## 订阅地址
 
-| | Shadowrocket | Stash |
-|---|---|---|
-| 配置 | `config/default.conf` | `config/stash.stoverride` |
-| 规则 | `rule/*.list` | `stash/*.txt` |
-| 生成 | 手写 | `tools/build-stash.py` |
+复制对应客户端的地址即可，无需下载文件。
+
+### Shadowrocket
+
+配置 → 添加配置 → 粘贴地址
+
+```
+https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/config/default.conf
+```
+
+去广告模块（纯 URL 重写，无脚本）——Config → 右上角 + → 粘贴地址：
+
+```
+https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/module/adblock-rewrite.sgmodule
+```
+
+### Stash
+
+覆写文件，需与你的机场订阅一起启用：
+
+```
+https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/config/stash.stoverride
+```
+
+要合并第二个机场，另取这份模板改本地地址（见「合并多个订阅」）：
+
+```
+https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/config/stash-providers.example.stoverride
+```
+
+### Clash for Apple / Clash Verge
+
+完整 mihomo 配置。**订阅地址是占位符，取回后必须替换**（见文件头部说明）：
+
+```
+https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/config/clash.yaml
+```
+
+Clash Verge Rev 另有一份扩展脚本，从节点属性动态重建分组：
+
+```
+https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/clash-verge/script.js
+https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/clash-verge/config.yaml
+```
+
+### 镜像
+
+`raw.githubusercontent.com` 拉不动时把域名段整体替换（有缓存延迟，通常几分钟到一小时）：
+
+```
+https://cdn.jsdelivr.net/gh/adrianyusong/shadowrocket@main/config/default.conf
+```
+
+> 仓库为 Public，不含任何节点凭据——`[Proxy]` 段留空，`proxy-providers` 是占位地址。
+> 你自己的机场订阅地址等同密码，只留在设备上，别写进任何要提交的文件。
+
+## 三份配置，共用一份规则
+
+| | Shadowrocket | Stash | Clash |
+|---|---|---|---|
+| 配置 | `config/default.conf` | `config/stash.stoverride` | `config/clash.yaml` |
+| 形态 | 完整配置 | 覆写（打补丁） | 完整配置 |
+| 规则 | `rule/*.list` | `stash/*.txt` | `stash/*.txt` |
+| 生成 | 手写 | `tools/build-stash.py` | `tools/build-clash.py` |
+| MITM / 重写 | ✅ | ✅ | ❌ mihomo 不支持 |
+| 协议分组 | ❌ | ❌ | ✅ `exclude-type` |
 
 规则数据同源：`tools/sources.txt` → `tools/sync-rules.py` → `rule/*.list`，
-Stash 那套再由 `build-stash.py` 从中派生。改上游只需改一处。
+Stash 那套再由 `build-stash.py` 从中派生，Clash 那份又从 `build-stash.py`
+导入策略组与地区正则。改上游只需改一处，三份不会漂移。
 
 ### Stash 独有的两点
 
@@ -65,14 +127,21 @@ https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/config/stash.st
 
 覆写不会自己生效，要在对应的订阅配置里勾选。
 
-### 为什么覆写里没有 rewrite / mitm / script
+### 为什么覆写里只有一条重写
 
-因为本仓库没有这类内容可放。Shadowrocket 那边的 `[URL Rewrite]` 两条早已删除
-（`g.cn` 走 HTTPS，没有 MITM 根本不触发，是死代码），`[MITM] hostname` 是空的
-——实际域名来自 iRingo 等**模块**，`script/` 目录也一直是空的。
+Shadowrocket 那边现在有内容了：`[URL Rewrite]` 四条（`g.cn` / `google.cn` /
+`ditu|maps.google.cn` → Google，加 iRingo MapKit 三条端点重写）、`[Script]` 三条
+（iRingo News，版本钉死在 v3.2.1）、`[MITM] hostname` 十个域名。
 
-写空段是装饰不是功能，而且 MITM 本身有代价：要装并信任 CA、解密 HTTPS、耗电，
-没内容时开启是净损失。
+Stash 覆写只保留 `g.cn` 系列重写，因为 **iRingo 官方直接发布 `.stoverride`**，
+自带 `rules` + `http.mitm` + `http.script` + `script-providers`，在 Stash 里作为
+独立覆写叠加即可，不需要我们手抄一遍。
+
+`config/clash.yaml` 里这些全都没有 —— mihomo 不支持 MITM。
+
+MITM 本身有代价：要装并信任 CA、解密 HTTPS、耗电。域名列表越小越好，
+`tools/check-config.py` 会核对 `[URL Rewrite]` 与 `[Script]` 涉及的每个域名
+是否都在 `hostname` 列表里，不在就是死代码。
 
 **iRingo 官方直接发布 `.stoverride`**，自带 `rules` + `http.mitm` +
 `http.script` + `script-providers`，在 Stash 里作为独立覆写叠加即可：
@@ -86,6 +155,11 @@ https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/config/stash.st
 | TestFlight | `https://github.com/NSRingo/TestFlight/releases/latest/download/iRingo.TestFlight.stoverride` |
 | News | `https://github.com/NSRingo/News/releases/latest/download/iRingo.News.stoverride` |
 | TV | `https://github.com/NSRingo/TV/releases/latest/download/iRingo.TV.stoverride` |
+
+Shadowrocket 用户取同一 release 下的 `.sgmodule`，例如
+`https://github.com/NSRingo/News/releases/latest/download/iRingo.News.sgmodule`。
+本仓库已把 MapKit 的重写与 News 的脚本内联进 `config/default.conf`，
+装了模块就不必再启用那两项，否则会重复解密同一批域名。
 
 **叠加时的一个注意点**：本覆写的 `rules` 带 `#!replace`，且以 `MATCH` 收尾。
 iRingo 的覆写各自带几条 `REJECT-DROP`（如 `weather-analytics-events.apple.com`），
@@ -144,32 +218,28 @@ proxy-providers:
 | 线路属性 | `🏠 住宅IP` `🛣️ 专线` `🎞️ 流媒体节点` `💴 低倍率` |
 | 地区 | 港 / 台 / 日 / 新 / 美 / 韩 / 英 |
 
-**协议维度做不到**，原因见上方更正。`tools/check-config.py` 现在会拒绝任何
-Stash 未记载的 `proxy-groups` 选项，防止再写出这类静默失效的配置。
+| 协议 | **仅 Clash**：`🔐 VLESS` `⚡ HY2` `🧩 VMESS` `🐴 TROJAN` |
 
-## 订阅
+**协议维度在 Shadowrocket 与 Stash 上做不到**，原因见上方更正。
+`tools/check-config.py` 会拒绝任何 Stash 未记载的 `proxy-groups` 选项，
+防止再写出这类静默失效的配置。
 
-在 Shadowrocket 中：**配置 → 添加配置 → 填入下方地址**
-
-```
-https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/config/default.conf
-```
-
-若 `raw.githubusercontent.com` 拉不动，可换 jsDelivr 镜像（有缓存延迟）：
-
-```
-https://cdn.jsdelivr.net/gh/adrianyusong/shadowrocket@main/config/default.conf
-```
-
-> 仓库为 Public。它不含任何节点凭据——`[Proxy]` 段留空，节点由 App 内订阅提供。
+`config/clash.yaml` 能做，因为 mihomo 真的实现了 `exclude-type`
+（`adapter/outboundgroup/groupbase.go`）。但有个坑：group 层比较的是
+`p.Type().String()`（`Vless` / `Shadowsocks`），不是配置里的 `type:` 值
+（`vless` / `ss`）。`EqualFold` 让 `hysteria2` 能对上 `Hysteria2`，
+但 **`ss` 对不上 `Shadowsocks`** —— 网上抄来的 `exclude-type: "ss|ssr|..."`
+在 group 上排不掉 SS 节点，而且不报错。`check_clash` 会拦这个写法。
 
 ## 目录结构
 
 | 目录 | 内容 |
 |---|---|
-| `config/` | 主配置文件（`.conf`） |
+| `config/` | 三份主配置（`.conf` / `.stoverride` / `.yaml`） |
 | `rule/` | 分流规则集（`.list`），已收编上游 |
 | `module/` | 模块（`.module` / `.sgmodule`） |
+| `stash/` | Stash / Clash 共用的规则集（`.txt`） |
+| `clash-verge/` | Clash Verge Rev 扩展脚本与独立配置 |
 | `script/` | 重写脚本（`.js`） |
 | `tools/` | 维护脚本 |
 
@@ -178,7 +248,7 @@ https://cdn.jsdelivr.net/gh/adrianyusong/shadowrocket@main/config/default.conf
 原先配置直接引用 54 个 blackmatrix7 的远程规则集。每次配置更新就是 54 次网络请求，
 任何一个失败该类规则会**静默消失**，不报错。上游改动也会在你不知情时改变分流。
 
-现在全部收编进 `rule/`，共 34 个文件、12.3 万条规则。
+现在全部收编进 `rule/`，共 35 个文件、15.7 万条规则，再派生出 `stash/` 下 83 个按 behavior 拆分的规则集。
 
 ### 维护
 
@@ -187,11 +257,14 @@ https://cdn.jsdelivr.net/gh/adrianyusong/shadowrocket@main/config/default.conf
 | `tools/sources.txt` | **上游清单，脚本的唯一数据来源**。顺序即优先级 |
 | `tools/exclude.txt` | 上游缺陷黑名单，同步时剔除 |
 | `tools/sync-rules.py` | 拉取、去重、按策略合并 |
+| `tools/sync-modules.py` | 收编上游模块到 `module/` 自托管 |
+| `tools/build-stash.py` | 生成 Stash 覆写与 `stash/*.txt` |
+| `tools/build-clash.py` | 生成完整 mihomo YAML |
 | `tools/check-config.py` | 静态校验，失败退出码非 0 |
 | `.github/workflows/sync.yml` | 每周日自动同步，校验通过才提交 |
 
 ```bash
-python tools/sync-rules.py && python tools/check-config.py
+python tools/sync-rules.py \n  && python tools/sync-modules.py \n  && python tools/build-stash.py \n  && python tools/build-clash.py \n  && python tools/check-config.py
 ```
 
 `sources.txt` 必须独立存在：规则集收编后配置里只剩指向本仓库的 URL，
@@ -203,11 +276,13 @@ python tools/sync-rules.py && python tools/check-config.py
 `HOST-SUFFIX` 归一化为原生 `DOMAIN-SUFFIX`。
 
 `exclude.txt` 记录上游缺陷。收编后上游的错误也进了本仓库，手工删除会在下次同步时
-被搬回，所以必须记在这里。当前豁免三条，每条都有实测依据：
+被搬回，所以必须记在这里。当前豁免五条，每条都有实测依据：
 
 - `DOMAIN-KEYWORD,jav` —— 误伤 `javascript.info`、`javadoc.io`
 - `DOMAIN-SUFFIX,ms` —— `.ms` 是蒙特塞拉特国家域，非中国 gTLD
 - `DOMAIN-SUFFIX,simility.com,reject-ads` —— PayPal 风控引擎，只从广告策略剔除
+- `DOMAIN-SUFFIX,grok.com,twitter` —— Grok 属 X 旗下被 Twitter 集抢走，让 AI 集接管
+- `DOMAIN-SUFFIX,stripe.com,ai` —— OpenAI 用 Stripe 收款，通用支付商不该进 AI 组
 
 ### 广告拦截
 
@@ -342,11 +417,21 @@ stun-response-ipv6 = ::1
 
 ### MITM
 
-`enable = true`。配置本身不含重写脚本，但 iRingo 一类模块需要 MITM，
-且若这里写 false，每次拉取配置都会把 App 内的开关按回去，表现为模块间歇性失效。
+`enable = true`。这里若写 false，每次拉取配置都会把 App 内的开关按回去，
+表现为模块间歇性失效。
 
-`hostname` 留空是对的：模块用 `hostname = %APPEND% xxx` 追加自己的域名，
-启用模块后自动并入全局列表。
+`hostname` 现在有十个域名：`*.g.cn` / `*.google.cn`（跳转重写）、
+`configuration.ls.apple.com` 与 `gspe35-ssl.ls.apple.com`（iRingo MapKit）、
+六个 `news-*.apple.com`（iRingo News）。App 内另装的模块用
+`hostname = %APPEND% xxx` 追加，会并入而非替换本列表。
+
+**列表越小越好**——每多一个域名就多一份明文流量被解密。
+`check-config.py` 会核对 `[URL Rewrite]` 与 `[Script]` 里每个 pattern 涉及的
+域名是否都在 `hostname` 中：不在就是永不触发的死代码，这正是当初
+`g.cn` 那两条重写被删掉的原因。
+
+自托管的 `module/adblock-rewrite.sgmodule` 会再解密 902 个域名。
+做成独立模块而非写进配置，就是为了出问题能一键关掉。
 
 证书需在 App 内生成并**在系统里信任**：
 
