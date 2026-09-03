@@ -74,7 +74,9 @@ ATTRS = [
 # 若机场提供按协议区分的订阅地址，可用 proxy-providers 分别引入再 use: 指向，
 # 那是另一条可行路径。
 
-TEST_URL = 'http://www.gstatic.com/generate_204'
+# 用 https：机场劫持明文 204 测速地址很常见。开了 unified-delay 后 mihomo
+# 会发两次 HEAD，被劫持时第二次超时，好节点反而被判失败踢出候选。
+TEST_URL = 'https://www.gstatic.com/generate_204'
 
 # 策略 -> (rule/ 里的文件名, 是否为拦截类)
 POLICIES = [
@@ -450,6 +452,15 @@ def main():
     A('  # 那个规则集排在更前面，仍会被拦截，不受这两条影响。')
     for d in ['digicert.com', 'digicert-validation.com']:
         A('  - DOMAIN-SUFFIX,%s,🎯 全球直连' % d)
+    A('  # FCM 推送端点走代理。上游 GoogleFCM 集把它们归为 DIRECT，那是境外环境的')
+    A('  # 惯例（长连接过代理更不稳）；但在国内 mtalk.google.com 是通不了的，')
+    A('  # 直连等于完全收不到推送。clash-verge/README.md 记录了设备上的实测结果。')
+    A('  # 注意 sources.txt 里「FCM 走代理收不到推送」那条注释与此相反，已一并更正。')
+    A('  # statsigapi.net 用 REJECT-DROP：主动拒绝会让客户端毫秒级重试，')
+    A('  # 静默丢包让它等超时，与 rmonitor.qq.com 是同一类处理。')
+    for d in ['mtalk.google.com', 'mtalk-dev.google.com', 'mtalk-staging.google.com', 'alt1-mtalk.google.com', 'alt2-mtalk.google.com', 'alt3-mtalk.google.com', 'alt4-mtalk.google.com', 'alt5-mtalk.google.com', 'alt6-mtalk.google.com', 'alt7-mtalk.google.com', 'alt8-mtalk.google.com']:
+        A('  - DOMAIN,%s,📢 谷歌服务' % d)
+    A('  - DOMAIN-SUFFIX,statsigapi.net,REJECT-DROP')
     A('  # 联网检测、局域网设备管理页、NTP 校时必须直连。')
     A('  # 上游规则集把它们归进了微软/代理集，走代理会导致强制门户误判、')
     A('  # 路由器后台打不开、校时失败。内联规则在规则集之前命中。')

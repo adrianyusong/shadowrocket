@@ -23,6 +23,18 @@ keep-alive-interval: 30
 find-process-mode: "off"
 global-client-fingerprint: chrome
 
+# GeoIP 数据库默认从 GitHub raw 拉，17 MB 直连几乎必定超时，
+# 表现是 [GEO] can.t download GeoIP database file: context deadline exceeded，
+# 而且不影响启动——规则静默按旧库匹配。改用 jsDelivr 镜像。
+# 注意 ASN 的文件名是 GeoLite2-ASN.mmdb，写成 asn.mmdb 会 404。
+geo-auto-update: true
+geo-update-interval: 24
+geox-url:
+  geoip: https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat
+  geosite: https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat
+  mmdb: https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb
+  asn: https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/GeoLite2-ASN.mmdb
+
 profile:
   # 记住手动选择的节点，配置更新后不被重置。
   store-selected: true
@@ -144,7 +156,7 @@ proxy-providers:
     interval: 3600
     health-check:
       enable: true
-      url: http://www.gstatic.com/generate_204
+      url: https://www.gstatic.com/generate_204
       interval: 300
 
 proxy-groups:
@@ -177,7 +189,7 @@ proxy-groups:
     type: url-test
     include-all: true
     filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|群组|群組|直连|直連|Expire|Traffic|Reset|Website)).*$"
-    url: http://www.gstatic.com/generate_204
+    url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   # 地区分组：按节点名正则筛。英文缩写用逆序环视包裹，
@@ -186,49 +198,49 @@ proxy-groups:
     type: url-test
     include-all: true
     filter: "(?i)(香港|港岛|深港|沪港|Hong ?Kong|(?<![A-Za-z])(HK|HKG)(?![A-Za-z]))"
-    url: http://www.gstatic.com/generate_204
+    url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🇹🇼 台湾"
     type: url-test
     include-all: true
     filter: "(?i)(台湾|台灣|台北|臺灣|Taiwan|(?<![A-Za-z])(TW|TPE)(?![A-Za-z]))"
-    url: http://www.gstatic.com/generate_204
+    url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🇯🇵 日本"
     type: url-test
     include-all: true
     filter: "(?i)(日本|東京|东京|大阪|名古屋|埼玉|Japan|(?<![A-Za-z])(JP|JPN|NRT|KIX)(?![A-Za-z]))"
-    url: http://www.gstatic.com/generate_204
+    url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🇸🇬 狮城"
     type: url-test
     include-all: true
     filter: "(?i)(新加坡|狮城|獅城|Singapore|(?<![A-Za-z])(SG|SIN)(?![A-Za-z]))"
-    url: http://www.gstatic.com/generate_204
+    url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🇺🇲 美国"
     type: url-test
     include-all: true
     filter: "(?i)(美国|美國|美西|美东|美東|洛杉矶|圣何塞|西雅图|达拉斯|凤凰城|United ?States|(?<![A-Za-z])(US|USA|LAX|SJC)(?![A-Za-z]))"
-    url: http://www.gstatic.com/generate_204
+    url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🇰🇷 韩国"
     type: url-test
     include-all: true
     filter: "(?i)(韩国|韓國|首尔|首爾|Korea|(?<![A-Za-z])(KR|ICN)(?![A-Za-z]))"
-    url: http://www.gstatic.com/generate_204
+    url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🇬🇧 英国"
     type: url-test
     include-all: true
     filter: "(?i)(英国|英國|伦敦|倫敦|London|(?<![A-Za-z])(UK|GB|LHR)(?![A-Za-z]))"
-    url: http://www.gstatic.com/generate_204
+    url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   # 线路属性分组，与地区维度正交。
@@ -236,28 +248,28 @@ proxy-groups:
     type: url-test
     include-all: true
     filter: "(?i)(住宅|家宽|家寬|原生|Residential)"
-    url: http://www.gstatic.com/generate_204
+    url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🛣️ 专线"
     type: url-test
     include-all: true
     filter: "(?i)(专线|專線|IPLC|IEPL)"
-    url: http://www.gstatic.com/generate_204
+    url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🎞️ 流媒体节点"
     type: url-test
     include-all: true
     filter: "(?i)(流媒体|流媒體)"
-    url: http://www.gstatic.com/generate_204
+    url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "💴 低倍率"
     type: url-test
     include-all: true
     filter: "(?i)(?<![0-9.])0\\.[0-9]+ ?x"
-    url: http://www.gstatic.com/generate_204
+    url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   # 协议分组。mihomo 没有 include-type，只能反着排除其余全部类型。
@@ -267,28 +279,28 @@ proxy-groups:
     type: url-test
     include-all: true
     exclude-type: "Shadowsocks|ShadowsocksR|Snell|Socks5|Http|Vmess|Trojan|Hysteria|Hysteria2|WireGuard|Tuic|Ssh|Mieru|AnyTLS"
-    url: http://www.gstatic.com/generate_204
+    url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "⚡ HY2 节点"
     type: url-test
     include-all: true
     exclude-type: "Shadowsocks|ShadowsocksR|Snell|Socks5|Http|Vmess|Vless|Trojan|Hysteria|WireGuard|Tuic|Ssh|Mieru|AnyTLS"
-    url: http://www.gstatic.com/generate_204
+    url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🧩 VMESS 节点"
     type: url-test
     include-all: true
     exclude-type: "Shadowsocks|ShadowsocksR|Snell|Socks5|Http|Vless|Trojan|Hysteria|Hysteria2|WireGuard|Tuic|Ssh|Mieru|AnyTLS"
-    url: http://www.gstatic.com/generate_204
+    url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🐴 TROJAN 节点"
     type: url-test
     include-all: true
     exclude-type: "Shadowsocks|ShadowsocksR|Snell|Socks5|Http|Vmess|Vless|Hysteria|Hysteria2|WireGuard|Tuic|Ssh|Mieru|AnyTLS"
-    url: http://www.gstatic.com/generate_204
+    url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   # 业务分组。候选顺序即默认优先级。
@@ -721,6 +733,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/direct-domain.txt
     path: ./ruleset/direct-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   direct-ipcidr:
     type: http
     behavior: ipcidr
@@ -728,6 +741,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/direct-ipcidr.txt
     path: ./ruleset/direct-ipcidr.txt
     interval: 86400
+    proxy: 🚀 节点选择
   reject-ads-domain:
     type: http
     behavior: domain
@@ -735,6 +749,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/reject-ads-domain.txt
     path: ./ruleset/reject-ads-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   reject-ads-ipcidr:
     type: http
     behavior: ipcidr
@@ -742,6 +757,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/reject-ads-ipcidr.txt
     path: ./ruleset/reject-ads-ipcidr.txt
     interval: 86400
+    proxy: 🚀 节点选择
   reject-ads-classical:
     type: http
     behavior: classical
@@ -749,6 +765,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/reject-ads-classical.txt
     path: ./ruleset/reject-ads-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   reject-privacy-ipcidr:
     type: http
     behavior: ipcidr
@@ -756,6 +773,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/reject-privacy-ipcidr.txt
     path: ./ruleset/reject-privacy-ipcidr.txt
     interval: 86400
+    proxy: 🚀 节点选择
   reject-privacy-classical:
     type: http
     behavior: classical
@@ -763,6 +781,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/reject-privacy-classical.txt
     path: ./ruleset/reject-privacy-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   apple-domain:
     type: http
     behavior: domain
@@ -770,6 +789,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/apple-domain.txt
     path: ./ruleset/apple-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   apple-ipcidr:
     type: http
     behavior: ipcidr
@@ -777,6 +797,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/apple-ipcidr.txt
     path: ./ruleset/apple-ipcidr.txt
     interval: 86400
+    proxy: 🚀 节点选择
   apple-classical:
     type: http
     behavior: classical
@@ -784,6 +805,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/apple-classical.txt
     path: ./ruleset/apple-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   apple-media-domain:
     type: http
     behavior: domain
@@ -791,6 +813,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/apple-media-domain.txt
     path: ./ruleset/apple-media-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   apple-media-classical:
     type: http
     behavior: classical
@@ -798,6 +821,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/apple-media-classical.txt
     path: ./ruleset/apple-media-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   media-cn-domain:
     type: http
     behavior: domain
@@ -805,6 +829,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/media-cn-domain.txt
     path: ./ruleset/media-cn-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   media-cn-ipcidr:
     type: http
     behavior: ipcidr
@@ -812,6 +837,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/media-cn-ipcidr.txt
     path: ./ruleset/media-cn-ipcidr.txt
     interval: 86400
+    proxy: 🚀 节点选择
   media-cn-classical:
     type: http
     behavior: classical
@@ -819,6 +845,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/media-cn-classical.txt
     path: ./ruleset/media-cn-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   youtube-domain:
     type: http
     behavior: domain
@@ -826,6 +853,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/youtube-domain.txt
     path: ./ruleset/youtube-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   youtube-ipcidr:
     type: http
     behavior: ipcidr
@@ -833,6 +861,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/youtube-ipcidr.txt
     path: ./ruleset/youtube-ipcidr.txt
     interval: 86400
+    proxy: 🚀 节点选择
   youtube-classical:
     type: http
     behavior: classical
@@ -840,6 +869,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/youtube-classical.txt
     path: ./ruleset/youtube-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   netflix-domain:
     type: http
     behavior: domain
@@ -847,6 +877,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/netflix-domain.txt
     path: ./ruleset/netflix-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   netflix-ipcidr:
     type: http
     behavior: ipcidr
@@ -854,6 +885,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/netflix-ipcidr.txt
     path: ./ruleset/netflix-ipcidr.txt
     interval: 86400
+    proxy: 🚀 节点选择
   netflix-classical:
     type: http
     behavior: classical
@@ -861,6 +893,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/netflix-classical.txt
     path: ./ruleset/netflix-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   disney-domain:
     type: http
     behavior: domain
@@ -868,6 +901,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/disney-domain.txt
     path: ./ruleset/disney-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   disney-classical:
     type: http
     behavior: classical
@@ -875,6 +909,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/disney-classical.txt
     path: ./ruleset/disney-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   hbo-domain:
     type: http
     behavior: domain
@@ -882,6 +917,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/hbo-domain.txt
     path: ./ruleset/hbo-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   hbo-classical:
     type: http
     behavior: classical
@@ -889,6 +925,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/hbo-classical.txt
     path: ./ruleset/hbo-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   primevideo-domain:
     type: http
     behavior: domain
@@ -896,6 +933,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/primevideo-domain.txt
     path: ./ruleset/primevideo-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   primevideo-classical:
     type: http
     behavior: classical
@@ -903,6 +941,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/primevideo-classical.txt
     path: ./ruleset/primevideo-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   spotify-domain:
     type: http
     behavior: domain
@@ -910,6 +949,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/spotify-domain.txt
     path: ./ruleset/spotify-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   spotify-ipcidr:
     type: http
     behavior: ipcidr
@@ -917,6 +957,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/spotify-ipcidr.txt
     path: ./ruleset/spotify-ipcidr.txt
     interval: 86400
+    proxy: 🚀 节点选择
   spotify-classical:
     type: http
     behavior: classical
@@ -924,6 +965,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/spotify-classical.txt
     path: ./ruleset/spotify-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   bahamut-domain:
     type: http
     behavior: domain
@@ -931,6 +973,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/bahamut-domain.txt
     path: ./ruleset/bahamut-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   bahamut-classical:
     type: http
     behavior: classical
@@ -938,6 +981,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/bahamut-classical.txt
     path: ./ruleset/bahamut-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   abematv-domain:
     type: http
     behavior: domain
@@ -945,6 +989,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/abematv-domain.txt
     path: ./ruleset/abematv-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   abematv-classical:
     type: http
     behavior: classical
@@ -952,6 +997,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/abematv-classical.txt
     path: ./ruleset/abematv-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   twitch-domain:
     type: http
     behavior: domain
@@ -959,6 +1005,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/twitch-domain.txt
     path: ./ruleset/twitch-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   twitch-ipcidr:
     type: http
     behavior: ipcidr
@@ -966,6 +1013,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/twitch-ipcidr.txt
     path: ./ruleset/twitch-ipcidr.txt
     interval: 86400
+    proxy: 🚀 节点选择
   twitch-classical:
     type: http
     behavior: classical
@@ -973,6 +1021,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/twitch-classical.txt
     path: ./ruleset/twitch-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   emby-domain:
     type: http
     behavior: domain
@@ -980,6 +1029,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/emby-domain.txt
     path: ./ruleset/emby-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   emby-classical:
     type: http
     behavior: classical
@@ -987,6 +1037,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/emby-classical.txt
     path: ./ruleset/emby-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   pikpak-domain:
     type: http
     behavior: domain
@@ -994,6 +1045,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/pikpak-domain.txt
     path: ./ruleset/pikpak-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   pikpak-classical:
     type: http
     behavior: classical
@@ -1001,6 +1053,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/pikpak-classical.txt
     path: ./ruleset/pikpak-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   media-global-domain:
     type: http
     behavior: domain
@@ -1008,6 +1061,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/media-global-domain.txt
     path: ./ruleset/media-global-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   media-global-ipcidr:
     type: http
     behavior: ipcidr
@@ -1015,6 +1069,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/media-global-ipcidr.txt
     path: ./ruleset/media-global-ipcidr.txt
     interval: 86400
+    proxy: 🚀 节点选择
   media-global-classical:
     type: http
     behavior: classical
@@ -1022,6 +1077,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/media-global-classical.txt
     path: ./ruleset/media-global-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   ai-domain:
     type: http
     behavior: domain
@@ -1029,6 +1085,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/ai-domain.txt
     path: ./ruleset/ai-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   ai-ipcidr:
     type: http
     behavior: ipcidr
@@ -1036,6 +1093,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/ai-ipcidr.txt
     path: ./ruleset/ai-ipcidr.txt
     interval: 86400
+    proxy: 🚀 节点选择
   ai-classical:
     type: http
     behavior: classical
@@ -1043,6 +1101,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/ai-classical.txt
     path: ./ruleset/ai-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   telegram-domain:
     type: http
     behavior: domain
@@ -1050,6 +1109,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/telegram-domain.txt
     path: ./ruleset/telegram-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   telegram-ipcidr:
     type: http
     behavior: ipcidr
@@ -1057,6 +1117,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/telegram-ipcidr.txt
     path: ./ruleset/telegram-ipcidr.txt
     interval: 86400
+    proxy: 🚀 节点选择
   telegram-classical:
     type: http
     behavior: classical
@@ -1064,6 +1125,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/telegram-classical.txt
     path: ./ruleset/telegram-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   twitter-domain:
     type: http
     behavior: domain
@@ -1071,6 +1133,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/twitter-domain.txt
     path: ./ruleset/twitter-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   twitter-ipcidr:
     type: http
     behavior: ipcidr
@@ -1078,6 +1141,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/twitter-ipcidr.txt
     path: ./ruleset/twitter-ipcidr.txt
     interval: 86400
+    proxy: 🚀 节点选择
   twitter-classical:
     type: http
     behavior: classical
@@ -1085,6 +1149,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/twitter-classical.txt
     path: ./ruleset/twitter-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   meta-domain:
     type: http
     behavior: domain
@@ -1092,6 +1157,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/meta-domain.txt
     path: ./ruleset/meta-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   meta-ipcidr:
     type: http
     behavior: ipcidr
@@ -1099,6 +1165,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/meta-ipcidr.txt
     path: ./ruleset/meta-ipcidr.txt
     interval: 86400
+    proxy: 🚀 节点选择
   meta-classical:
     type: http
     behavior: classical
@@ -1106,6 +1173,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/meta-classical.txt
     path: ./ruleset/meta-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   discord-domain:
     type: http
     behavior: domain
@@ -1113,6 +1181,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/discord-domain.txt
     path: ./ruleset/discord-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   line-domain:
     type: http
     behavior: domain
@@ -1120,6 +1189,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/line-domain.txt
     path: ./ruleset/line-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   line-ipcidr:
     type: http
     behavior: ipcidr
@@ -1127,6 +1197,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/line-ipcidr.txt
     path: ./ruleset/line-ipcidr.txt
     interval: 86400
+    proxy: 🚀 节点选择
   payment-domain:
     type: http
     behavior: domain
@@ -1134,6 +1205,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/payment-domain.txt
     path: ./ruleset/payment-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   payment-classical:
     type: http
     behavior: classical
@@ -1141,6 +1213,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/payment-classical.txt
     path: ./ruleset/payment-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   github-domain:
     type: http
     behavior: domain
@@ -1148,6 +1221,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/github-domain.txt
     path: ./ruleset/github-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   github-classical:
     type: http
     behavior: classical
@@ -1155,6 +1229,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/github-classical.txt
     path: ./ruleset/github-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   bing-domain:
     type: http
     behavior: domain
@@ -1162,6 +1237,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/bing-domain.txt
     path: ./ruleset/bing-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   microsoft-domain:
     type: http
     behavior: domain
@@ -1169,6 +1245,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/microsoft-domain.txt
     path: ./ruleset/microsoft-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   microsoft-classical:
     type: http
     behavior: classical
@@ -1176,6 +1253,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/microsoft-classical.txt
     path: ./ruleset/microsoft-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   google-domain:
     type: http
     behavior: domain
@@ -1183,6 +1261,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/google-domain.txt
     path: ./ruleset/google-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   google-ipcidr:
     type: http
     behavior: ipcidr
@@ -1190,6 +1269,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/google-ipcidr.txt
     path: ./ruleset/google-ipcidr.txt
     interval: 86400
+    proxy: 🚀 节点选择
   google-classical:
     type: http
     behavior: classical
@@ -1197,6 +1277,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/google-classical.txt
     path: ./ruleset/google-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   tiktok-domain:
     type: http
     behavior: domain
@@ -1204,6 +1285,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/tiktok-domain.txt
     path: ./ruleset/tiktok-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   tiktok-classical:
     type: http
     behavior: classical
@@ -1211,6 +1293,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/tiktok-classical.txt
     path: ./ruleset/tiktok-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   direct-global-domain:
     type: http
     behavior: domain
@@ -1218,6 +1301,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/direct-global-domain.txt
     path: ./ruleset/direct-global-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   direct-global-classical:
     type: http
     behavior: classical
@@ -1225,6 +1309,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/direct-global-classical.txt
     path: ./ruleset/direct-global-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   game-domain:
     type: http
     behavior: domain
@@ -1232,6 +1317,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/game-domain.txt
     path: ./ruleset/game-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   game-ipcidr:
     type: http
     behavior: ipcidr
@@ -1239,6 +1325,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/game-ipcidr.txt
     path: ./ruleset/game-ipcidr.txt
     interval: 86400
+    proxy: 🚀 节点选择
   game-classical:
     type: http
     behavior: classical
@@ -1246,6 +1333,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/game-classical.txt
     path: ./ruleset/game-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   china-domain:
     type: http
     behavior: domain
@@ -1253,6 +1341,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/china-domain.txt
     path: ./ruleset/china-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   china-ipcidr:
     type: http
     behavior: ipcidr
@@ -1260,6 +1349,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/china-ipcidr.txt
     path: ./ruleset/china-ipcidr.txt
     interval: 86400
+    proxy: 🚀 节点选择
   china-classical:
     type: http
     behavior: classical
@@ -1267,6 +1357,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/china-classical.txt
     path: ./ruleset/china-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
   ChinaDomains-domain:
     type: http
     behavior: domain
@@ -1274,6 +1365,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/ChinaDomains-domain.txt
     path: ./ruleset/ChinaDomains-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   proxy-domain:
     type: http
     behavior: domain
@@ -1281,6 +1373,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/proxy-domain.txt
     path: ./ruleset/proxy-domain.txt
     interval: 86400
+    proxy: 🚀 节点选择
   proxy-ipcidr:
     type: http
     behavior: ipcidr
@@ -1288,6 +1381,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/proxy-ipcidr.txt
     path: ./ruleset/proxy-ipcidr.txt
     interval: 86400
+    proxy: 🚀 节点选择
   proxy-classical:
     type: http
     behavior: classical
@@ -1295,6 +1389,7 @@ rule-providers:
     url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/proxy-classical.txt
     path: ./ruleset/proxy-classical.txt
     interval: 86400
+    proxy: 🚀 节点选择
 
 rules:
   # 高频埋点用 REJECT-DROP：静默丢包让 App 等超时才重试。
@@ -1321,6 +1416,24 @@ rules:
   # DigiCert 是通用 CA，走代理会给每次 TLS 握手多加一跳。
   - DOMAIN-SUFFIX,digicert.com,🎯 全球直连
   - DOMAIN-SUFFIX,digicert-validation.com,🎯 全球直连
+  # FCM 推送端点走代理。上游 GoogleFCM 集把它们归为 DIRECT，那是境外环境的
+  # 惯例（长连接过代理更不稳）；但在国内 mtalk.google.com 是通不了的，
+  # 直连等于完全收不到推送。clash-verge/README.md 记录了设备上的实测结果。
+  # 注意 sources.txt 里「FCM 走代理收不到推送」那条注释与此相反，已一并更正。
+  # statsigapi.net 用 REJECT-DROP：主动拒绝会让客户端毫秒级重试，
+  # 静默丢包让它等超时，与 rmonitor.qq.com 是同一类处理。
+  - DOMAIN,mtalk.google.com,📢 谷歌服务
+  - DOMAIN,mtalk-dev.google.com,📢 谷歌服务
+  - DOMAIN,mtalk-staging.google.com,📢 谷歌服务
+  - DOMAIN,alt1-mtalk.google.com,📢 谷歌服务
+  - DOMAIN,alt2-mtalk.google.com,📢 谷歌服务
+  - DOMAIN,alt3-mtalk.google.com,📢 谷歌服务
+  - DOMAIN,alt4-mtalk.google.com,📢 谷歌服务
+  - DOMAIN,alt5-mtalk.google.com,📢 谷歌服务
+  - DOMAIN,alt6-mtalk.google.com,📢 谷歌服务
+  - DOMAIN,alt7-mtalk.google.com,📢 谷歌服务
+  - DOMAIN,alt8-mtalk.google.com,📢 谷歌服务
+  - DOMAIN-SUFFIX,statsigapi.net,REJECT-DROP
   # 联网检测、局域网设备、NTP 校时必须直连。
   - DOMAIN-SUFFIX,msftconnecttest.com,🎯 全球直连
   - DOMAIN-SUFFIX,msftncsi.com,🎯 全球直连

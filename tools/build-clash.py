@@ -88,6 +88,18 @@ def main():
     A('find-process-mode: "off"')
     A('global-client-fingerprint: chrome')
     A('')
+    A('# GeoIP 数据库默认从 GitHub raw 拉，17 MB 直连几乎必定超时，')
+    A('# 表现是 [GEO] can.t download GeoIP database file: context deadline exceeded，')
+    A('# 而且不影响启动——规则静默按旧库匹配。改用 jsDelivr 镜像。')
+    A('# 注意 ASN 的文件名是 GeoLite2-ASN.mmdb，写成 asn.mmdb 会 404。')
+    A('geo-auto-update: true')
+    A('geo-update-interval: 24')
+    A('geox-url:')
+    for k, fn in [('geoip', 'geoip.dat'), ('geosite', 'geosite.dat'),
+                  ('mmdb', 'country.mmdb'), ('asn', 'GeoLite2-ASN.mmdb')]:
+        A('  %s: https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/%s'
+          % (k, fn))
+    A('')
     A('profile:')
     A('  # 记住手动选择的节点，配置更新后不被重置。')
     A('  store-selected: true')
@@ -248,6 +260,9 @@ def main():
             A('    url: %s%s' % (BASE, fname))
             A('    path: ./ruleset/%s' % fname)
             A('    interval: 86400')
+            # 直连抓取时 raw.githubusercontent.com 一被污染，RULE-SET 会静默失效，
+            # 流量整批掉到兜底规则且不报错。走代理抓更可靠。
+            A('    proxy: 🚀 节点选择')
     A('')
 
     # ---- rules ----
@@ -269,6 +284,15 @@ def main():
     A('  # DigiCert 是通用 CA，走代理会给每次 TLS 握手多加一跳。')
     for d in ['digicert.com', 'digicert-validation.com']:
         A('  - DOMAIN-SUFFIX,%s,🎯 全球直连' % d)
+    A('  # FCM 推送端点走代理。上游 GoogleFCM 集把它们归为 DIRECT，那是境外环境的')
+    A('  # 惯例（长连接过代理更不稳）；但在国内 mtalk.google.com 是通不了的，')
+    A('  # 直连等于完全收不到推送。clash-verge/README.md 记录了设备上的实测结果。')
+    A('  # 注意 sources.txt 里「FCM 走代理收不到推送」那条注释与此相反，已一并更正。')
+    A('  # statsigapi.net 用 REJECT-DROP：主动拒绝会让客户端毫秒级重试，')
+    A('  # 静默丢包让它等超时，与 rmonitor.qq.com 是同一类处理。')
+    for d in ['mtalk.google.com', 'mtalk-dev.google.com', 'mtalk-staging.google.com', 'alt1-mtalk.google.com', 'alt2-mtalk.google.com', 'alt3-mtalk.google.com', 'alt4-mtalk.google.com', 'alt5-mtalk.google.com', 'alt6-mtalk.google.com', 'alt7-mtalk.google.com', 'alt8-mtalk.google.com']:
+        A('  - DOMAIN,%s,📢 谷歌服务' % d)
+    A('  - DOMAIN-SUFFIX,statsigapi.net,REJECT-DROP')
     A('  # 联网检测、局域网设备、NTP 校时必须直连。')
     for d in ['msftconnecttest.com', 'msftncsi.com', 'ipv6.microsoft.com',
               'router.asus.com', 'linksys.com', 'linksyssmartwifi.com',

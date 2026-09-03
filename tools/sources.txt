@@ -94,7 +94,9 @@ https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shado
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Bing/Bing.list 🔍 BING
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/OneDrive/OneDrive.list Ⓜ️ 微软服务
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Microsoft/Microsoft.list Ⓜ️ 微软服务
-# 必须早于 Google：FCM 走代理收不到推送
+# 必须早于 Google 总集，避免被它吞掉。
+# 策略仍是 DIRECT（境外环境的惯例），但 mtalk.* 那批端点已在两份配置的
+# 内联规则里改走代理——国内直连根本连不上，见 clash-verge/README.md。
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/GoogleFCM/GoogleFCM.list DIRECT
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Google/Google.list 📢 谷歌服务
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/TikTok/TikTok.list 🎶 TIKTOK
