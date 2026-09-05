@@ -10,7 +10,10 @@
 #
 # Clash for Apple 的 Profile 导入后不能在 App 内编辑（详情页只有
 # update / rename / export / remove），所以必须先改好再导入：
-#   1. 在电脑上下载本文件，把 url 换成你自己的订阅地址
+#   1. 在电脑上下载本文件，改两处：
+#      a) proxy-providers.airport.url  -> 你的订阅地址
+#      b) secret                       -> 你自己生成的随机串
+#         生成：python -c "import secrets;print(secrets.token_urlsafe(32))"
 #   2. 存成 *.local.yaml，放进 iCloud Drive 或用 AirDrop 传到手机
 #   3. Clash → Add Profile → 选「配置文件」导入
 # Clash Verge 直接改本地文件即可。
@@ -35,6 +38,39 @@ keep-alive-interval: 30
 # iOS/tvOS 的 NetworkExtension 拿不到进程信息，开了也只是空转。
 find-process-mode: "off"
 global-client-fingerprint: chrome
+
+# ============================================================
+# 外部控制器：让电脑实时读取连接与日志（配合 tools/tail-clash.py）
+#
+# clash.md 的字段表把 external-controller / secret / bind-address
+# 标为 Advanced —— 支持，但官方 best-practice 明确不建议暴露到局域网。
+# 这里是明知代价而为之，以下三条必须看懂再用：
+#
+# 1) secret 为空 = 整个 API 无鉴权。mihomo 的鉴权中间件写作
+#    if secret != "" { r.Use(authentication(secret)) } —— 空值直接不挂载。
+#    下面的占位符必须换掉，换成占位符本身也等于用了一个公开的密码。
+#
+# 2) PUT /configs 一个请求就能替换整份配置（代理、规则、DNS）。
+#    也就是说拿到 API 的人可以把你手机的全部流量导向他自己的服务器，
+#    不需要任何代码执行。这是最坏情况，比读日志严重得多。
+#
+# 3) mihomo 没有针对控制器的来源 IP 白名单 —— lan-allowed-ips 管的是
+#    代理入站，不是控制 API。绑到局域网时唯一的保护就是这个 secret。
+#    绝不要在咖啡厅 / 酒店 / 公司 / 合租的网络上开。
+#
+# 只想本机用（Clash Verge 桌面版）就把地址改回 127.0.0.1:9090。
+# ============================================================
+external-controller: 0.0.0.0:9090
+secret: "CHANGE-ME-generate-a-random-secret"
+external-controller-cors:
+  # 默认不给任何网页来源。tools/tail-clash.py 是 Python 客户端，
+  # 不受 CORS 限制，所以留空即可。
+  allow-origins: []
+  # mihomo 的默认值是 true —— 那会让你访问的任何网站都能用 JS
+  # 在后台驱动这个控制器。这才是现实中的攻击路径。
+  # 要用浏览器面板（metacubexd 等）指向手机 IP 才需要改成 true，
+  # 同时把上面的 allow-origins 填成面板的具体地址，不要用 *。
+  allow-private-network: false
 
 # GeoIP 数据库默认从 GitHub raw 拉，17 MB 直连几乎必定超时，
 # 表现是 [GEO] can.t download GeoIP database file: context deadline exceeded，

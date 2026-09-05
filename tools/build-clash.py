@@ -37,6 +37,11 @@ ALL_TYPES = ['Shadowsocks', 'ShadowsocksR', 'Snell', 'Socks5', 'Http',
              'Vmess', 'Vless', 'Trojan', 'Hysteria', 'Hysteria2',
              'WireGuard', 'Tuic', 'Ssh', 'Mieru', 'AnyTLS']
 
+# 控制器密钥占位符。生成器不能写入真实密钥——仓库是 Public。
+# 不含引号：带引号的占位符会破坏生成的 YAML（已实测踩到）。
+# check-config.py 会在它仍是占位符时告警。
+SECRET_PLACEHOLDER = 'CHANGE-ME-generate-a-random-secret'
+
 # 协议分组。Stash 上做不到（exclude-type 被静默忽略，Hy2 会混进 VLESS 组），
 # mihomo 的 adapter/outboundgroup/groupbase.go:211 实现了它，所以这里能做。
 # 没有 include-type，只能反着排除其余全部类型。
@@ -73,7 +78,10 @@ def main():
     A('#')
     A('# Clash for Apple 的 Profile 导入后不能在 App 内编辑（详情页只有')
     A('# update / rename / export / remove），所以必须先改好再导入：')
-    A('#   1. 在电脑上下载本文件，把 url 换成你自己的订阅地址')
+    A('#   1. 在电脑上下载本文件，改两处：')
+    A('#      a) proxy-providers.airport.url  -> 你的订阅地址')
+    A('#      b) secret                       -> 你自己生成的随机串')
+    A('#         生成：python -c "import secrets;print(secrets.token_urlsafe(32))"')
     A('#   2. 存成 *.local.yaml，放进 iCloud Drive 或用 AirDrop 传到手机')
     A('#   3. Clash → Add Profile → 选「配置文件」导入')
     A('# Clash Verge 直接改本地文件即可。')
@@ -100,6 +108,39 @@ def main():
     A('# iOS/tvOS 的 NetworkExtension 拿不到进程信息，开了也只是空转。')
     A('find-process-mode: "off"')
     A('global-client-fingerprint: chrome')
+    A('')
+    A('# ============================================================')
+    A('# 外部控制器：让电脑实时读取连接与日志（配合 tools/tail-clash.py）')
+    A('#')
+    A('# clash.md 的字段表把 external-controller / secret / bind-address')
+    A('# 标为 Advanced —— 支持，但官方 best-practice 明确不建议暴露到局域网。')
+    A('# 这里是明知代价而为之，以下三条必须看懂再用：')
+    A('#')
+    A('# 1) secret 为空 = 整个 API 无鉴权。mihomo 的鉴权中间件写作')
+    A('#    if secret != "" { r.Use(authentication(secret)) } —— 空值直接不挂载。')
+    A('#    下面的占位符必须换掉，换成占位符本身也等于用了一个公开的密码。')
+    A('#')
+    A('# 2) PUT /configs 一个请求就能替换整份配置（代理、规则、DNS）。')
+    A('#    也就是说拿到 API 的人可以把你手机的全部流量导向他自己的服务器，')
+    A('#    不需要任何代码执行。这是最坏情况，比读日志严重得多。')
+    A('#')
+    A('# 3) mihomo 没有针对控制器的来源 IP 白名单 —— lan-allowed-ips 管的是')
+    A('#    代理入站，不是控制 API。绑到局域网时唯一的保护就是这个 secret。')
+    A('#    绝不要在咖啡厅 / 酒店 / 公司 / 合租的网络上开。')
+    A('#')
+    A('# 只想本机用（Clash Verge 桌面版）就把地址改回 127.0.0.1:9090。')
+    A('# ============================================================')
+    A('external-controller: 0.0.0.0:9090')
+    A('secret: %s' % q(SECRET_PLACEHOLDER))
+    A('external-controller-cors:')
+    A('  # 默认不给任何网页来源。tools/tail-clash.py 是 Python 客户端，')
+    A('  # 不受 CORS 限制，所以留空即可。')
+    A('  allow-origins: []')
+    A('  # mihomo 的默认值是 true —— 那会让你访问的任何网站都能用 JS')
+    A('  # 在后台驱动这个控制器。这才是现实中的攻击路径。')
+    A('  # 要用浏览器面板（metacubexd 等）指向手机 IP 才需要改成 true，')
+    A('  # 同时把上面的 allow-origins 填成面板的具体地址，不要用 *。')
+    A('  allow-private-network: false')
     A('')
     A('# GeoIP 数据库默认从 GitHub raw 拉，17 MB 直连几乎必定超时，')
     A('# 表现是 [GEO] can.t download GeoIP database file: context deadline exceeded，')

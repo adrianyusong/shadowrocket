@@ -578,6 +578,8 @@ def check_clash():
         fail('config/clash.yaml 不是合法 YAML: %s' % e)
         return 0
 
+    check_controller(d)
+
     groups = d.get('proxy-groups') or []
     names = [g.get('name') for g in groups]
     dup = {x for x in names if names.count(x) > 1}
@@ -622,6 +624,47 @@ def check_clash():
                      '不是 AdapterType 名（应写 Shadowsocks 而非 ss），会静默失效'
                      % (g.get('name'), t))
     return len(groups)
+
+
+def check_controller(d):
+    """外部控制器的危险配置必须拦下来。
+
+    mihomo 的鉴权中间件写作 if secret != "" { r.Use(authentication(secret)) }
+    —— secret 为空就完全不挂载鉴权，API 对局域网全开。而 PUT /configs
+    一个请求即可替换整份配置，等于把设备全部流量导向任意服务器，
+    不需要代码执行。所以「开了控制器但没有 secret」是本仓库最危险的
+    一种配置，判 FAIL 而不是 WARN。
+
+    CORS 同理：mihomo 默认 allow-origins ["*"] + allow-private-network true，
+    配上空 secret 后，设备访问的任何网站都能用 JS 在后台驱动控制器。
+    """
+    ec = d.get('external-controller')
+    if not ec:
+        return
+    secret = d.get('secret')
+    if not secret or not str(secret).strip():
+        fail('clash.yaml 开了 external-controller 但 secret 为空，'
+             'mihomo 会完全不挂载鉴权，API 对局域网全开')
+    elif str(secret).startswith('CHANGE-ME'):
+        warn('clash.yaml 的 secret 仍是占位符，导入前必须换成随机串'
+             '（python -c "import secrets;print(secrets.token_urlsafe(32))"）')
+    elif len(str(secret)) < 24:
+        fail('clash.yaml 的 secret 只有 %d 字符，太短。控制器绑在局域网时'
+             '它是唯一的保护' % len(str(secret)))
+
+    cors = d.get('external-controller-cors') or {}
+    origins = cors.get('allow-origins')
+    if isinstance(origins, list) and '*' in origins:
+        fail('clash.yaml 的 external-controller-cors.allow-origins 含 *，'
+             '任何网页都能跨域驱动控制器')
+    if cors.get('allow-private-network') is True:
+        warn('clash.yaml 的 allow-private-network 为 true —— '
+             '设备访问的任何网站都能用 JS 触达这个控制器。'
+             '只有要用浏览器面板时才需要，且应同时收紧 allow-origins')
+    if str(ec).startswith('0.0.0.0') or str(ec).startswith('[::]'):
+        warn('clash.yaml 的 external-controller 绑在 %s（局域网可达）。'
+             'mihomo 没有针对控制器的来源 IP 白名单，'
+             '只在可信网络下使用' % ec)
 
 
 def check_workflows():
