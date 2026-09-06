@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/proxy.list 生成，请勿手改。
-# behavior: domain   条数: 30990
+# behavior: domain   条数: 30999
 +.a2z.com
 +.aboutamazon.cn
 +.aboutamazon.co.uk
@@ -3763,6 +3763,7 @@ login.microsoftonline.com
 +.blackandstacked.com
 +.blackburn.ac.uk
 +.blackcountryandmarchesiot.ac.uk
++.blackedraw.com
 +.blackhomeporn.com
 +.blackmonsterterror.com
 +.blackpool-acl.ac.uk
@@ -6110,7 +6111,6 @@ login.microsoftonline.com
 +.ctan.org
 +.ctc.ac.uk
 +.ctcrm.ac.uk
-+.ctee.com.tw
 +.ctfassets.net
 +.ctg.ac.uk
 +.ctk.ac.uk
@@ -9141,6 +9141,8 @@ login.microsoftonline.com
 +.gastrointestinalexam.com
 +.gate.ac.uk
 +.gate.cc
++.gate.tv
++.gateapi.io
 +.gatedata.org
 +.gateimg.com
 +.gateio.live
@@ -14054,6 +14056,7 @@ login.microsoftonline.com
 +.milftube.pro
 +.milftugs.com
 +.milfvr.com
++.milfy.com
 +.milfzr.com
 +.miliav.com
 +.milkmanbook.com
@@ -15434,7 +15437,6 @@ login.microsoftonline.com
 +.nicolepeters.com
 +.nicomanga.jp
 +.niconico.com
-+.nicoseiga.jp
 +.niees.ac.uk
 +.niesr.ac.uk
 +.night.livedoor.biz
@@ -19558,6 +19560,7 @@ login.microsoftonline.com
 +.slashdot.org
 +.slavbank.ru
 +.slavicstar.com
++.slayed.com
 +.slc.ac.uk
 +.slc.tl
 +.slcollege.ac.uk
@@ -21421,6 +21424,7 @@ login.microsoftonline.com
 +.turkeyblocks.org
 +.tusco.ru
 +.tushy.com
++.tushyraw.com
 +.tuta.com
 +.tuta.io
 +.tutamail.com
@@ -22333,6 +22337,7 @@ login.microsoftonline.com
 +.vitukali.com
 +.vivaxnxx.com
 +.vixen.com
++.vixengroup.com
 +.vixvids.to
 +.viznet.ac.uk
 +.vk-apps.com
@@ -25639,6 +25644,7 @@ login.microsoftonline.com
 +.csw.org.uk
 +.ct.org.tw
 +.ctao.org
++.ctee.com.tw
 +.ctfriend.net
 +.ctinets.com
 +.ctinews.com
@@ -26565,6 +26571,7 @@ login.microsoftonline.com
 +.getjetso.com
 +.getlantern.org
 +.getmalus.com
++.getmonero.org
 +.getpricetag.com
 +.getsession.org
 +.getsocialscope.com
@@ -27664,6 +27671,7 @@ login.microsoftonline.com
 +.linpie.com
 +.linux.do
 +.linux.org.hk
++.linux.sb
 +.linuxtoy.org
 +.lionsroar.com
 +.lipuman.com
@@ -28258,6 +28266,7 @@ login.microsoftonline.com
 +.nianticlabs.com
 +.nic.google
 +.nic.gov
++.nicoseiga.jp
 +.nicovideo.jp
 +.nighost.org
 +.nightlife141.com

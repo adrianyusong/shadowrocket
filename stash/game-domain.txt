@@ -584,16 +584,13 @@ gog.salesmanago.com
 +.lpl.com.cn
 +.molesports.com
 +.playvalorant.com
-+.pvp.net
 +.pvp.tv
 +.rgpub.io
 +.riot-games.com
 +.riot.com
 +.riot.net
-+.riotcdn.net
 +.riotforgegames.com
 +.riotgames.co.kr
-+.riotgames.com
 +.riotgames.info
 +.riotgames.jp
 +.riotgames.net
@@ -618,3 +615,6 @@ gog.salesmanago.com
 +.ubisoft-uplay-savegames.s3.amazonaws.com
 +.ubisoft.com
 +.uplay.com
++.pvp.net
++.riotcdn.net
++.riotgames.com
