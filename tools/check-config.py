@@ -611,9 +611,19 @@ def check_clash():
             fail('clash.yaml 规则指向了不存在的策略: %s' % tgt)
 
     # exclude-type 必须用 AdapterType 名。小写的 ss / vless 之类会静默失效。
-    adapter_types = {'Shadowsocks', 'ShadowsocksR', 'Snell', 'Socks5', 'Http',
-                     'Vmess', 'Vless', 'Trojan', 'Hysteria', 'Hysteria2',
-                     'WireGuard', 'Tuic', 'Ssh', 'Mieru', 'AnyTLS'}
+    #
+    # 直接从 build-clash.py 读 ALL_TYPES，不再在这里维护第二份拷贝——
+    # 这份拷贝曾经就是漂移源：build-clash.py 补了 8 个新协议后，
+    # 这里还是旧的 15 个，于是把合法的 Masque / Tailscale 判成非法。
+    # 上游新增协议由 tools/sync-modules.py 的 check_type_drift 负责发现。
+    src = io.open(os.path.join(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))), 'tools', 'build-clash.py'),
+        encoding='utf-8').read()
+    m = re.search(r'ALL_TYPES = \[(.*?)\]', src, re.S)
+    if not m:
+        fail('build-clash.py 里找不到 ALL_TYPES，exclude-type 无法校验')
+        return len(groups)
+    adapter_types = set(re.findall(r"'([A-Za-z0-9]+)'", m.group(1)))
     for g in groups:
         et = g.get('exclude-type')
         if not et:

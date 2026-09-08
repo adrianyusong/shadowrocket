@@ -33,9 +33,17 @@ TEST_URL = bs.TEST_URL
 # 不是配置里的 type: 值。EqualFold 让 hysteria2/Hysteria2 能对上，
 # 但 ss ≠ Shadowsocks、ssr ≠ ShadowsocksR——照抄网上的 "ss|ssr|..."
 # 在 group 上排不掉 SS 节点。这里一律用 AdapterType 名。
+# 漏掉任何一个类型，它就会漏进**全部**协议分组——因为分组是靠
+# 「排除其余所有类型」实现的，而且同样不报错。
+# 首次写这份清单时一口气漏了 8 个（Sudoku / Masque / TrustTunnel /
+# ShadowQuic / OpenVPN / Tailscale / ZeroTier / GostRelay），是 Shadowrocket
+# 2.2.92 加入 Sudoku 才暴露出来的。tools/sync-modules.py 现在会拉
+# mihomo 源码比对，漏了就让同步失败。
 ALL_TYPES = ['Shadowsocks', 'ShadowsocksR', 'Snell', 'Socks5', 'Http',
              'Vmess', 'Vless', 'Trojan', 'Hysteria', 'Hysteria2',
-             'WireGuard', 'Tuic', 'Ssh', 'Mieru', 'AnyTLS']
+             'WireGuard', 'Tuic', 'Ssh', 'Mieru', 'AnyTLS', 'Sudoku',
+             'Masque', 'TrustTunnel', 'ShadowQuic', 'OpenVPN',
+             'Tailscale', 'ZeroTier', 'GostRelay']
 
 # 控制器密钥占位符。生成器不能写入真实密钥——仓库是 Public。
 # 不含引号：带引号的占位符会破坏生成的 YAML（已实测踩到）。

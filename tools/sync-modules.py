@@ -41,6 +41,69 @@ def fetch(url):
         return r.read().decode('utf-8', 'replace')
 
 
+# mihomo 的协议类型来源。协议分组靠「排除其余全部类型」实现，
+# ALL_TYPES 少一个，那个协议就会漏进全部四个分组——与最初
+# 「VLESS 组里混着 Hy2」是同一种失效，且同样不报错。
+ADAPTERS_URL = ('https://raw.githubusercontent.com/MetaCubeX/mihomo'
+                '/Alpha/constant/adapters.go')
+
+# 路由/控制类出站，不是节点协议，不参与协议分组。
+NON_PROXY_TYPES = {'Direct', 'Reject', 'RejectDrop', 'Compatible', 'Pass',
+                   'PassRule', 'Rematch', 'Dns', 'Unknown'}
+
+# 代理组类型，不是节点协议——它们也在同一个常量块里。
+GROUP_TYPES = {'Relay', 'Selector', 'Fallback', 'URLTest', 'LoadBalance'}
+
+
+def check_type_drift():
+    """比对 build-clash.py 的 ALL_TYPES 与 mihomo 当前的节点协议清单。
+
+    解析 constant/adapters.go 的 AdapterType 常量块，而不是 String() 方法——
+    常量块按空行分成三段：控制类出站、代理组类型、节点协议。只有第三段
+    参与协议分组。用 String() 会把 Selector / URLTest 这些组类型也算进来。
+
+    Shadowrocket 2.2.92（2026-09-07）加入 Sudoku 时暴露了这个缺口：
+    当时清单一口气漏了 8 个协议，每一个都会漏进全部四个协议分组。
+    抓不到上游返回 0（不因网络问题让同步失败），清单有出入返回 1。
+    """
+    try:
+        body = fetch(ADAPTERS_URL)
+    except Exception as e:                           # noqa: BLE001
+        print('协议类型比对跳过（抓取失败 %s）' % e)
+        return 0
+
+    m = re.search('Direct AdapterType = iota(.*?)' + chr(10) + r'\)',
+                  body, re.S)
+    if not m:
+        print('协议类型比对跳过：未找到 AdapterType 常量块')
+        return 0
+    names = [x.strip() for x in m.group(1).split(chr(10)) if x.strip()]
+    upstream = set(names) - NON_PROXY_TYPES - GROUP_TYPES
+    if not upstream:
+        print('协议类型比对跳过：解析结果为空')
+        return 0
+
+    src = io.open(os.path.join(ROOT, 'tools', 'build-clash.py'),
+                  encoding='utf-8').read()
+    m2 = re.search(r'ALL_TYPES = \[(.*?)\]', src, re.S)
+    if not m2:
+        print('协议类型比对失败：build-clash.py 里找不到 ALL_TYPES')
+        return 1
+    ours = set(re.findall(r"'([A-Za-z0-9]+)'", m2.group(1)))
+
+    missing = sorted(upstream - ours)
+    extra = sorted(ours - upstream)
+    if missing:
+        print('ALL_TYPES 缺少 mihomo 已有的协议: %s' % '、'.join(missing))
+        print('  它们会漏进全部协议分组。补进 tools/build-clash.py 的 ALL_TYPES。')
+    if extra:
+        print('ALL_TYPES 含 mihomo 已无的协议: %s（无害，建议清理）'
+              % '、'.join(extra))
+    if not missing and not extra:
+        print('协议类型比对：与 mihomo 一致（%d 种节点协议）' % len(upstream))
+    return 1 if missing else 0
+
+
 def main():
     if not os.path.isdir(OUTDIR):
         os.makedirs(OUTDIR)
@@ -93,6 +156,7 @@ def main():
             fh.write(chr(10).join(out) + chr(10) + keep)
         print('module/%s.sgmodule  重写 %d 条 / 解密域名 %d 个'
               % (s['name'], len(rules), len(hosts)))
+    failed |= check_type_drift()
     return failed
 
 
