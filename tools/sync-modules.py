@@ -44,8 +44,13 @@ def fetch(url):
 # mihomo 的协议类型来源。协议分组靠「排除其余全部类型」实现，
 # ALL_TYPES 少一个，那个协议就会漏进全部四个分组——与最初
 # 「VLESS 组里混着 Hy2」是同一种失效，且同样不报错。
+#
+# 锁定到 Clash for Apple（Hako 核心）实际用的 mihomo 版本，不是 Alpha。
+# Alpha 是开发主线，新协议不断进（例如 EasyTier），拿它做基准会让每周同步
+# 因为一个用户客户端还不支持的协议而反复失败。基准必须与用户设备一致。
+MIHOMO_REF = 'v1.19.30'
 ADAPTERS_URL = ('https://raw.githubusercontent.com/MetaCubeX/mihomo'
-                '/Alpha/constant/adapters.go')
+                '/%s/constant/adapters.go' % MIHOMO_REF)
 
 # 路由/控制类出站，不是节点协议，不参与协议分组。
 NON_PROXY_TYPES = {'Direct', 'Reject', 'RejectDrop', 'Compatible', 'Pass',
@@ -53,6 +58,22 @@ NON_PROXY_TYPES = {'Direct', 'Reject', 'RejectDrop', 'Compatible', 'Pass',
 
 # 代理组类型，不是节点协议——它们也在同一个常量块里。
 GROUP_TYPES = {'Relay', 'Selector', 'Fallback', 'URLTest', 'LoadBalance'}
+
+
+def _warn_summary(msg):
+    """告警但不失败：打到 stderr，并在 CI 里追加到步骤摘要。
+
+    协议漂移不阻断同步，但也不能悄无声息 —— 摘要会显示在 Actions 运行页，
+    本地则打到 stderr。
+    """
+    sys.stderr.write('[协议漂移] ' + msg + chr(10))
+    summary = os.environ.get('GITHUB_STEP_SUMMARY')
+    if summary:
+        try:
+            with io.open(summary, 'a', encoding='utf-8') as fh:
+                fh.write('⚠️ ' + msg + chr(10) + chr(10))
+        except OSError:
+            pass
 
 
 def check_type_drift():
@@ -64,7 +85,11 @@ def check_type_drift():
 
     Shadowrocket 2.2.92（2026-09-07）加入 Sudoku 时暴露了这个缺口：
     当时清单一口气漏了 8 个协议，每一个都会漏进全部四个协议分组。
-    抓不到上游返回 0（不因网络问题让同步失败），清单有出入返回 1。
+
+    返回值一律为 0（本函数不阻断同步）。理由：漏一个协议是 clash.yaml 的
+    前向兼容缺口，只在机场真的提供该协议时才有实际影响；而每周同步的主要
+    目的是刷新广告规则，不该因为一个基准版本尚未包含的新协议就整批卡住。
+    有出入时把结论打到 GITHUB_STEP_SUMMARY 与 stderr，靠邮件/摘要提醒即可。
     """
     try:
         body = fetch(ADAPTERS_URL)
@@ -87,21 +112,23 @@ def check_type_drift():
                   encoding='utf-8').read()
     m2 = re.search(r'ALL_TYPES = \[(.*?)\]', src, re.S)
     if not m2:
-        print('协议类型比对失败：build-clash.py 里找不到 ALL_TYPES')
-        return 1
+        _warn_summary('协议类型比对失败：build-clash.py 里找不到 ALL_TYPES')
+        return 0
     ours = set(re.findall(r"'([A-Za-z0-9]+)'", m2.group(1)))
 
     missing = sorted(upstream - ours)
     extra = sorted(ours - upstream)
     if missing:
-        print('ALL_TYPES 缺少 mihomo 已有的协议: %s' % '、'.join(missing))
-        print('  它们会漏进全部协议分组。补进 tools/build-clash.py 的 ALL_TYPES。')
+        _warn_summary('ALL_TYPES 缺少 mihomo %s 的协议: %s —— '
+                      '它们会漏进全部协议分组，补进 tools/build-clash.py 的 ALL_TYPES'
+                      % (MIHOMO_REF, '、'.join(missing)))
     if extra:
-        print('ALL_TYPES 含 mihomo 已无的协议: %s（无害，建议清理）'
-              % '、'.join(extra))
+        _warn_summary('ALL_TYPES 含 mihomo %s 已无的协议: %s（无害，建议清理）'
+                      % (MIHOMO_REF, '、'.join(extra)))
     if not missing and not extra:
-        print('协议类型比对：与 mihomo 一致（%d 种节点协议）' % len(upstream))
-    return 1 if missing else 0
+        print('协议类型比对：与 mihomo %s 一致（%d 种节点协议）'
+              % (MIHOMO_REF, len(upstream)))
+    return 0
 
 
 def main():
