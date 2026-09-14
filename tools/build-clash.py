@@ -43,7 +43,7 @@ ALL_TYPES = ['Shadowsocks', 'ShadowsocksR', 'Snell', 'Socks5', 'Http',
              'Vmess', 'Vless', 'Trojan', 'Hysteria', 'Hysteria2',
              'WireGuard', 'Tuic', 'Ssh', 'Mieru', 'AnyTLS', 'Sudoku',
              'Masque', 'TrustTunnel', 'ShadowQuic', 'OpenVPN',
-             'Tailscale', 'ZeroTier', 'GostRelay']
+             'Tailscale', 'ZeroTier', 'EasyTier', 'GostRelay']
 
 # 控制器密钥占位符。生成器不能写入真实密钥——仓库是 Public。
 # 不含引号：带引号的占位符会破坏生成的 YAML（已实测踩到）。
