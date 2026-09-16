@@ -35,3 +35,11 @@ DOMAIN-SUFFIX,grok.com,twitter
 # 走机房 IP 正是支付风控最敏感的特征。改由 Stripe 规则集归入支付组
 # （该组默认 DIRECT，用本地真实 IP 结账）。
 DOMAIN-SUFFIX,stripe.com,ai
+
+# 微信 HTTPDNS（MMTLS 解析器），被 anti-AD 误判为广告。它负责解析小程序
+# 的 servicewechat.com 等域名——被拦后小程序拿不到地址就打不开。
+# 2026-09-16 连接日志实证：dns.weixin.qq.com.cn 与其硬编码回落 IP
+# 101.124.19.122 全被 REJECT，整份日志无一条 servicewechat.com，
+# 即小程序根本没走到拉代码包那步。两条都从广告策略剔除。
+DOMAIN-SUFFIX,dns.weixin.qq.com.cn,reject-ads
+IP-CIDR,101.124.19.122/32,reject-ads

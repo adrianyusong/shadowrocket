@@ -1,8 +1,7 @@
 # 由 tools/build-stash.py 从 rule/reject-ads.list 生成，请勿手改。
-# behavior: ipcidr   条数: 191
+# behavior: ipcidr   条数: 190
 1.3.0.10/32
 10.72.25.0/24
-101.124.19.122/32
 101.201.29.182/32
 101.227.200.11/32
 101.227.200.28/32
