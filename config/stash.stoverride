@@ -1108,13 +1108,18 @@ rules: #!replace
   - DOMAIN-SUFFIX,linkedin-ei.com,🚀 节点选择
   - DOMAIN-SUFFIX,linkedin.cn,🚀 节点选择
   - DOMAIN-SUFFIX,licdn.cn,🚀 节点选择
-  # 境外 AI 服务，上游规则集未覆盖。
+  # 境外 AI 服务，上游规则集未覆盖。meta.ai / ai.meta.com / llama.meta.com
+  # 原本落到 META 或节点选择，muse.ai 无命中，一并归入 AI 组。
   - DOMAIN-SUFFIX,poe.com,🤖 AI 服务
   - DOMAIN-SUFFIX,huggingface.co,🤖 AI 服务
   - DOMAIN-SUFFIX,hf.co,🤖 AI 服务
   - DOMAIN-SUFFIX,cursor.sh,🤖 AI 服务
   - DOMAIN-SUFFIX,cursor.com,🤖 AI 服务
   - DOMAIN-SUFFIX,midjourney.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,meta.ai,🤖 AI 服务
+  - DOMAIN-SUFFIX,ai.meta.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,llama.meta.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,muse.ai,🤖 AI 服务
   # DigiCert 是通用 CA，不只 Apple 在用。上游 AppleProxy 收录了 digicert.com，
   # proxy 集又收录了 digicert-validation.com——大量网站的 OCSP / CRL 校验会
   # 跟着走代理，给每次 TLS 握手多加一跳。改直连。

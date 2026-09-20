@@ -441,9 +441,11 @@ def main():
     A('  # 不显式指定就会被后面的 GEOIP,CN 判成国内服务走直连。')
     for d in ['linkedin.com', 'licdn.com', 'linkedin-ei.com', 'linkedin.cn', 'licdn.cn']:
         A('  - DOMAIN-SUFFIX,%s,🚀 节点选择' % d)
-    A('  # 境外 AI 服务，上游规则集未覆盖。')
+    A('  # 境外 AI 服务，上游规则集未覆盖。meta.ai / ai.meta.com / llama.meta.com')
+    A('  # 原本落到 META 或节点选择，muse.ai 无命中，一并归入 AI 组。')
     for d in ['poe.com', 'huggingface.co', 'hf.co', 'cursor.sh', 'cursor.com',
-              'midjourney.com']:
+              'midjourney.com', 'meta.ai', 'ai.meta.com', 'llama.meta.com',
+              'muse.ai']:
         A('  - DOMAIN-SUFFIX,%s,🤖 AI 服务' % d)
     A('  # DigiCert 是通用 CA，不只 Apple 在用。上游 AppleProxy 收录了 digicert.com，')
     A('  # proxy 集又收录了 digicert-validation.com——大量网站的 OCSP / CRL 校验会')

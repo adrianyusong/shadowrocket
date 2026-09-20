@@ -341,7 +341,8 @@ def main():
               'licdn.cn']:
         A('  - DOMAIN-SUFFIX,%s,🚀 节点选择' % d)
     for d in ['poe.com', 'huggingface.co', 'hf.co', 'cursor.sh', 'cursor.com',
-              'midjourney.com']:
+              'midjourney.com', 'meta.ai', 'ai.meta.com', 'llama.meta.com',
+              'muse.ai']:
         A('  - DOMAIN-SUFFIX,%s,🤖 AI 服务' % d)
     A('  # DigiCert 是通用 CA，走代理会给每次 TLS 握手多加一跳。')
     for d in ['digicert.com', 'digicert-validation.com']:

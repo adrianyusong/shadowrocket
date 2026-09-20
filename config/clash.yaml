@@ -1462,6 +1462,10 @@ rules:
   - DOMAIN-SUFFIX,cursor.sh,🤖 AI 服务
   - DOMAIN-SUFFIX,cursor.com,🤖 AI 服务
   - DOMAIN-SUFFIX,midjourney.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,meta.ai,🤖 AI 服务
+  - DOMAIN-SUFFIX,ai.meta.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,llama.meta.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,muse.ai,🤖 AI 服务
   # DigiCert 是通用 CA，走代理会给每次 TLS 握手多加一跳。
   - DOMAIN-SUFFIX,digicert.com,🎯 全球直连
   - DOMAIN-SUFFIX,digicert-validation.com,🎯 全球直连
