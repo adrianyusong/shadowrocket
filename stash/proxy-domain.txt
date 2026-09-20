@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/proxy.list 生成，请勿手改。
-# behavior: domain   条数: 31009
+# behavior: domain   条数: 31013
 +.a2z.com
 +.aboutamazon.cn
 +.aboutamazon.co.uk
@@ -504,6 +504,7 @@ openaiassets.blob.core.windows.net
 openaicom.imgix.net
 opgg-static.akamaized.net
 osu.ppy.sh
+p16-tiktok-dm-sticker-sign-sg.ibyteimg.com
 packages.microsoft.com
 paper-attachments.s3.amazonaws.com
 payments-jp.amazon.com
@@ -20232,6 +20233,9 @@ login.microsoftonline.com
 +.stripe-terminal-local-reader.net
 +.stripe.ac.uk
 +.stripe.com
++.stripe.dev
++.stripe.events
++.stripe.global
 +.stripe.network
 +.stripecdn.com
 +.stripparadise.com

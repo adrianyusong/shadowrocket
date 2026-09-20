@@ -2,7 +2,7 @@
 # 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
 # 需要增补规则请写进 config/default.conf 的内联规则段。
 # 上游: blackmatrix7/ios_rule_script
-# 规则数: 98
+# 规则数: 101
 
 DOMAIN-SUFFIX,chat.com
 DOMAIN-SUFFIX,chatgpt.com
@@ -17,6 +17,9 @@ DOMAIN,o33249.ingest.sentry.io
 DOMAIN,openaiapi-site.azureedge.net
 DOMAIN-KEYWORD,openaiapi
 DOMAIN-KEYWORD,openaicom
+DOMAIN-WILDCARD,*mask*.apple-dns.net
+DOMAIN-WILDCARD,*mask*.icloud.com
+DOMAIN-WILDCARD,*siri*.apple.com
 DOMAIN-SUFFIX,smoot.apple.com
 DOMAIN,apple-relay.apple.com
 DOMAIN,apple-relay.cloudflare.com

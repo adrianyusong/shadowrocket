@@ -2,7 +2,7 @@
 # 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
 # 需要增补规则请写进 config/default.conf 的内联规则段。
 # 上游: blackmatrix7/ios_rule_script
-# 规则数: 16342
+# 规则数: 16337
 
 DOMAIN,netease.ugcvideoss.ourdvs.com
 DOMAIN-SUFFIX,163yun.com
@@ -7605,14 +7605,12 @@ IP-CIDR,154.19.85.0/24,no-resolve
 IP-CIDR,154.19.86.0/23,no-resolve
 IP-CIDR,154.19.88.0/21,no-resolve
 IP-CIDR,154.19.96.0/19,no-resolve
-IP-CIDR,154.197.128.0/17,no-resolve
 IP-CIDR,154.209.251.0/24,no-resolve
 IP-CIDR,154.36.92.0/23,no-resolve
 IP-CIDR,154.72.44.0/24,no-resolve
 IP-CIDR,154.72.47.0/24,no-resolve
 IP-CIDR,154.8.128.0/17,no-resolve
 IP-CIDR,154.8.48.0/20,no-resolve
-IP-CIDR,154.84.180.0/24,no-resolve
 IP-CIDR,154.89.32.0/20,no-resolve
 IP-CIDR,155.102.0.0/16,no-resolve
 IP-CIDR,155.126.176.0/23,no-resolve
@@ -7637,10 +7635,10 @@ IP-CIDR,156.109.34.0/31,no-resolve
 IP-CIDR,156.109.34.3/32,no-resolve
 IP-CIDR,156.109.34.4/30,no-resolve
 IP-CIDR,156.154.62.0/23,no-resolve
-IP-CIDR,156.224.128.0/17,no-resolve
 IP-CIDR,156.227.239.0/24,no-resolve
 IP-CIDR,156.232.10.0/23,no-resolve
 IP-CIDR,156.232.9.0/24,no-resolve
+IP-CIDR,156.239.237.0/24,no-resolve
 IP-CIDR,156.251.144.0/20,no-resolve
 IP-CIDR,156.251.161.0/24,no-resolve
 IP-CIDR,156.251.162.0/23,no-resolve
@@ -13746,7 +13744,7 @@ IP-CIDR,2610:a1:3078::/46,no-resolve
 IP-CIDR,2620:171:32::/48,no-resolve
 IP-CIDR,2620:171:5a:f0::/64,no-resolve
 IP-CIDR,2620:171:fb::/48,no-resolve
-IP-CIDR,2620:57:4004::/48,no-resolve
+IP-CIDR,2620:57:4004::/47,no-resolve
 IP-CIDR,27.0.128.0/21,no-resolve
 IP-CIDR,27.0.160.0/21,no-resolve
 IP-CIDR,27.0.188.0/22,no-resolve
@@ -15255,9 +15253,7 @@ IP-CIDR,2c0f:f7a8:805f::/48,no-resolve
 IP-CIDR,2c0f:f7a8:8150::/48,no-resolve
 IP-CIDR,2c0f:f7a8:815f::/48,no-resolve
 IP-CIDR,2c0f:f7a8:8211::/48,no-resolve
-IP-CIDR,2c0f:f7a8:9020::/48,no-resolve
 IP-CIDR,2c0f:f7a8:9041::/48,no-resolve
-IP-CIDR,2c0f:f7a8:9220::/48,no-resolve
 IP-CIDR,3.2.35.128/26,no-resolve
 IP-CIDR,3.5.214.0/23,no-resolve
 IP-CIDR,31.130.224.0/20,no-resolve
@@ -15322,8 +15318,7 @@ IP-CIDR,38.181.40.0/21,no-resolve
 IP-CIDR,38.181.48.0/20,no-resolve
 IP-CIDR,38.196.176.0/24,no-resolve
 IP-CIDR,38.226.199.0/24,no-resolve
-IP-CIDR,38.247.24.0/23,no-resolve
-IP-CIDR,38.247.27.0/24,no-resolve
+IP-CIDR,38.247.24.0/22,no-resolve
 IP-CIDR,38.247.32.0/24,no-resolve
 IP-CIDR,38.247.34.0/23,no-resolve
 IP-CIDR,38.247.36.0/24,no-resolve
