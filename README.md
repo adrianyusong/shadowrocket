@@ -229,6 +229,7 @@ proxy-providers:
 |---|---|
 | 线路属性 | `🏠 住宅IP` `🛣️ 专线` `🎞️ 流媒体节点` `💴 低倍率` |
 | 地区 | 港 / 台 / 日 / 新 / 美 / 韩 / 英 |
+| 直连线路 | **仅 Shadowrocket**：`🇸🇬 狮城直连` `🇺🇲 美国直连`（地区 × 无中转） |
 
 | 协议 | **仅 Clash**：`🔐 VLESS` `⚡ HY2` `🧩 VMESS` `🐴 TROJAN` |
 
@@ -315,7 +316,7 @@ python tools/sync-rules.py \n  && python tools/sync-modules.py \n  && python too
 
 ## 配置说明
 
-`config/default.conf` 包含 43 个策略组、34 个规则集（全部托管于本仓库 `rule/`），
+`config/default.conf` 包含 49 个策略组、34 个规则集（全部托管于本仓库 `rule/`），
 合计 12.3 万条规则。上游为 [blackmatrix7/ios_rule_script](https://github.com/blackmatrix7/ios_rule_script)
 与 [anti-AD](https://anti-ad.net)。
 
@@ -331,6 +332,20 @@ python tools/sync-rules.py \n  && python tools/sync-modules.py \n  && python too
 同理不使用裸单字 `台` / `日` / `美`（会命中 烟台、台州、重置日、美食）。
 
 某个地区分组为空，说明节点名不含该地区关键词，扩充对应正则即可。
+
+`🇸🇬 狮城直连` 与 `🇺🇲 美国直连` 是「地区 × 无中转」的组合：机场对直连线路的
+标注按地区不同（新加坡标 `专线` 或 `BGP`，美国标 `CTCU`），一条正则装不下两种
+口径，所以按地区各开一组，而不是改动与地区正交的 `🛣️ 专线`。两组都用
+`(?!.*(中转|中轉|隧道|转发|轉發))` 排掉中转节点。
+
+这两组目前只在 Shadowrocket 那份里。Stash 与 Clash 两份由 `tools/build-stash.py`
+生成，要一起加得先确认各自正则引擎对环视的支持（mihomo 走 RE2，`(?=` / `(?!` 得
+改写成 `filter` + `exclude-filter`）。
+
+这里的「直连」指节点自身不经中转落地，与 `DIRECT` 策略无关。已知局限：
+`policy-regex-filter` 只看得到节点名，机场若有前置 Cloudflare 的中转节点而名字里
+不带中转标注，这两组拦不住它 —— `clash-verge/script.js` 那边是靠
+`network === 'ws'` 判出来的，Shadowrocket 拿不到这个信息。
 
 ### IP 稳定性
 
