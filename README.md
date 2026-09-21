@@ -339,8 +339,15 @@ python tools/sync-rules.py \n  && python tools/sync-modules.py \n  && python too
 `(?!.*(中转|中轉|隧道|转发|轉發))` 排掉中转节点。
 
 这两组目前只在 Shadowrocket 那份里。Stash 与 Clash 两份由 `tools/build-stash.py`
-生成，要一起加得先确认各自正则引擎对环视的支持（mihomo 走 RE2，`(?=` / `(?!` 得
-改写成 `filter` + `exclude-filter`）。
+生成，同一条正则能否照搬要分开看：
+
+- **Clash（mihomo）可以照搬。** group 的 `filter` / `exclude-filter` 是用
+  `regexp2.MustCompile` 编译的（`adapter/outboundgroup/groupbase.go`、`parser.go`，
+  依赖 `github.com/dlclark/regexp2`），那是 .NET 系语法，环视完全支持 —— 不是 Go
+  标准库的 RE2。所以**不要**把能用的环视改写成 `filter` + `exclude-filter`。
+  clash.yaml 里既有的地区正则本来就带 `(?<![A-Za-z])`，同理。
+- **Stash 未经查证。** 引擎闭源，对不支持的语法是静默忽略（`exclude-type` 就是
+  这么踩过的坑），所以照搬前要在设备上确认分组非空。
 
 这里的「直连」指节点自身不经中转落地，与 `DIRECT` 策略无关。已知局限：
 `policy-regex-filter` 只看得到节点名，机场若有前置 Cloudflare 的中转节点而名字里
