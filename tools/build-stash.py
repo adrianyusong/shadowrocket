@@ -355,6 +355,9 @@ def main():
 
     main_cands = (['♻️ 自动选择', '🔯 故障转移', '🔮 负载均衡', '🔧 手动选择']
                   + [n for n, _ in ATTRS] + [n for n, _ in REGIONS] + ['DIRECT'])
+    # 首选美国：Stash 没有 policy-select-name，select 组默认选中第一项，
+    # 所以把 🇺🇲 美国 挪到最前。与 Shadowrocket 的 policy-select-name 对齐。
+    main_cands = ['🇺🇲 美国'] + [c for c in main_cands if c != '🇺🇲 美国']
     A('  # 主策略。候选里同时给出协议、线路属性、地区三个维度，按需切换。')
     grp('🚀 节点选择', 'select', main_cands)
 
@@ -386,8 +389,8 @@ def main():
     A('  # 要钉死某个具体节点就用 🔧 手动选择，它列出全部真实节点。')
     A('  # 候选里刻意不放 🚀 节点选择，避免间接落到负载均衡上每请求换出口。')
     grp('🤖 AI 服务', 'select',
-        ['🏠 住宅IP', '🛣️ 专线', '🔧 手动选择',
-         '🇺🇲 美国', '🇯🇵 日本', '🇸🇬 狮城', '🇬🇧 英国', 'DIRECT'])
+        ['🇺🇲 美国', '🏠 住宅IP', '🛣️ 专线', '🔧 手动选择',
+         '🇯🇵 日本', '🇸🇬 狮城', '🇬🇧 英国', 'DIRECT'])
 
     A('  # 流媒体对 IP 跳变敏感，机场自标的流媒体节点排首位。')
     for n in ['📹 YOUTUBE', '🎥 NETFLIX', '🎬 DISNEY+', '🎦 HBO', '📦 PRIMEVIDEO']:

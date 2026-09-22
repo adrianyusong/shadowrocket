@@ -252,8 +252,11 @@ def main():
     protos = [x[0] for x in PROTOCOLS]
 
     A('  # 总入口。手动选择排最前，其余按维度铺开。')
+    # 首选美国：mihomo 的 select 组默认选中第一项（此后记住手动选择），
+    # 所以把 🇺🇲 美国 挪到最前，与 Shadowrocket 的 policy-select-name 对齐。
     grp('🚀 节点选择', 'select',
-        ['♻️ 自动选择', '🔧 手动选择'] + regions + attrs + protos + ['DIRECT'])
+        ['🇺🇲 美国', '♻️ 自动选择', '🔧 手动选择']
+        + [r for r in regions if r != '🇺🇲 美国'] + attrs + protos + ['DIRECT'])
     grp('🔧 手动选择', 'select', include_all='true')
     grp('♻️ 自动选择', 'url-test', include_all='true',
         filter=q(bs.AUTO_FILTER), url=TEST_URL, interval=300, tolerance=50)
@@ -297,8 +300,8 @@ def main():
             A('  # AI 组不含 🚀 节点选择：避免落到自动测速上每请求换出口，')
             A('  # 出口频繁跳变会被判为异常。协议分组一并列为候选。')
             grp(policy, 'select',
-                ['🏠 住宅IP', '🛣️ 专线', '🔧 手动选择'] + protos +
-                ['🇺🇲 美国', '🇯🇵 日本', '🇸🇬 狮城', '🇬🇧 英国', 'DIRECT'])
+                ['🇺🇲 美国', '🏠 住宅IP', '🛣️ 专线', '🔧 手动选择'] + protos +
+                ['🇯🇵 日本', '🇸🇬 狮城', '🇬🇧 英国', 'DIRECT'])
         else:
             grp(policy, 'select', common)
     A('  # 兜底：没有任何规则命中的流量。')

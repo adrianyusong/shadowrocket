@@ -141,6 +141,7 @@ proxy-groups: #!replace
   - name: "🚀 节点选择"
     type: select
     proxies:
+      - "🇺🇲 美国"
       - "♻️ 自动选择"
       - "🔯 故障转移"
       - "🔮 负载均衡"
@@ -153,7 +154,6 @@ proxy-groups: #!replace
       - "🇹🇼 台湾"
       - "🇯🇵 日本"
       - "🇸🇬 狮城"
-      - "🇺🇲 美国"
       - "🇰🇷 韩国"
       - "🇬🇧 英国"
       - "DIRECT"
@@ -284,10 +284,10 @@ proxy-groups: #!replace
   - name: "🤖 AI 服务"
     type: select
     proxies:
+      - "🇺🇲 美国"
       - "🏠 住宅IP"
       - "🛣️ 专线"
       - "🔧 手动选择"
-      - "🇺🇲 美国"
       - "🇯🇵 日本"
       - "🇸🇬 狮城"
       - "🇬🇧 英国"
