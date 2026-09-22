@@ -252,11 +252,11 @@ def main():
     protos = [x[0] for x in PROTOCOLS]
 
     A('  # 总入口。手动选择排最前，其余按维度铺开。')
-    # 首选美国：mihomo 的 select 组默认选中第一项（此后记住手动选择），
-    # 所以把 🇺🇲 美国 挪到最前，与 Shadowrocket 的 policy-select-name 对齐。
+    # 首选美国直连：mihomo 的 select 组默认选中第一项（此后记住手动选择），
+    # DIRECTS 以 🇺🇲 美国直连 打头，与 Shadowrocket 的 policy-select-name 对齐。
     grp('🚀 节点选择', 'select',
-        ['🇺🇲 美国', '♻️ 自动选择', '🔧 手动选择']
-        + [r for r in regions if r != '🇺🇲 美国'] + attrs + protos + ['DIRECT'])
+        [n for n, _ in bs.DIRECTS] + ['♻️ 自动选择', '🔧 手动选择']
+        + regions + attrs + protos + ['DIRECT'])
     grp('🔧 手动选择', 'select', include_all='true')
     grp('♻️ 自动选择', 'url-test', include_all='true',
         filter=q(bs.AUTO_FILTER), url=TEST_URL, interval=300, tolerance=50)
@@ -269,6 +269,11 @@ def main():
 
     A('  # 线路属性分组，与地区维度正交。')
     for name, rex in bs.ATTRS:
+        grp(name, 'url-test', include_all='true', filter=q(rex),
+            url=TEST_URL, interval=300, tolerance=50)
+
+    A('  # 直连线路：地区 × 无中转，与 Shadowrocket / Stash 同一判据（build-stash.DIRECTS）。')
+    for name, rex in bs.DIRECTS:
         grp(name, 'url-test', include_all='true', filter=q(rex),
             url=TEST_URL, interval=300, tolerance=50)
 
@@ -300,8 +305,9 @@ def main():
             A('  # AI 组不含 🚀 节点选择：避免落到自动测速上每请求换出口，')
             A('  # 出口频繁跳变会被判为异常。协议分组一并列为候选。')
             grp(policy, 'select',
-                ['🇺🇲 美国', '🏠 住宅IP', '🛣️ 专线', '🔧 手动选择'] + protos +
-                ['🇯🇵 日本', '🇸🇬 狮城', '🇬🇧 英国', 'DIRECT'])
+                ['🇺🇲 美国直连', '🇯🇵 日本直连', '🇸🇬 狮城直连', '🇬🇧 英国直连',
+                 '🏠 住宅IP', '🛣️ 专线', '🔧 手动选择'] + protos +
+                ['🇺🇲 美国', '🇯🇵 日本', '🇸🇬 狮城', '🇬🇧 英国', 'DIRECT'])
         else:
             grp(policy, 'select', common)
     A('  # 兜底：没有任何规则命中的流量。')

@@ -677,6 +677,53 @@ def check_controller(d):
              '只在可信网络下使用' % ec)
 
 
+# 直连组必须带的中转排除子句，以及绝不能出现的正向写法。
+RELAY_EXCLUDE_CLAUSE = '(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))'
+RELAY_AS_POSITIVE = re.compile(r'\(\?=\.\*[^)]*CTCU')
+
+
+def check_direct_groups(cfg):
+    """三份配置里的「直连」分组必须排除中转，且不能把中转标签当正向条件。
+
+    #1 引入的 🇺🇲 美国直连 写成 (?=.*CTCU)——把中转标签当成直连标志，
+    选中的 5 个节点全是 Cloudflare 中转，而它随即被设成节点选择与 AI 服务的首选。
+    节点名看不出对错，真正的核对要靠 tools/check-direct.py 读订阅文件的
+    network 字段；那份文件含凭据不能进仓库，所以 CI 里只能守住结构。
+    """
+    found = []
+    for m in re.finditer(r'^(\S+ [^=\n]*直连) = url-test, policy-regex-filter = (.*?), url =',
+                         cfg, re.M):
+        found.append(('Shadowrocket', m.group(1).strip(), m.group(2)))
+    try:
+        import yaml
+    except ImportError:
+        yaml = None
+    if yaml:
+        for fname, label in (('stash.stoverride', 'Stash'), ('clash.yaml', 'Clash')):
+            path = os.path.join(os.path.dirname(CONFIG), fname)
+            if not os.path.exists(path):
+                continue
+            doc = yaml.safe_load(io.open(path, encoding='utf-8').read()
+                                 .replace('#!replace', '')) or {}
+            for g in doc.get('proxy-groups') or []:
+                if '直连' in g.get('name', '') and g.get('filter'):
+                    found.append((label, g['name'], g['filter']))
+    for label, name, rx in found:
+        if RELAY_EXCLUDE_CLAUSE not in rx:
+            fail('%s 的 %s 缺少中转排除 %s，会把 CF 中转节点选进「直连」组'
+                 % (label, name, RELAY_EXCLUDE_CLAUSE))
+        if RELAY_AS_POSITIVE.search(rx):
+            fail('%s 的 %s 把 CTCU 写成了正向条件 (?=.*CTCU)——'
+                 'CTCU 是中转标签，这样选出来的全是中转' % (label, name))
+    names = {}
+    for label, name, rx in found:
+        names.setdefault(label, set()).add(name)
+    if len({frozenset(v) for v in names.values()}) > 1:
+        fail('三份配置的直连分组不一致: %s'
+             % '; '.join('%s=%s' % (k, sorted(v)) for k, v in sorted(names.items())))
+    return len(found)
+
+
 def check_workflows():
     """GitHub 只在推送后才报 YAML 错误，本地必须先挡住。"""
     paths = sorted(glob.glob(os.path.join(ROOT, '.github', 'workflows', '*.yml'))
@@ -814,6 +861,7 @@ def main():
     check_realip_parity(cfg)
     nmod = check_modules()
     nclash = check_clash()
+    ndirect = check_direct_groups(cfg)
     rules = load_rules()
     check_keywords(rules)
     check_no_block(rules, cfg)
@@ -823,6 +871,8 @@ def main():
           % (ngroups, nrefs, len(rules)))
     if nmod:
         print('自托管模块:   %d 个' % nmod)
+    if ndirect:
+        print('直连分组:     %d 个（三份配置合计）' % ndirect)
     if nclash:
         print('Clash:        分组 %d' % nclash)
     if sgroups:

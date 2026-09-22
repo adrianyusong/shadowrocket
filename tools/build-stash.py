@@ -59,6 +59,29 @@ ATTRS = [
     ('💴 低倍率', r'(?i)(?<![0-9.])0\.[0-9]+ ?x'),
 ]
 
+# 直连线路分组：地区 × 无中转。与 Shadowrocket 的同名分组同一判据。
+#
+# 判据是节点名里单独出现的 CTCU 标签 = Cloudflare 中转（network: ws）。
+# 用机场订阅的真实传输方式核对：15 个中转全带裸 CTCU，39 个直连里只有
+# 1 个带（被误排除，安全方向）。CTCUCM 是三网直连，用 (?![A-Za-z]) 截断。
+# 这是当前机场的命名规律，换机场后用 tools/check-direct.py 重新核对。
+#
+# mihomo 用 dlclark/regexp2（.NET 兼容），Stash 用系统正则，两者都支持
+# (?= / (?! / (?<!，所以直接用单条带环视的 filter，与 Shadowrocket 一致。
+# 韩国不开：订阅里没有韩国节点。
+RELAY_EXCLUDE = r'(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發))'
+DIRECT_REGIONS = ['🇺🇲 美国', '🇯🇵 日本', '🇸🇬 狮城', '🇭🇰 香港', '🇹🇼 台湾', '🇬🇧 英国']
+
+
+def direct_filter(region_rx):
+    """把地区正则改写成「该地区 且 非中转」。"""
+    inner = region_rx[4:] if region_rx.startswith('(?i)') else region_rx
+    return '(?i)^(?=.*' + inner + ')' + RELAY_EXCLUDE + '.*$'
+
+
+DIRECTS = [(n + '直连', direct_filter(rx)) for n, rx in REGIONS if n in DIRECT_REGIONS]
+DIRECTS.sort(key=lambda d: DIRECT_REGIONS.index(d[0][:-2]))
+
 # 协议分组：Stash 做不到，已移除。
 #
 # 曾用 exclude-type 实现，但 Stash 官方文档的 proxy-groups 选项里没有这一项
@@ -355,9 +378,10 @@ def main():
 
     main_cands = (['♻️ 自动选择', '🔯 故障转移', '🔮 负载均衡', '🔧 手动选择']
                   + [n for n, _ in ATTRS] + [n for n, _ in REGIONS] + ['DIRECT'])
-    # 首选美国：Stash 没有 policy-select-name，select 组默认选中第一项，
-    # 所以把 🇺🇲 美国 挪到最前。与 Shadowrocket 的 policy-select-name 对齐。
-    main_cands = ['🇺🇲 美国'] + [c for c in main_cands if c != '🇺🇲 美国']
+    # 首选美国直连：Stash 没有 policy-select-name，select 组默认选中第一项，
+    # DIRECTS 以 🇺🇲 美国直连 打头。与 Shadowrocket 的 policy-select-name 对齐。
+    main_cands = ([n for n, _ in DIRECTS]
+                  + [c for c in main_cands if c != '🇺🇲 美国直连'])
     A('  # 主策略。候选里同时给出协议、线路属性、地区三个维度，按需切换。')
     grp('🚀 节点选择', 'select', main_cands)
 
@@ -384,13 +408,19 @@ def main():
         grp(name, 'url-test', None, include_all='true', filter=q(f),
             url=q(TEST_URL), interval=600, tolerance=200, lazy='true')
 
+    A('  # 直连线路：地区 × 无中转，判据见文件头 DIRECTS。')
+    for name, f in DIRECTS:
+        grp(name, 'url-test', None, include_all='true', filter=q(f),
+            url=q(TEST_URL), interval=600, tolerance=200, lazy='true')
+
     A('  # AI 对 IP 风控极严。住宅 IP 排首位——机房 IP 是判定代理的首要特征。')
     A('  # 无法按协议指定（Stash 不支持 exclude-type，见文件头说明），')
     A('  # 要钉死某个具体节点就用 🔧 手动选择，它列出全部真实节点。')
     A('  # 候选里刻意不放 🚀 节点选择，避免间接落到负载均衡上每请求换出口。')
     grp('🤖 AI 服务', 'select',
-        ['🇺🇲 美国', '🏠 住宅IP', '🛣️ 专线', '🔧 手动选择',
-         '🇯🇵 日本', '🇸🇬 狮城', '🇬🇧 英国', 'DIRECT'])
+        ['🇺🇲 美国直连', '🇯🇵 日本直连', '🇸🇬 狮城直连', '🇬🇧 英国直连',
+         '🏠 住宅IP', '🛣️ 专线', '🔧 手动选择',
+         '🇺🇲 美国', '🇯🇵 日本', '🇸🇬 狮城', '🇬🇧 英国', 'DIRECT'])
 
     A('  # 流媒体对 IP 跳变敏感，机场自标的流媒体节点排首位。')
     for n in ['📹 YOUTUBE', '🎥 NETFLIX', '🎬 DISNEY+', '🎦 HBO', '📦 PRIMEVIDEO']:
