@@ -1,17 +1,9 @@
 function main(config) {
   if (!config.proxies || config.proxies.length === 0) return config;
 
-  // ============================================================
-  // 安全鎖定（腳本最後合併，避免被 Verge 覆寫回預設值）
-  // ============================================================
-  config.secret = '<YOUR-CONTROLLER-SECRET>';   // 自行填入，或整行刪掉改在 Verge 的 Clash 設定裡設
-  config['external-controller-cors'] = {
-    'allow-private-network': true,
-    'allow-origins': [
-      'tauri://localhost',
-      'http://tauri.localhost'
-    ]
-  };
+  // 控制面欄位（secret、external-controller-cors、ipv6、mixed-port、mode、log-level、
+  // unified-delay 等）由 Verge GUI 擁有：v2.5.x 在所有 Merge 與腳本跑完之後，
+  // 會用「Clash 設定」裡的值強制蓋回去，腳本裡設了也無效。這些請到 GUI 改。
 
   // 域名嗅探：改善純 IP 連線的分流準確度（不強行改寫目標，降低誤傷）
   config.sniffer = {
@@ -31,11 +23,17 @@ function main(config) {
   };
 
   // ============================================================
-  // DNS(從 dns_config.yaml 搬入:v2.5.4 的「DNS 覆寫保護」會自動關閉
-  // enable_dns_settings,導致 dns_config 失效、ipv6 被翻回預設。
-  // 放進腳本最後合併,不管 Verge 那個開關是開是關都強制生效,永久免疫更新。)
+  // DNS（從 dns_config.yaml 搬入）
+  // 前提：Verge 的「DNS 覆寫」開關必須保持關閉。開啟時 Verge 會在腳本之後
+  // 再套一次 dns_config.yaml，蓋掉這裡的設定（v2.5.5 enhance/mod.rs 的
+  // apply_dns_settings → AuthoritativeFields::enforce）。那份檔案還帶著
+  // 舊式 fallback / fallback-filter，已由下面的 nameserver-policy 取代。
+  // 開關關閉時，這裡就是最終結果。
   // ============================================================
-  config.ipv6 = false;  // 頂層也鎖死,避免更新重置
+  // 頂層 ipv6 屬於 GUI 擁有的欄位，最終以「Clash 設定」的 IPv6 開關為準，這行鎖不住。
+  // 留著當警報：GUI 更新若又把 IPv6 翻成開啟，這個值會被丟棄，Verge 會跳通知，
+  // 腳本記錄也會出現「`ipv6` is managed by Settings; ... discarded」
+  config.ipv6 = false;
   config.dns = {
     enable: true,
     listen: '127.0.0.1:53',

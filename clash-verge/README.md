@@ -42,7 +42,7 @@ YAML 沒有腳本能力，以下兩項無法移植：
 - **中轉識別**：`network === 'ws'`，或伺服器主機名以 `cfyes.` 開頭，就判定為 Cloudflare 前置的中轉節點，另外生成「直連（無中轉）」分組。中轉節點出口是共享邊緣 IP，支付風控命中率高、長連線也容易中斷。第二個條件是防範機場推出走 CF 前置、但不是 ws 的節點；`cfyes.` 是目前這家機場的前置域名，**換機場要改成對應的前綴**
 - **協議拆分**：Hysteria2 與 VLESS 各自成組，另有 fallback 型的「穩定」組
 - **分流規則**：24 個雲端規則集，涵蓋廣告攔截、HTTPDNS、國內直連、串流解鎖、AI 服務、支付與帳號綁定
-- **DNS**：整段 DNS 設定（fake-ip、按域名歸屬分流的 `nameserver-policy`、58 條 fake-ip 過濾）直接寫在腳本裡，IPv6 也一併關閉
+- **DNS**：整段 DNS 設定（fake-ip、按域名歸屬分流的 `nameserver-policy`、58 條 fake-ip 過濾）直接寫在腳本裡。前提是 Verge 的「DNS 覆寫」開關保持關閉，見下
 
 ## 使用方式
 
@@ -54,16 +54,15 @@ YAML 沒有腳本能力，以下兩項無法移植：
 
 | 佔位符 | 所在檔案 | 說明 |
 |---|---|---|
-| `<YOUR-CONTROLLER-SECRET>` | script.js | mihomo 外部控制器密鑰。也可以整行刪掉，改在 Verge 的「Clash 設定」裡設 |
 | `<YOUR-SUB-HOST>` / `<YOUR-TOKEN>` | script.js | 第二個訂閱的網址（以 `proxy-providers` 形式併入）。用不到就把整個 `proxy-providers` 區塊和兩個 EdgeTunnel 分組刪掉。註解裡也會出現 `<YOUR-SUB-HOST>`，那些不影響執行 |
 | `<YOUR-SUBSCRIPTION-URL>` | config.yaml | 機場訂閱網址 |
 | `<YOUR-IPTV-PLAYLIST-HOST>` | 兩者 | IPTV 播放列表的來源主機。用不到可刪除該行 |
 
 ### 需要搭配的設定
 
-- **統一延遲**要開啟（Clash 設定）。腳本設不了這個值，Verge 會在腳本之後覆寫
+- **控制面設定到 GUI 改**：統一延遲、IPv6、控制器密鑰與 CORS、埠號、模式、日誌等級都歸 Verge 管。v2.5.x 會在所有 Merge 與腳本之後，用「Clash 設定」的值強制蓋回去，腳本裡設了無效。**統一延遲要開、IPv6 要關**
 - 分流依賴 `find-process-mode: strict`（腳本內已設）才能讓 `PROCESS-NAME` 規則生效
-- **DNS 要改就改腳本**。Verge「DNS 覆寫」頁面的設定會被腳本蓋掉，那個開關開或關都不影響結果
+- **「DNS 覆寫」開關要保持關閉**。開啟時 Verge 會在腳本之後再套一次 `dns_config.yaml`，把腳本的 DNS 蓋掉。要改 DNS 就改腳本
 
 ## 幾個踩過坑才寫進去的地方
 
@@ -71,7 +70,7 @@ YAML 沒有腳本能力，以下兩項無法移植：
 
 - **測速位址一律用 `https://`**。開了統一延遲後 mihomo 會送兩次 HEAD 請求，機場若劫持了測速位址就會在第二次逾時，好節點被誤判成失敗而踢出候選
 - **規則集透過代理抓取**。直連時 CDN 一被污染，所有 `RULE-SET` 會靜默失效，流量整批掉到兜底規則，而且不會報錯
-- **DNS 與 IPv6 寫在腳本，不放 Verge 的 DNS 設定**。Verge v2.5.4 起的「DNS 覆寫保護」會自動關掉 DNS 覆寫開關，GUI 更新也曾把 `ipv6` 翻回 `true`，兩次都是悄悄發生、沒有提示。腳本最後合併，不受這些開關影響
+- **DNS 寫在腳本，Verge 的 DNS 覆寫保持關閉**。Verge v2.5.4 起的「DNS 覆寫保護」會自動關掉這個開關，GUI 更新也曾把 IPv6 開關翻回開啟，兩次都是悄悄發生、沒有提示。DNS 放進腳本後就不怕開關被關；IPv6 則只能靠 GUI，腳本裡的 `ipv6 = false` 鎖不住，只能當警報：GUI 一旦被翻開，這個值會被丟棄，Verge 會跳出通知
 - **`RULE-SET,YouTube` 必須排在 `RULE-SET,Google` 之前**。Google 規則集裡有 `DOMAIN-KEYWORD,google`，會把 `googlevideo.com`（影片流本體）撈走
 - **Stripe 各子域必須跟 PayPal 共用出口**。`r.stripe.com` 是風險訊號端點，與 `api.stripe.com` 來自不同 IP 會直接觸發拒付
 - **`statsigapi.net`、`qdp.qidian.com` 用 `REJECT-DROP` 而非 `REJECT`**。主動拒絕會讓客戶端毫秒級重試（實測起點的廣告端點每分鐘重試 20–130 次，佔掉整份日誌的 85%），靜默丟棄則要等它自己逾時
