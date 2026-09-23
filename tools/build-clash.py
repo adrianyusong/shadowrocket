@@ -43,7 +43,7 @@ ALL_TYPES = ['Shadowsocks', 'ShadowsocksR', 'Snell', 'Socks5', 'Http',
              'Vmess', 'Vless', 'Trojan', 'Hysteria', 'Hysteria2',
              'WireGuard', 'Tuic', 'Ssh', 'Mieru', 'AnyTLS', 'Sudoku',
              'Masque', 'TrustTunnel', 'ShadowQuic', 'OpenVPN',
-             'Tailscale', 'ZeroTier', 'GostRelay']
+             'Tailscale', 'ZeroTier', 'EasyTier', 'GostRelay']
 
 # 控制器密钥占位符。生成器不能写入真实密钥——仓库是 Public。
 # 不含引号：带引号的占位符会破坏生成的 YAML（已实测踩到）。
@@ -232,6 +232,14 @@ def main():
     A('      enable: true')
     A('      url: %s' % TEST_URL)
     A('      interval: 300')
+    A('  # 自建 CF 节点（edgetunnel 一类）作第二个来源时取消下面的注释。')
+    A('  # 节点名须含独立的 CF 或 Cloudflare 才会进 ☁️ CF优选。')
+    A('  # 该订阅地址含 UUID，等同密码：只写进 *.local.yaml，别提交。')
+    A('  # cf:')
+    A('  #   type: http')
+    A('  #   url: "https://你的部署域名/你的订阅路径"')
+    A('  #   path: ./providers/cf.yaml')
+    A('  #   interval: 3600')
     A('')
 
     # ---- proxy-groups ----
@@ -256,7 +264,7 @@ def main():
     # DIRECTS 以 🇺🇲 美国直连 打头，与 Shadowrocket 的 policy-select-name 对齐。
     grp('🚀 节点选择', 'select',
         [n for n, _ in bs.DIRECTS] + ['♻️ 自动选择', '🔧 手动选择']
-        + regions + attrs + protos + ['DIRECT'])
+        + regions + attrs + protos + [bs.CF_GROUP[0], 'DIRECT'])
     grp('🔧 手动选择', 'select', include_all='true')
     grp('♻️ 自动选择', 'url-test', include_all='true',
         filter=q(bs.AUTO_FILTER), url=TEST_URL, interval=300, tolerance=50)
@@ -277,12 +285,19 @@ def main():
         grp(name, 'url-test', include_all='true', filter=q(rex),
             url=TEST_URL, interval=300, tolerance=50)
 
+    A('  # 自建 CF 节点（edgetunnel 一类）：只在这里出现，自动测速组与协议组一律排除。')
+    grp(bs.CF_GROUP[0], 'url-test', include_all='true', filter=q(bs.CF_GROUP[1]),
+        url=TEST_URL, interval=300, tolerance=50)
+
     A('  # 协议分组。mihomo 没有 include-type，只能反着排除其余全部类型。')
     A('  # 这些名字是 AdapterType.String() 的形式——group 层比较的是它，')
     A('  # 不是配置里的 type: 值，所以必须写 Shadowsocks 而不是 ss。')
+    A('  # exclude-filter 排掉自建 CF 节点：它们是 VLESS，优选 IP 延迟最低，')
+    A('  # 不排掉的话 🔐 VLESS 节点 会测速选中 CF，绕开「CF 只作备用」的约定。')
     for name, keep in PROTOCOLS:
         ex = '|'.join(t for t in ALL_TYPES if t != keep)
         grp(name, 'url-test', include_all='true', exclude_type=q(ex),
+            exclude_filter=q('(?i)(' + bs.CF_NODE + ')'),
             url=TEST_URL, interval=300, tolerance=50)
 
     A('  # 业务分组。候选顺序即默认优先级。')
