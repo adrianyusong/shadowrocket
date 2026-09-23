@@ -36,7 +36,21 @@ EXCLUDE_INFO = ('官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|
                 '流量|套餐|订阅|訂閱|群组|群組|直连|直連|Expire|Traffic|Reset|Website')
 
 # 自动测速类分组的 filter：排除上面那些信息类伪节点。
-AUTO_FILTER = '(?i)^(?!.*(' + EXCLUDE_INFO + ')).*$'
+# 自建 Cloudflare 节点（edgetunnel 一类：Pages/Workers + 优选 IP）。
+# 它们只经 ☁️ CF优选 手动启用，不进任何自动测速组：
+# - 十几个「节点」是同一后端的不同入口 IP，出口都在 Cloudflare，落地地区
+#   取决于命中的机房，不是按地区选出的线路；
+# - 优选 IP 延迟通常最低，进了自动测速会把流量悄悄转到 CF 上，
+#   而免费额度每天 10 万次请求，每条 WS 连接计一次。
+# 必须显式排除，不能依赖 EXCLUDE_INFO 里「官方」对「CF官方优选」的误伤——
+# 节点在 edgetunnel 里改名成「CF优选」就会漏进来。
+# CF 两侧用逆序环视：不命中 NCF / CFO，也不命中机场的 CTCU（那是 CF 中转，
+# 归 DIRECTS 的判据管）。
+CF_NODE = '(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare'
+CF_GROUP = ('☁️ CF优选', '(?i)(' + CF_NODE + ')')
+
+# 自动测速类分组的 filter：排除信息类伪节点与自建 CF 节点。
+AUTO_FILTER = '(?i)^(?!.*(' + EXCLUDE_INFO + '|' + CF_NODE + ')).*$'
 
 
 # 地区分组的节点名正则。英文缩写一律用逆序环视包裹——裸 US 在忽略大小写下
@@ -377,7 +391,8 @@ def main():
                 A('      - %s' % q(p))
 
     main_cands = (['♻️ 自动选择', '🔯 故障转移', '🔮 负载均衡', '🔧 手动选择']
-                  + [n for n, _ in ATTRS] + [n for n, _ in REGIONS] + ['DIRECT'])
+                  + [n for n, _ in ATTRS] + [n for n, _ in REGIONS]
+                  + [CF_GROUP[0], 'DIRECT'])
     # 首选美国直连：Stash 没有 policy-select-name，select 组默认选中第一项，
     # DIRECTS 以 🇺🇲 美国直连 打头。与 Shadowrocket 的 policy-select-name 对齐。
     main_cands = ([n for n, _ in DIRECTS]
@@ -412,6 +427,10 @@ def main():
     for name, f in DIRECTS:
         grp(name, 'url-test', None, include_all='true', filter=q(f),
             url=q(TEST_URL), interval=600, tolerance=200, lazy='true')
+
+    A('  # 自建 CF 节点：只在这里出现，自动测速组一律排除（见 CF_NODE 注释）。')
+    grp(CF_GROUP[0], 'url-test', None, include_all='true', filter=q(CF_GROUP[1]),
+        url=q(TEST_URL), interval=600, tolerance=200, lazy='true')
 
     A('  # AI 对 IP 风控极严。住宅 IP 排首位——机房 IP 是判定代理的首要特征。')
     A('  # 无法按协议指定（Stash 不支持 exclude-type，见文件头说明），')

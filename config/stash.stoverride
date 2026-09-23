@@ -162,6 +162,7 @@ proxy-groups: #!replace
       - "🇺🇲 美国"
       - "🇰🇷 韩国"
       - "🇬🇧 英国"
+      - "☁️ CF优选"
       - "DIRECT"
   # 自动测速类。filter 排除机场的信息类伪节点。
   # include-all 不可省：filter / exclude-type 只对 use 引入的 provider 或
@@ -169,7 +170,7 @@ proxy-groups: #!replace
   - name: "♻️ 自动选择"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|群组|群組|直连|直連|Expire|Traffic|Reset|Website)).*$"
+    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|群组|群組|直连|直連|Expire|Traffic|Reset|Website|(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
     url: "https://www.gstatic.com/generate_204"
     interval: 300
     tolerance: 100
@@ -177,14 +178,14 @@ proxy-groups: #!replace
   - name: "🔯 故障转移"
     type: fallback
     include-all: true
-    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|群组|群組|直连|直連|Expire|Traffic|Reset|Website)).*$"
+    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|群组|群組|直连|直連|Expire|Traffic|Reset|Website|(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
     url: "https://www.gstatic.com/generate_204"
     interval: 300
     lazy: true
   - name: "🔮 负载均衡"
     type: load-balance
     include-all: true
-    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|群组|群組|直连|直連|Expire|Traffic|Reset|Website)).*$"
+    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|群组|群組|直连|直連|Expire|Traffic|Reset|Website|(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
     url: "https://www.gstatic.com/generate_204"
     interval: 300
     strategy: consistent-hashing
@@ -192,7 +193,7 @@ proxy-groups: #!replace
   - name: "🔧 手动选择"
     type: select
     include-all: true
-    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|群组|群組|直连|直連|Expire|Traffic|Reset|Website)).*$"
+    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|群组|群組|直连|直連|Expire|Traffic|Reset|Website|(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
   # 线路属性分组，与地区维度正交。
   - name: "🏠 住宅IP"
     type: url-test
@@ -328,6 +329,15 @@ proxy-groups: #!replace
     type: url-test
     include-all: true
     filter: "(?i)^(?=.*(英国|英國|伦敦|倫敦|London|(?<![A-Za-z])(UK|GB|LHR)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
+    url: "https://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  # 自建 CF 节点：只在这里出现，自动测速组一律排除（见 CF_NODE 注释）。
+  - name: "☁️ CF优选"
+    type: url-test
+    include-all: true
+    filter: "(?i)((?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)"
     url: "https://www.gstatic.com/generate_204"
     interval: 600
     tolerance: 200
