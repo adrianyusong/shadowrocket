@@ -2,6 +2,7 @@
 # 來源 https://github.com/adrianyusong/shadowrocket/tree/main/clash-verge
 #
 # 使用前必須替換 <YOUR-SUBSCRIPTION-URL> 為你的機場訂閱網址。
+# <YOUR-IPTV-PLAYLIST-HOST> 是 IPTV 播放列表主機，用不到可刪掉該行規則。
 
 mixed-port: 7890
 allow-lan: false
@@ -34,10 +35,11 @@ dns:
   enable: true
   # 只綁本機：TUN 的 dns-hijack any:53 已經接管所有 DNS，
   # 綁 0.0.0.0 會讓本機對區網變成開放解析器，也容易和其他佔 53 埠的服務衝突
-  listen: 0.0.0.0:1053
+  listen: 127.0.0.1:1053
   ipv6: false
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
+  fake-ip-range6: 'fdfe:dcba:9876::1/64'
   fake-ip-filter-mode: blacklist
   # 注意：'*' 只匹配單層，子網域會漏；需要遞迴匹配一律用 '+.'
   fake-ip-filter:
@@ -62,6 +64,45 @@ dns:
   - '+.n.n.srv.nintendo.net'
   - xbox.*.microsoft.com
   - '+.xboxlive.com'
+  # 音樂串流、遊戲、系統更新、路由器管理頁等：用戶端會拿解析結果做直連或地區判斷，必須拿到真實 IP
+  - '+.music.163.com'
+  - '+.126.net'
+  - '+.y.qq.com'
+  - '+.qqmusic.qq.com'
+  - '+.music.tc.qq.com'
+  - '+.kugou.com'
+  - '+.kuwo.cn'
+  - '+.music.migu.cn'
+  - '+.taihe.com'
+  - '+.mcdn.bilivideo.cn'
+  - '+.media.dssott.com'
+  - stun.*.*
+  - stun.*.*.*
+  - '+.stun.*.*.*.*'
+  - stun.l.google.com
+  - '+.srv.nintendo.net'
+  - '+.pvp.net'
+  - '+.battlenet.com.cn'
+  - '+.wotgame.cn'
+  - '+.wggames.cn'
+  - '+.wowsgame.cn'
+  - '+.wargaming.net'
+  - mesu.apple.com
+  - swscan.apple.com
+  - swquery.apple.com
+  - swdownload.apple.com
+  - swcdn.apple.com
+  - swdist.apple.com
+  - '+.router.asus.com'
+  - '+.linksys.com'
+  - '+.linksyssmartwifi.com'
+  - heartbeat.belkin.com
+  - proxy.golang.org
+  - localhost.sec.qq.com
+  - '+.ipv6.microsoft.com'
+  - time.*.edu.cn
+  - time.*.apple.com
+  - '+.ntp.org.cn'
   default-nameserver:
   - 223.5.5.5
   - 119.29.29.29
@@ -428,16 +469,22 @@ rules:
   - 'DOMAIN,wifi.vivo.com,DIRECT'
   - 'DOMAIN,p.to,DIRECT'
   - 'DOMAIN-SUFFIX,wpad.net,REJECT'
-  - 'DOMAIN,garysclub.sharewithyou.dpdns.org,🚀 節點選擇'
+  - 'DOMAIN-KEYWORD,stun,DIRECT'
+  - 'DOMAIN,<YOUR-IPTV-PLAYLIST-HOST>,🚀 節點選擇'
   - 'DOMAIN-SUFFIX,githubusercontent.com,🐙 GitHub'
   - 'DOMAIN,bit.ly,🚀 節點選擇'
   - 'DOMAIN-SUFFIX,fanmingming.cn,🚀 節點選擇'
+  - 'DOMAIN,kan.waiguotai.top,DIRECT'
+  - 'DOMAIN-SUFFIX,zsdc.eu.org,🚀 節點選擇'
   - 'DOMAIN-SUFFIX,sentry.io,🚀 節點選擇'
   - 'DOMAIN-SUFFIX,mtalk.google.com,🔍 Google'
   - 'DOMAIN-SUFFIX,gcm-http.googleapis.com,🔍 Google'
   - 'DOMAIN-SUFFIX,fcm.googleapis.com,🔍 Google'
   - 'DOMAIN-SUFFIX,safebrowsing.googleapis.com,🔍 Google'
   - 'DOMAIN-SUFFIX,pki.goog,🔍 Google'
+  - 'DOMAIN-SUFFIX,digicert.com,🚀 節點選擇'
+  - 'DOMAIN-SUFFIX,recaptcha.net,🔍 Google'
+  - 'DOMAIN,filedownload.lenovo.com,🚀 節點選擇'
   - 'DOMAIN-SUFFIX,paypal.com,💰 PayPal'
   - 'DOMAIN-SUFFIX,paypalobjects.com,💰 PayPal'
   - 'DOMAIN-SUFFIX,paypal.cn,💰 PayPal'
@@ -447,6 +494,7 @@ rules:
   - 'DOMAIN-SUFFIX,stripecdn.com,💰 PayPal'
   - 'DOMAIN-SUFFIX,stripe.network,💰 PayPal'
   - 'DOMAIN-SUFFIX,statsigapi.net,REJECT-DROP'
+  - 'DOMAIN,qdp.qidian.com,REJECT-DROP'
   - 'RULE-SET,AdBlock,🛡️ 廣告攔截'
   - 'RULE-SET,Hijacking,🛡️ 廣告攔截'
   - 'RULE-SET,HTTPDNS,🛡️ 廣告攔截'
@@ -525,13 +573,13 @@ rules:
   - 'DOMAIN-SUFFIX,default.exp-tas.com,💻 AI 編程'
   - 'DOMAIN-SUFFIX,auth0.com,🚀 節點選擇'
   - 'DOMAIN-SUFFIX,algolia.net,🚀 節點選擇'
+  - 'DOMAIN-SUFFIX,deepseek.com,🤖 AI 服務'
   - 'RULE-SET,OpenAI,🤖 AI 服務'
   - 'RULE-SET,Gemini,🤖 AI 服務'
   - 'RULE-SET,Claude,🤖 AI 服務'
   - 'RULE-SET,Copilot,🤖 AI 服務'
   - 'RULE-SET,GitHub,🐙 GitHub'
   - 'DOMAIN-SUFFIX,github.com,🐙 GitHub'
-  - 'DOMAIN-SUFFIX,githubusercontent.com,🐙 GitHub'
   - 'DOMAIN-SUFFIX,githubassets.com,🐙 GitHub'
   - 'DOMAIN-SUFFIX,ghcr.io,🐙 GitHub'
   - 'DOMAIN-SUFFIX,npm.pkg.github.com,🐙 GitHub'

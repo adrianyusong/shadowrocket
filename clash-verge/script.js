@@ -31,6 +31,96 @@ function main(config) {
   };
 
   // ============================================================
+  // DNS(從 dns_config.yaml 搬入:v2.5.4 的「DNS 覆寫保護」會自動關閉
+  // enable_dns_settings,導致 dns_config 失效、ipv6 被翻回預設。
+  // 放進腳本最後合併,不管 Verge 那個開關是開是關都強制生效,永久免疫更新。)
+  // ============================================================
+  config.ipv6 = false;  // 頂層也鎖死,避免更新重置
+  config.dns = {
+    enable: true,
+    listen: '127.0.0.1:53',
+    ipv6: false,
+    'enhanced-mode': 'fake-ip',
+    'fake-ip-range': '198.18.0.1/16',
+    'fake-ip-range6': 'fdfe:dcba:9876::1/64',
+    'fake-ip-filter-mode': 'blacklist',
+    'prefer-h3': false,
+    'respect-rules': true,
+    'use-hosts': true,
+    'use-system-hosts': true,
+    'default-nameserver': ['223.5.5.5', '119.29.29.29'],
+    nameserver: ['https://doh.pub/dns-query', 'https://dns.alidns.com/dns-query'],
+    'proxy-server-nameserver': ['https://doh.pub/dns-query', 'https://dns.alidns.com/dns-query', 'tls://223.5.5.5'],
+    'direct-nameserver': [],
+    'direct-nameserver-follow-policy': true,
+    'nameserver-policy': {
+      '+.cloudflare-dns.com,+.dns.google,+.doh.pub,+.alidns.com': ['223.5.5.5', '119.29.29.29'],
+      'geosite:cn,private': ['https://doh.pub/dns-query', 'https://dns.alidns.com/dns-query'],
+      'geosite:geolocation-!cn': ['https://cloudflare-dns.com/dns-query', 'https://dns.google/dns-query']
+    },
+    'fake-ip-filter': [
+      '+.lan',
+      '+.local',
+      '+.localdomain',
+      '+.home.arpa',
+      '+.arpa',
+      '+.wpad',
+      'time.*.com',
+      'time.*.gov',
+      'ntp.*.com',
+      '+.pool.ntp.org',
+      '+.market.xiaomi.com',
+      'localhost.ptlogin2.qq.com',
+      '+.msftncsi.com',
+      '+.msftconnecttest.com',
+      '+.stun.*.*',
+      '+.stun.*.*.*',
+      '+.stun.playstation.net',
+      '+.n.n.srv.nintendo.net',
+      'xbox.*.microsoft.com',
+      '+.xboxlive.com',
+      '+.music.163.com',
+      '+.126.net',
+      '+.y.qq.com',
+      '+.qqmusic.qq.com',
+      '+.music.tc.qq.com',
+      '+.kugou.com',
+      '+.kuwo.cn',
+      '+.music.migu.cn',
+      '+.taihe.com',
+      '+.mcdn.bilivideo.cn',
+      '+.media.dssott.com',
+      'stun.*.*',
+      'stun.*.*.*',
+      '+.stun.*.*.*.*',
+      'stun.l.google.com',
+      '+.srv.nintendo.net',
+      '+.pvp.net',
+      '+.battlenet.com.cn',
+      '+.wotgame.cn',
+      '+.wggames.cn',
+      '+.wowsgame.cn',
+      '+.wargaming.net',
+      'mesu.apple.com',
+      'swscan.apple.com',
+      'swquery.apple.com',
+      'swdownload.apple.com',
+      'swcdn.apple.com',
+      'swdist.apple.com',
+      '+.router.asus.com',
+      '+.linksys.com',
+      '+.linksyssmartwifi.com',
+      'heartbeat.belkin.com',
+      'proxy.golang.org',
+      'localhost.sec.qq.com',
+      '+.ipv6.microsoft.com',
+      'time.*.edu.cn',
+      'time.*.apple.com',
+      '+.ntp.org.cn'
+    ]
+  };
+
+  // ============================================================
   // 效能優化
   // ============================================================
   config['tcp-concurrent'] = true;
@@ -65,7 +155,11 @@ function main(config) {
   // CF 中轉節點識別：這批 network: ws 的節點前置在 Cloudflare，出口是共享邊緣 IP。
   // 跑一般網頁沒問題，但支付風控（Stripe Radar / PayPal）對共享 IP 命中率極高，
   // 而且中轉多一跳，長交互容易中途斷 —— 支付與帳號綁定流程一律排除。
-  const relaySet = new Set(config.proxies.filter(p => p.network === 'ws').map(p => p.name));
+  // 判定條件:network: ws,或伺服器主機名以 cfyes. 開頭(機場的 Cloudflare 前置域名)。
+  // 目前所有 cfyes 節點都是 ws,兩個條件等價;加第二條是防範機場哪天推出
+  // 走 cfyes 前置的 hysteria2 等非 ws 節點,那時只看 network 會漏網
+  const isRelay = p => p.network === 'ws' || /^cfyes\./i.test(p.server || '');
+  const relaySet = new Set(config.proxies.filter(isRelay).map(p => p.name));
   const noRelay = list => list.filter(n => !relaySet.has(n));
 
   const isHy2  = name => typeMap[name] === 'hysteria2' || typeMap[name] === 'hysteria';
@@ -212,7 +306,7 @@ function main(config) {
       path: './providers/edgetunnel.yaml',
       // 抓取節點的選擇有兩個約束：
       // 1) 不能指向含 EdgeTunnel 的組（🚀 節點選擇），否則「要抓節點得先有節點」循環依賴
-      // 2) 實測 🇭🇰香港专线02（住宅 IP）連 edge-doo.pages.dev 會 25 秒逾時 ——
+      // 2) 實測 🇭🇰香港专线02（住宅 IP）連 <YOUR-SUB-HOST> 會 25 秒逾時 ——
       //    Cloudflare Pages 對住宅代理 IP 的封鎖很常見；同樣是 Hy2 的 🇺🇸美国05 則 0.9 秒 200。
       // usDirectName 是無中轉的美國直連組（含美国05），兩個約束都滿足
       proxy: usDirectName || usName || '⚡ 全局最快大亂鬥',
@@ -284,7 +378,7 @@ function main(config) {
     { name: '🤖 AI 服務', type: 'select', proxies: uniq(aiProxies) },
     { name: '💻 AI 編程', type: 'select', proxies: uniq([jpFallback, usDirectName, sgDirectName, jpVlessName, jpName, usFallback, usVlessName, sgFallback, allVlessName, allHy2Name, '🚀 節點選擇', ...regionNames]) },
     { name: '🐙 GitHub', type: 'select', proxies: [usName, jpName, sgName, usVlessName, jpVlessName, '🚀 節點選擇', ...regionNames].filter(Boolean) },
-    { name: '🎥 串流媒體', type: 'select', proxies: uniq(['🚀 節點選擇', ...protocolNames, ...regionNames, ...edgeNames]) },
+    { name: '🎥 串流媒體', type: 'select', proxies: uniq([usDirectName, sgDirectName, jpDirectName, '🚀 節點選擇', ...protocolNames, ...regionNames, ...edgeNames]) },
     { name: '🎌 巴哈姆特', type: 'select', proxies: [twName, twHy2Name, '🚀 節點選擇'].filter(Boolean) },
     // 預設沿用目前實際落點（美國直連），避免改動後行為突變；
     // 想要低延遲就往下選日本／獅城，但注意倍率：美國 0.01x~0.1x，日本專線是 1x
@@ -293,8 +387,8 @@ function main(config) {
     { name: '🏰 Disney+', type: 'select', proxies: [sgName, sgVlessName, sgHy2Name, sgFallback, '🚀 節點選擇'].filter(Boolean) },
     { name: '🎵 Spotify', type: 'select', proxies: [jpName, jpVlessName, jpHy2Name, jpFallback, '🚀 節點選擇'].filter(Boolean) },
     { name: '📺 Prime Video', type: 'select', proxies: [jpName, jpVlessName, jpHy2Name, jpFallback, '🚀 節點選擇'].filter(Boolean) },
-    { name: '🔍 Google', type: 'select', proxies: [usName, jpName, sgName, usVlessName, jpVlessName, usHy2Name, jpHy2Name, '🚀 節點選擇', ...regionNames].filter(Boolean) },
-    { name: '📲 Telegram', type: 'select', proxies: uniq(['🚀 節點選擇', ...protocolNames, ...regionNames, ...edgeNames]) },
+    { name: '🔍 Google', type: 'select', proxies: uniq([usDirectName, sgDirectName, jpDirectName, usName, jpName, sgName, usVlessName, jpVlessName, usHy2Name, jpHy2Name, '🚀 節點選擇', ...regionNames]) },
+    { name: '📲 Telegram', type: 'select', proxies: uniq([sgDirectName, jpDirectName, usDirectName, '🚀 節點選擇', ...protocolNames, ...regionNames, ...edgeNames]) },
     { name: '🎮 遊戲平台', type: 'select', proxies: uniq(['DIRECT', '🚀 節點選擇', ...protocolNames, ...regionNames, ...edgeNames]) },
     // 預設直連；國外片源播不動時可在代理組改走節點
     { name: '📺 本地播放器', type: 'select', proxies: ['DIRECT', '🚀 節點選擇', ...regionNames] },
@@ -332,6 +426,17 @@ function main(config) {
     // fake-ip-filter 的 '+.wpad' 只管 DNS 不管路由，這條才是實際攔截
     'DOMAIN-SUFFIX,wpad.net,REJECT',
 
+    // STUN（WebRTC 的 NAT 穿透探測）一律直連。
+    // 繞代理是沒有意義的 —— 探測到的會是節點位址而不是本機真實的 NAT 映射，
+    // 對端根本連不過來；實測還走了 CF 中轉節點，UDP 經中轉直接失敗
+    // （stun.l.google.com 重試 5 次後放棄）。影響是視訊/語音通話只能退回中繼。
+    // STUN 本身是明文 UDP、不傳輸內容，直連沒有隱私顧慮。
+    // 用 keyword 是因為主機名沒有統一規律：實測出現過 stun.l.google.com、
+    // stun1.l.google.com（數字後綴）、global.stun.twilio.com（stun 在中間），
+    // 精確列舉蓋不全。代價是會誤中含 "stun" 字串的域名（如 stunning-*），
+    // 機率極低且後果僅是該站改走直連，日誌裡一眼可見
+    'DOMAIN-KEYWORD,stun,DIRECT',
+
     // 📋 IPTV 播放列表來源 → 走代理。必須排在下面的 PROCESS-NAME 之前，
     // 否則會被進程規則拖進 📺 本地播放器（該組直連，抓不到這些來源）。
     // 分工：列表檔案走代理，m3u 裡的實際串流（cdn.qd.je、*.163189.xyz 等亞洲源）
@@ -344,6 +449,17 @@ function main(config) {
     // 開源 IPTV 列表源。ChinaMax 按 .cn 後綴判成直連，但主機實際在海外，
     // 直連必逾時（實測 108.160.165.212 i/o timeout）。同 c.pki.goog 那類誤判
     'DOMAIN-SUFFIX,fanmingming.cn,🚀 節點選擇',
+    // kan.waiguotai.top：列表與串流共用同一台主機，所以一條規則決定兩者。
+    // 走直連的理由：① 4K 杜比視界直播碼率極高，一小時可能 10-20 GB，
+    // 走 1x 節點等於吃掉月額度的 2-4%，直連零成本；
+    // ② 實測日誌 DIRECT 3 次全成功、0 失敗（走代理 11 次有 1 次因節點掛掉而失敗）；
+    // ③ 這台在 Cloudflare 後面（CF-RAY ...-LAX），而 Cloudflare 對代理 IP 段
+    //    挑戰頻繁 —— 參見 <YOUR-SUB-HOST> 走香港住宅 IP 卡 25 秒逾時那次。
+    // 若日後直連出現卡頓或 dial DIRECT error，再改回 🚀 節點選擇
+    'DOMAIN,kan.waiguotai.top,DIRECT',
+    // EPG 節目表：7.5 MB／天，流量可忽略，但境外託管直連可達性沒把握，
+    // 穩定性優先走節點（抓不到只是節目表空白，不影響播放）
+    'DOMAIN-SUFFIX,zsdc.eu.org,🚀 節點選擇',
 
     // 📺 PotPlayer / VLC / IPTV Player Zero 進程直連（需 find-process-mode；TUN 下最有效）
     'PROCESS-NAME,PotPlayerMini64.exe,📺 本地播放器',
@@ -370,6 +486,20 @@ function main(config) {
     // 但本機直連不通，CryptSvc 會每 5 秒重試到逾時，拖慢所有 TLS 握手。
     // 必須排在 RULE-SET,ChinaMax 之前
     'DOMAIN-SUFFIX,pki.goog,🔍 Google',
+    // DigiCert OCSP/CRL:全球憑證基礎設施,但被 blackmatrix7 的 Bahamut 規則集收錄,
+    // 導致 iCloud/系統的憑證吊銷檢查被導向台灣節點而逾時(實測每 5 分鐘一次
+    // context deadline exceeded)。排在 RULE-SET,Bahamut 之前搶回,走通用代理。
+    // 同 c.pki.goog / recaptcha.net 那類「通用 CA/服務域名被規則集誤歸」的修正
+    'DOMAIN-SUFFIX,digicert.com,🚀 節點選擇',
+    // reCAPTCHA 的「中國可用」備援域名。ChinaMax 收錄它並判成直連(原本 Google 在北京的
+    // 伺服器),但實測直連會逾時(9/14 日誌 i/o timeout ×11,9/22 經代理埠測試 5.2s 失敗)。
+    // 走 🔍 Google 與主站 google.com/recaptcha 同一個出口,排在 RULE-SET,ChinaMax 之前
+    'DOMAIN-SUFFIX,recaptcha.net,🔍 Google',
+    // 聯想軟體下載：ChinaMax 因為是 lenovo.com 判成直連，但這台主機解析到
+    // 境外 Akamai（實測 2.23.245.88 / 2.16.177.65 直連逾時 8 次）。
+    // 用 DOMAIN 精確匹配：同層的 filedownload.csw.lenovo.com、msg.csw.lenovo.com
+    // 等五個域名直連都正常，不能一起拉進代理
+    'DOMAIN,filedownload.lenovo.com,🚀 節點選擇',
 
     // 💰 PayPal（必須在 AdBlock 之前：c.paypal.com 等會被廣告規則誤攔）
     'DOMAIN-SUFFIX,paypal.com,💰 PayPal',
@@ -392,6 +522,13 @@ function main(config) {
     // 用 REJECT-DROP 靜默丟棄而非主動拒絕：攔截效果相同，但客戶端要等自己逾時
     // 才會重試，頻率降到個位數。必須排在 RULE-SET,AdBlock 之前才會生效。
     'DOMAIN-SUFFIX,statsigapi.net,REJECT-DROP',
+    // 起點的廣告端點，跟 statsigapi 完全同一個病：被 REJECT 後 Firefox 毫秒級重試，
+    // 實測 2.7 小時 4483 筆、每分鐘 20-130 次，佔掉整份日誌的 85%，
+    // 把有用的記錄擠出保留視窗。改用 REJECT-DROP 靜默丟棄，攔截效果不變，
+    // 但客戶端要等自己逾時才重試。
+    // 注意：後面的 DOMAIN-SUFFIX,qidian.com,DIRECT 不受影響 ——
+    // 這裡只精確攔 qdp 這個廣告子域，正文站 www/my/qdfepccdn 仍走直連
+    'DOMAIN,qdp.qidian.com,REJECT-DROP',
 
     // 🛡️ 廣告與劫持攔截
     'RULE-SET,AdBlock,🛡️ 廣告攔截',
@@ -503,6 +640,10 @@ function main(config) {
     'DOMAIN-SUFFIX,auth0.com,🚀 節點選擇',
     'DOMAIN-SUFFIX,algolia.net,🚀 節點選擇',
 
+    // DeepSeek（深度求索）：一條後綴涵蓋 chat / api / platform / cdn / www 等相關域名。
+    // 實測直連與代理皆可達,依需求歸入 AI 服務組(走無中轉直連出口)
+    'DOMAIN-SUFFIX,deepseek.com,🤖 AI 服務',
+
     // OpenAI 移到 AI 編程規則之後：openai.yaml 收了 api.statsig.com、
     // browser-intake-datadoghq.com，放前面會把編程工具的遙測搶進 🤖 AI 服務
     'RULE-SET,OpenAI,🤖 AI 服務',
@@ -515,7 +656,7 @@ function main(config) {
     // GitHub 在 Google 之前，避免部分資源被寬鬆規則誤傷
     'RULE-SET,GitHub,🐙 GitHub',
     'DOMAIN-SUFFIX,github.com,🐙 GitHub',
-    'DOMAIN-SUFFIX,githubusercontent.com,🐙 GitHub',
+    // githubusercontent.com 已在前面 IPTV 列表區塊(PROCESS-NAME 之前)命中同組,此處省略避免死規則
     'DOMAIN-SUFFIX,githubassets.com,🐙 GitHub',
     'DOMAIN-SUFFIX,ghcr.io,🐙 GitHub',
     'DOMAIN-SUFFIX,npm.pkg.github.com,🐙 GitHub',
