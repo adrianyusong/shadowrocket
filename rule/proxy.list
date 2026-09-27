@@ -2,7 +2,7 @@
 # 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
 # 需要增补规则请写进 config/default.conf 的内联规则段。
 # 上游: blackmatrix7/ios_rule_script
-# 规则数: 31105
+# 规则数: 31098
 
 DOMAIN-SUFFIX,a2z.com
 DOMAIN-SUFFIX,aboutamazon.cn
@@ -412,7 +412,6 @@ DOMAIN,gamedownloads-rockstargames-com.akamaized.net
 DOMAIN,gamer-cds.cdn.hinet.net
 DOMAIN,gamer2-cds.cdn.hinet.net
 DOMAIN,gigabyte2.azureedge.net
-DOMAIN,github-api.arkoselabs.com
 DOMAIN,github-cloud.s3.amazonaws.com
 DOMAIN,github-production-release-asset-2e65be.s3.amazonaws.com
 DOMAIN,github-production-repository-file-5c1aeb.s3.amazonaws.com
@@ -919,6 +918,7 @@ DOMAIN,cloud.oracle.com
 DOMAIN,d1q6f0aelx0por.cloudfront.net
 DOMAIN,d2wy8f7a9ursnm.cloudfront.net
 DOMAIN,d36jcksde1wxzq.cloudfront.net
+DOMAIN,github-api.arkoselabs.com
 DOMAIN,lens.l.google.com
 DOMAIN,login.microsoftonline.com
 DOMAIN-SUFFIX,01.org
@@ -2577,7 +2577,6 @@ DOMAIN-SUFFIX,appdynamics.org
 DOMAIN-SUFFIX,appexchange.com
 DOMAIN-SUFFIX,appget.com
 DOMAIN-SUFFIX,apple-studies.com
-DOMAIN-SUFFIX,appledaily.hk
 DOMAIN-SUFFIX,applefruity.com
 DOMAIN-SUFFIX,applehealth.com.hk
 DOMAIN-SUFFIX,appleinsider.com
@@ -7082,15 +7081,6 @@ DOMAIN-SUFFIX,drnastran.com
 DOMAIN-SUFFIX,drns.ac.uk
 DOMAIN-SUFFIX,drobbox.pro
 DOMAIN-SUFFIX,drom.ru
-DOMAIN-SUFFIX,dropbox-dns.com
-DOMAIN-SUFFIX,dropbox.tech
-DOMAIN-SUFFIX,dropboxbusiness.com
-DOMAIN-SUFFIX,dropboxcaptcha.com
-DOMAIN-SUFFIX,dropboxforum.com
-DOMAIN-SUFFIX,dropboxforums.com
-DOMAIN-SUFFIX,dropboxinsiders.com
-DOMAIN-SUFFIX,dropboxmail.com
-DOMAIN-SUFFIX,dropboxpartners.com
 DOMAIN-SUFFIX,drpc.org
 DOMAIN-SUFFIX,drunk6.com
 DOMAIN-SUFFIX,drunkenstepfather.com
@@ -9344,7 +9334,6 @@ DOMAIN-SUFFIX,getboxer.com
 DOMAIN-SUFFIX,getbuzzsaw.com
 DOMAIN-SUFFIX,getcomposer.org
 DOMAIN-SUFFIX,getdirect.tv
-DOMAIN-SUFFIX,getdropbox.com
 DOMAIN-SUFFIX,getfappy.com
 DOMAIN-SUFFIX,getfedora.org
 DOMAIN-SUFFIX,getfiddler.com
@@ -9455,10 +9444,7 @@ DOMAIN-SUFFIX,girlsxxx.net
 DOMAIN-SUFFIX,gisplanning.com
 DOMAIN-SUFFIX,git-scm.com
 DOMAIN-SUFFIX,gitgud.io
-DOMAIN-SUFFIX,github.ai
-DOMAIN-SUFFIX,github.career
 DOMAIN-SUFFIX,github1s.com
-DOMAIN-SUFFIX,githubsupport.com
 DOMAIN-SUFFIX,gitlab-static.net
 DOMAIN-SUFFIX,gitstar.com
 DOMAIN-SUFFIX,gitstar.net
@@ -17679,7 +17665,6 @@ DOMAIN-SUFFIX,qmw.ac.uk
 DOMAIN-SUFFIX,qmzdd.com
 DOMAIN-SUFFIX,qnap.com
 DOMAIN-SUFFIX,qnapsupport.net
-DOMAIN-SUFFIX,qobuz.com
 DOMAIN-SUFFIX,qombol.com
 DOMAIN-SUFFIX,qoo-app.com
 DOMAIN-SUFFIX,qoo10.jp
@@ -20767,10 +20752,8 @@ DOMAIN-SUFFIX,termux.org
 DOMAIN-SUFFIX,terraform.io
 DOMAIN-SUFFIX,terrapeak.com
 DOMAIN-SUFFIX,terrlficdates.com
-DOMAIN-SUFFIX,tesla.com
 DOMAIN-SUFFIX,tesla.services
 DOMAIN-SUFFIX,teslaenergy.services
-DOMAIN-SUFFIX,teslamotors.com
 DOMAIN-SUFFIX,teslazta.net
 DOMAIN-SUFFIX,test-ipv6.alpinedc.ch
 DOMAIN-SUFFIX,test-ipv6.arauc.br
@@ -24611,7 +24594,6 @@ DOMAIN-SUFFIX,abchinese.com
 DOMAIN-SUFFIX,abebooks.co.uk
 DOMAIN-SUFFIX,abebooks.com
 DOMAIN-SUFFIX,ablwang.com
-DOMAIN-SUFFIX,about.google
 DOMAIN-SUFFIX,about.me
 DOMAIN-SUFFIX,abpchina.org
 DOMAIN-SUFFIX,abplive.com
@@ -24637,6 +24619,7 @@ DOMAIN-SUFFIX,aculo.us
 DOMAIN-SUFFIX,adblockplus.org
 DOMAIN-SUFFIX,adcex.com
 DOMAIN-SUFFIX,addictedtocoffee.de
+DOMAIN-SUFFIX,addtodropbox.com
 DOMAIN-SUFFIX,addyoutube.com
 DOMAIN-SUFFIX,adelaidebbs.com
 DOMAIN-SUFFIX,adguard-vpn.com
@@ -24664,7 +24647,6 @@ DOMAIN-SUFFIX,ahcdn.com
 DOMAIN-SUFFIX,ai-kan.net
 DOMAIN-SUFFIX,ai-wen.net
 DOMAIN-SUFFIX,ai.dev
-DOMAIN-SUFFIX,ai.google
 DOMAIN-SUFFIX,ai.studio
 DOMAIN-SUFFIX,aihub.top
 DOMAIN-SUFFIX,aiosearch.com
@@ -24829,6 +24811,7 @@ DOMAIN-SUFFIX,applecensorship.com
 DOMAIN-SUFFIX,appledaily.com
 DOMAIN-SUFFIX,appledaily.com.hk
 DOMAIN-SUFFIX,appledaily.com.tw
+DOMAIN-SUFFIX,appledaily.hk
 DOMAIN-SUFFIX,appshopper.com
 DOMAIN-SUFFIX,appsocks.net
 DOMAIN-SUFFIX,appspot-preview.com
@@ -25258,6 +25241,7 @@ DOMAIN-SUFFIX,byrut.org
 DOMAIN-SUFFIX,c-est-simple.com
 DOMAIN-SUFFIX,c-span.org
 DOMAIN-SUFFIX,c-spanvideo.org
+DOMAIN-SUFFIX,c.go-mpulse.net
 DOMAIN-SUFFIX,c.mi.com
 DOMAIN-SUFFIX,c100tibet.org
 DOMAIN-SUFFIX,c2cx.com
@@ -25492,7 +25476,6 @@ DOMAIN-SUFFIX,christianstudy.com
 DOMAIN-SUFFIX,christiantimes.org.hk
 DOMAIN-SUFFIX,christusrex.org
 DOMAIN-SUFFIX,chrlawyers.hk
-DOMAIN-SUFFIX,chromeenterprise.google
 DOMAIN-SUFFIX,cht.com.tw
 DOMAIN-SUFFIX,chuang-yen.org
 DOMAIN-SUFFIX,chubold.com
@@ -25606,7 +25589,6 @@ DOMAIN-SUFFIX,coinut.com
 DOMAIN-SUFFIX,colacloud.net
 DOMAIN-SUFFIX,collateralmurder.com
 DOMAIN-SUFFIX,collateralmurder.org
-DOMAIN-SUFFIX,com.google
 DOMAIN-SUFFIX,comedycentral.com
 DOMAIN-SUFFIX,comefromchina.com
 DOMAIN-SUFFIX,comic-mega.me
@@ -25652,7 +25634,6 @@ DOMAIN-SUFFIX,crd-net.org
 DOMAIN-SUFFIX,creader.com
 DOMAIN-SUFFIX,creaders.net
 DOMAIN-SUFFIX,creadersnet.com
-DOMAIN-SUFFIX,crisisresponse.google
 DOMAIN-SUFFIX,crisp.chat
 DOMAIN-SUFFIX,cristyli.com
 DOMAIN-SUFFIX,crittercism.com
@@ -25797,7 +25778,6 @@ DOMAIN-SUFFIX,deno.com
 DOMAIN-SUFFIX,deno.dev
 DOMAIN-SUFFIX,depositphotos.com
 DOMAIN-SUFFIX,desc.se
-DOMAIN-SUFFIX,design.google
 DOMAIN-SUFFIX,desipro.de
 DOMAIN-SUFFIX,deskconnect.com
 DOMAIN-SUFFIX,dessci.com
@@ -25855,7 +25835,6 @@ DOMAIN-SUFFIX,dmm.co.jp
 DOMAIN-SUFFIX,dmm.com
 DOMAIN-SUFFIX,dns-dns.com
 DOMAIN-SUFFIX,dns-stuff.com
-DOMAIN-SUFFIX,dns.google
 DOMAIN-SUFFIX,dns.sb
 DOMAIN-SUFFIX,dns04.com
 DOMAIN-SUFFIX,dns05.com
@@ -25883,7 +25862,6 @@ DOMAIN-SUFFIX,dolc.de
 DOMAIN-SUFFIX,dolf.org.hk
 DOMAIN-SUFFIX,dollf.com
 DOMAIN-SUFFIX,domain.club.tw
-DOMAIN-SUFFIX,domains.google
 DOMAIN-SUFFIX,domaintoday.com.au
 DOMAIN-SUFFIX,donga.com
 DOMAIN-SUFFIX,dongtaiwang.net
@@ -25926,9 +25904,21 @@ DOMAIN-SUFFIX,dribbble.com
 DOMAIN-SUFFIX,drmingxia.org
 DOMAIN-SUFFIX,dronedj.com
 DOMAIN-SUFFIX,dropbooks.tv
+DOMAIN-SUFFIX,dropbox-dns.com
 DOMAIN-SUFFIX,dropbox.com
+DOMAIN-SUFFIX,dropbox.tech
 DOMAIN-SUFFIX,dropboxapi.com
+DOMAIN-SUFFIX,dropboxbusiness.com
+DOMAIN-SUFFIX,dropboxcaptcha.com
+DOMAIN-SUFFIX,dropboxexperiment.com
+DOMAIN-SUFFIX,dropboxforum.com
+DOMAIN-SUFFIX,dropboxforums.com
+DOMAIN-SUFFIX,dropboxinsiders.com
+DOMAIN-SUFFIX,dropboxlegal.com
+DOMAIN-SUFFIX,dropboxmail.com
+DOMAIN-SUFFIX,dropboxpartners.com
 DOMAIN-SUFFIX,dropboxstatic.com
+DOMAIN-SUFFIX,dropboxteam.com
 DOMAIN-SUFFIX,dropboxusercontent.com
 DOMAIN-SUFFIX,droplr.com
 DOMAIN-SUFFIX,drsunacademy.com
@@ -26075,7 +26065,6 @@ DOMAIN-SUFFIX,enlighten.org.tw
 DOMAIN-SUFFIX,entermap.com
 DOMAIN-SUFFIX,entnt.com
 DOMAIN-SUFFIX,entrust.net
-DOMAIN-SUFFIX,environment.google
 DOMAIN-SUFFIX,epac.to
 DOMAIN-SUFFIX,episcopalchurch.org
 DOMAIN-SUFFIX,epochhk.com
@@ -26593,6 +26582,7 @@ DOMAIN-SUFFIX,getastrill.com
 DOMAIN-SUFFIX,getchu.com
 DOMAIN-SUFFIX,getcloak.com
 DOMAIN-SUFFIX,getcloudapp.com
+DOMAIN-SUFFIX,getdropbox.com
 DOMAIN-SUFFIX,getfoxyproxy.org
 DOMAIN-SUFFIX,getfreedur.com
 DOMAIN-SUFFIX,getgom.com
@@ -26643,7 +26633,10 @@ DOMAIN-SUFFIX,gitbook.com
 DOMAIN-SUFFIX,gitbook.io
 DOMAIN-SUFFIX,gitbooks.io
 DOMAIN-SUFFIX,githack.com
+DOMAIN-SUFFIX,github.ai
+DOMAIN-SUFFIX,github.career
 DOMAIN-SUFFIX,githubmemory.com
+DOMAIN-SUFFIX,githubsupport.com
 DOMAIN-SUFFIX,gitlab.com
 DOMAIN-SUFFIX,gitlab.io
 DOMAIN-SUFFIX,gitlab.net
@@ -26722,6 +26715,7 @@ DOMAIN-SUFFIX,goodreads.com
 DOMAIN-SUFFIX,goodtv.com.tw
 DOMAIN-SUFFIX,goodtv.tv
 DOMAIN-SUFFIX,goofind.com
+DOMAIN-SUFFIX,google
 DOMAIN-SUFFIX,google.ac
 DOMAIN-SUFFIX,google.af
 DOMAIN-SUFFIX,google.ai
@@ -26816,7 +26810,6 @@ DOMAIN-SUFFIX,grindr.com
 DOMAIN-SUFFIX,grokipedia.com
 DOMAIN-SUFFIX,grotty-monday.com
 DOMAIN-SUFFIX,ground.news
-DOMAIN-SUFFIX,grow.google
 DOMAIN-SUFFIX,gs-discuss.com
 DOMAIN-SUFFIX,gsearch.media
 DOMAIN-SUFFIX,gtricks.com
@@ -27650,7 +27643,6 @@ DOMAIN-SUFFIX,lemonde.fr
 DOMAIN-SUFFIX,lenwhite.com
 DOMAIN-SUFFIX,leonardo.ai
 DOMAIN-SUFFIX,lerosua.org
-DOMAIN-SUFFIX,lers.google
 DOMAIN-SUFFIX,lesoir.be
 DOMAIN-SUFFIX,lester850.info
 DOMAIN-SUFFIX,letou.com
@@ -28293,7 +28285,6 @@ DOMAIN-SUFFIX,ngensis.com
 DOMAIN-SUFFIX,nhentai.net
 DOMAIN-SUFFIX,nhk-ondemand.jp
 DOMAIN-SUFFIX,nianticlabs.com
-DOMAIN-SUFFIX,nic.google
 DOMAIN-SUFFIX,nic.gov
 DOMAIN-SUFFIX,nicoseiga.jp
 DOMAIN-SUFFIX,nicovideo.jp
@@ -28811,7 +28802,6 @@ DOMAIN-SUFFIX,presentationzen.com
 DOMAIN-SUFFIX,president.ir
 DOMAIN-SUFFIX,presidentlee.tw
 DOMAIN-SUFFIX,prestige-av.com
-DOMAIN-SUFFIX,pride.google
 DOMAIN-SUFFIX,printfriendly.com
 DOMAIN-SUFFIX,prism-break.org
 DOMAIN-SUFFIX,prismic.io
@@ -28909,6 +28899,7 @@ DOMAIN-SUFFIX,qienkuen.org
 DOMAIN-SUFFIX,qiwen.lu
 DOMAIN-SUFFIX,qkshare.com
 DOMAIN-SUFFIX,qmp4.com
+DOMAIN-SUFFIX,qobuz.com
 DOMAIN-SUFFIX,qoos.com
 DOMAIN-SUFFIX,qpoe.com
 DOMAIN-SUFFIX,qq.co.za
@@ -29021,7 +29012,6 @@ DOMAIN-SUFFIX,religionnews.com
 DOMAIN-SUFFIX,religioustolerance.org
 DOMAIN-SUFFIX,rentry.co
 DOMAIN-SUFFIX,renyurenquan.org
-DOMAIN-SUFFIX,research.google
 DOMAIN-SUFFIX,resilio.com
 DOMAIN-SUFFIX,resistchina.org
 DOMAIN-SUFFIX,restofworld.org
@@ -29120,7 +29110,6 @@ DOMAIN-SUFFIX,sadpanda.us
 DOMAIN-SUFFIX,safechat.com
 DOMAIN-SUFFIX,safeguarddefenders.com
 DOMAIN-SUFFIX,safervpn.com
-DOMAIN-SUFFIX,safety.google
 DOMAIN-SUFFIX,sagernet.org
 DOMAIN-SUFFIX,saintyculture.com
 DOMAIN-SUFFIX,saiq.me
@@ -29532,7 +29521,6 @@ DOMAIN-SUFFIX,sto.cc
 DOMAIN-SUFFIX,stoporganharvesting.org
 DOMAIN-SUFFIX,stoptibetcrisis.net
 DOMAIN-SUFFIX,storagenewsletter.com
-DOMAIN-SUFFIX,stories.google
 DOMAIN-SUFFIX,storify.com
 DOMAIN-SUFFIX,storj.io
 DOMAIN-SUFFIX,storm.mg
@@ -29591,7 +29579,6 @@ DOMAIN-SUFFIX,surfshark.com
 DOMAIN-SUFFIX,surge.run
 DOMAIN-SUFFIX,suroot.com
 DOMAIN-SUFFIX,surrenderat20.net
-DOMAIN-SUFFIX,sustainability.google
 DOMAIN-SUFFIX,suyangg.com
 DOMAIN-SUFFIX,suyingtv.com
 DOMAIN-SUFFIX,svsfx.com
@@ -29730,6 +29717,8 @@ DOMAIN-SUFFIX,tenzinpalmo.com
 DOMAIN-SUFFIX,terabox.com
 DOMAIN-SUFFIX,teraboxcdn.com
 DOMAIN-SUFFIX,terobox.com
+DOMAIN-SUFFIX,tesla.com
+DOMAIN-SUFFIX,teslamotors.com
 DOMAIN-SUFFIX,tew.org
 DOMAIN-SUFFIX,textnow.com
 DOMAIN-SUFFIX,textnow.me
@@ -30349,6 +30338,7 @@ DOMAIN-SUFFIX,vanpeople.com
 DOMAIN-SUFFIX,vansky.com
 DOMAIN-SUFFIX,vaticannews.va
 DOMAIN-SUFFIX,vatn.org
+DOMAIN-SUFFIX,vava8.com
 DOMAIN-SUFFIX,vbstatic.co
 DOMAIN-SUFFIX,vcf-online.org
 DOMAIN-SUFFIX,vcfbuilder.org
@@ -31063,10 +31053,13 @@ IP-CIDR,120.253.253.226/32,no-resolve
 IP-CIDR,120.253.255.162/32,no-resolve
 IP-CIDR,120.253.255.34/32,no-resolve
 IP-CIDR,120.253.255.98/32,no-resolve
+IP-CIDR,13.251.24.0/24,no-resolve
+IP-CIDR,13.251.41.0/24,no-resolve
 IP-CIDR,14.102.250.18/31,no-resolve
 IP-CIDR,158.85.224.160/27,no-resolve
 IP-CIDR,158.85.46.128/27,no-resolve
 IP-CIDR,158.85.5.192/27,no-resolve
+IP-CIDR,17.252.156.0/23,no-resolve
 IP-CIDR,173.192.222.160/27,no-resolve
 IP-CIDR,173.192.231.32/27,no-resolve
 IP-CIDR,174.142.105.153/32,no-resolve

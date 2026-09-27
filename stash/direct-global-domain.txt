@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/direct-global.list 生成，请勿手改。
-# behavior: domain   条数: 21
+# behavior: domain   条数: 24
 csgo.wmsj.cn
 dl.steam.clngaa.com
 dl.steam.ksyna.com
@@ -20,4 +20,7 @@ xz.pphimalayanrt.com
 +.ooklaserver.net
 +.speed.cloudflare.com
 +.speed.dler.io
++.speedtest.co
++.speedtest.net
++.speedtestcustom.com
 +.qbittorrent.org

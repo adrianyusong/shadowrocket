@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/proxy.list 生成，请勿手改。
-# behavior: domain   条数: 31017
+# behavior: domain   条数: 31007
 +.a2z.com
 +.aboutamazon.cn
 +.aboutamazon.co.uk
@@ -393,7 +393,6 @@ gamedownloads-rockstargames-com.akamaized.net
 gamer-cds.cdn.hinet.net
 gamer2-cds.cdn.hinet.net
 gigabyte2.azureedge.net
-github-api.arkoselabs.com
 github-cloud.s3.amazonaws.com
 github-production-release-asset-2e65be.s3.amazonaws.com
 github-production-repository-file-5c1aeb.s3.amazonaws.com
@@ -900,6 +899,7 @@ cloud.oracle.com
 d1q6f0aelx0por.cloudfront.net
 d2wy8f7a9ursnm.cloudfront.net
 d36jcksde1wxzq.cloudfront.net
+github-api.arkoselabs.com
 lens.l.google.com
 login.microsoftonline.com
 +.01.org
@@ -2558,7 +2558,6 @@ login.microsoftonline.com
 +.appexchange.com
 +.appget.com
 +.apple-studies.com
-+.appledaily.hk
 +.applefruity.com
 +.applehealth.com.hk
 +.appleinsider.com
@@ -7063,15 +7062,6 @@ login.microsoftonline.com
 +.drns.ac.uk
 +.drobbox.pro
 +.drom.ru
-+.dropbox-dns.com
-+.dropbox.tech
-+.dropboxbusiness.com
-+.dropboxcaptcha.com
-+.dropboxforum.com
-+.dropboxforums.com
-+.dropboxinsiders.com
-+.dropboxmail.com
-+.dropboxpartners.com
 +.drpc.org
 +.drunk6.com
 +.drunkenstepfather.com
@@ -9325,7 +9315,6 @@ login.microsoftonline.com
 +.getbuzzsaw.com
 +.getcomposer.org
 +.getdirect.tv
-+.getdropbox.com
 +.getfappy.com
 +.getfedora.org
 +.getfiddler.com
@@ -9436,10 +9425,7 @@ login.microsoftonline.com
 +.gisplanning.com
 +.git-scm.com
 +.gitgud.io
-+.github.ai
-+.github.career
 +.github1s.com
-+.githubsupport.com
 +.gitlab-static.net
 +.gitstar.com
 +.gitstar.net
@@ -17660,7 +17646,6 @@ login.microsoftonline.com
 +.qmzdd.com
 +.qnap.com
 +.qnapsupport.net
-+.qobuz.com
 +.qombol.com
 +.qoo-app.com
 +.qoo10.jp
@@ -20748,10 +20733,8 @@ login.microsoftonline.com
 +.terraform.io
 +.terrapeak.com
 +.terrlficdates.com
-+.tesla.com
 +.tesla.services
 +.teslaenergy.services
-+.teslamotors.com
 +.teslazta.net
 +.test-ipv6.alpinedc.ch
 +.test-ipv6.arauc.br
@@ -24592,7 +24575,6 @@ login.microsoftonline.com
 +.abebooks.co.uk
 +.abebooks.com
 +.ablwang.com
-+.about.google
 +.about.me
 +.abpchina.org
 +.abplive.com
@@ -24618,6 +24600,7 @@ login.microsoftonline.com
 +.adblockplus.org
 +.adcex.com
 +.addictedtocoffee.de
++.addtodropbox.com
 +.addyoutube.com
 +.adelaidebbs.com
 +.adguard-vpn.com
@@ -24645,7 +24628,6 @@ login.microsoftonline.com
 +.ai-kan.net
 +.ai-wen.net
 +.ai.dev
-+.ai.google
 +.ai.studio
 +.aihub.top
 +.aiosearch.com
@@ -24810,6 +24792,7 @@ login.microsoftonline.com
 +.appledaily.com
 +.appledaily.com.hk
 +.appledaily.com.tw
++.appledaily.hk
 +.appshopper.com
 +.appsocks.net
 +.appspot-preview.com
@@ -25239,6 +25222,7 @@ login.microsoftonline.com
 +.c-est-simple.com
 +.c-span.org
 +.c-spanvideo.org
++.c.go-mpulse.net
 +.c.mi.com
 +.c100tibet.org
 +.c2cx.com
@@ -25473,7 +25457,6 @@ login.microsoftonline.com
 +.christiantimes.org.hk
 +.christusrex.org
 +.chrlawyers.hk
-+.chromeenterprise.google
 +.cht.com.tw
 +.chuang-yen.org
 +.chubold.com
@@ -25587,7 +25570,6 @@ login.microsoftonline.com
 +.colacloud.net
 +.collateralmurder.com
 +.collateralmurder.org
-+.com.google
 +.comedycentral.com
 +.comefromchina.com
 +.comic-mega.me
@@ -25633,7 +25615,6 @@ login.microsoftonline.com
 +.creader.com
 +.creaders.net
 +.creadersnet.com
-+.crisisresponse.google
 +.crisp.chat
 +.cristyli.com
 +.crittercism.com
@@ -25778,7 +25759,6 @@ login.microsoftonline.com
 +.deno.dev
 +.depositphotos.com
 +.desc.se
-+.design.google
 +.desipro.de
 +.deskconnect.com
 +.dessci.com
@@ -25836,7 +25816,6 @@ login.microsoftonline.com
 +.dmm.com
 +.dns-dns.com
 +.dns-stuff.com
-+.dns.google
 +.dns.sb
 +.dns04.com
 +.dns05.com
@@ -25864,7 +25843,6 @@ login.microsoftonline.com
 +.dolf.org.hk
 +.dollf.com
 +.domain.club.tw
-+.domains.google
 +.domaintoday.com.au
 +.donga.com
 +.dongtaiwang.net
@@ -25907,9 +25885,21 @@ login.microsoftonline.com
 +.drmingxia.org
 +.dronedj.com
 +.dropbooks.tv
++.dropbox-dns.com
 +.dropbox.com
++.dropbox.tech
 +.dropboxapi.com
++.dropboxbusiness.com
++.dropboxcaptcha.com
++.dropboxexperiment.com
++.dropboxforum.com
++.dropboxforums.com
++.dropboxinsiders.com
++.dropboxlegal.com
++.dropboxmail.com
++.dropboxpartners.com
 +.dropboxstatic.com
++.dropboxteam.com
 +.dropboxusercontent.com
 +.droplr.com
 +.drsunacademy.com
@@ -26056,7 +26046,6 @@ login.microsoftonline.com
 +.entermap.com
 +.entnt.com
 +.entrust.net
-+.environment.google
 +.epac.to
 +.episcopalchurch.org
 +.epochhk.com
@@ -26574,6 +26563,7 @@ login.microsoftonline.com
 +.getchu.com
 +.getcloak.com
 +.getcloudapp.com
++.getdropbox.com
 +.getfoxyproxy.org
 +.getfreedur.com
 +.getgom.com
@@ -26624,7 +26614,10 @@ login.microsoftonline.com
 +.gitbook.io
 +.gitbooks.io
 +.githack.com
++.github.ai
++.github.career
 +.githubmemory.com
++.githubsupport.com
 +.gitlab.com
 +.gitlab.io
 +.gitlab.net
@@ -26703,6 +26696,7 @@ login.microsoftonline.com
 +.goodtv.com.tw
 +.goodtv.tv
 +.goofind.com
++.google
 +.google.ac
 +.google.af
 +.google.ai
@@ -26797,7 +26791,6 @@ login.microsoftonline.com
 +.grokipedia.com
 +.grotty-monday.com
 +.ground.news
-+.grow.google
 +.gs-discuss.com
 +.gsearch.media
 +.gtricks.com
@@ -27631,7 +27624,6 @@ login.microsoftonline.com
 +.lenwhite.com
 +.leonardo.ai
 +.lerosua.org
-+.lers.google
 +.lesoir.be
 +.lester850.info
 +.letou.com
@@ -28274,7 +28266,6 @@ login.microsoftonline.com
 +.nhentai.net
 +.nhk-ondemand.jp
 +.nianticlabs.com
-+.nic.google
 +.nic.gov
 +.nicoseiga.jp
 +.nicovideo.jp
@@ -28792,7 +28783,6 @@ login.microsoftonline.com
 +.president.ir
 +.presidentlee.tw
 +.prestige-av.com
-+.pride.google
 +.printfriendly.com
 +.prism-break.org
 +.prismic.io
@@ -28890,6 +28880,7 @@ login.microsoftonline.com
 +.qiwen.lu
 +.qkshare.com
 +.qmp4.com
++.qobuz.com
 +.qoos.com
 +.qpoe.com
 +.qq.co.za
@@ -29002,7 +28993,6 @@ login.microsoftonline.com
 +.religioustolerance.org
 +.rentry.co
 +.renyurenquan.org
-+.research.google
 +.resilio.com
 +.resistchina.org
 +.restofworld.org
@@ -29101,7 +29091,6 @@ login.microsoftonline.com
 +.safechat.com
 +.safeguarddefenders.com
 +.safervpn.com
-+.safety.google
 +.sagernet.org
 +.saintyculture.com
 +.saiq.me
@@ -29513,7 +29502,6 @@ login.microsoftonline.com
 +.stoporganharvesting.org
 +.stoptibetcrisis.net
 +.storagenewsletter.com
-+.stories.google
 +.storify.com
 +.storj.io
 +.storm.mg
@@ -29572,7 +29560,6 @@ login.microsoftonline.com
 +.surge.run
 +.suroot.com
 +.surrenderat20.net
-+.sustainability.google
 +.suyangg.com
 +.suyingtv.com
 +.svsfx.com
@@ -29711,6 +29698,8 @@ login.microsoftonline.com
 +.terabox.com
 +.teraboxcdn.com
 +.terobox.com
++.tesla.com
++.teslamotors.com
 +.tew.org
 +.textnow.com
 +.textnow.me
@@ -30330,6 +30319,7 @@ login.microsoftonline.com
 +.vansky.com
 +.vaticannews.va
 +.vatn.org
++.vava8.com
 +.vbstatic.co
 +.vcf-online.org
 +.vcfbuilder.org
