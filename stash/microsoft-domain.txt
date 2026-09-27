@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/microsoft.list 生成，请勿手改。
-# behavior: domain   条数: 656
+# behavior: domain   条数: 621
 +.1drv.com
 +.livefilestore.com
 +.microsoftpersonalcontent.com
@@ -109,10 +109,6 @@ vsmarketplacebadge.apphb.com
 +.b2clogin.cn
 +.b3itech.cn
 +.bbing.com
-+.beth.games
-+.bethesda.net
-+.bethesdagamestudios.com
-+.bethsoft.com
 +.bibg.com
 +.biing.com
 +.binads.com
@@ -145,7 +141,6 @@ vsmarketplacebadge.apphb.com
 +.brazilpartneruniversity.com
 +.breakdown.me
 +.c-msedge.net
-+.callersbane.com
 +.cegid-cloud.cn
 +.centralvalidation.com
 +.ch9.ms
@@ -190,11 +185,7 @@ vsmarketplacebadge.apphb.com
 +.femalefounderscomp.com
 +.flipwithsurface.com
 +.fluidpreview.com
-+.forzamotorsport.net
-+.forzaracingchampionship.com
-+.forzarc.com
 +.g.akamaiedge.net
-+.gamepass.com
 +.gamesstack.com
 +.gameuxmasterguide.com
 +.gears5.com
@@ -207,7 +198,6 @@ vsmarketplacebadge.apphb.com
 +.graphengine.io
 +.groupme.com
 +.hdinsightservices.cn
-+.helpshift.com
 +.here.com
 +.here.net
 +.heremaps.cn
@@ -395,12 +385,9 @@ vsmarketplacebadge.apphb.com
 +.microsofttranslator.com
 +.microsoftusercontent.com
 +.microsoftuwp.com
-+.minecraft.net
-+.minecraftshop.com
 +.mmais.com.cn
 +.mmdnn.com
 +.mncmsidlab1.cn
-+.mojang.com
 +.momentumms.com
 +.mono-project.com
 +.morphcharts.com
@@ -432,7 +419,6 @@ vsmarketplacebadge.apphb.com
 +.msftidentity.com
 +.msftnet.org
 +.msgamesresearch.com
-+.msgamestudios.com
 +.msidentity.cn
 +.msidentity.com
 +.msidlabpbmc.cn
@@ -507,7 +493,6 @@ vsmarketplacebadge.apphb.com
 +.opentranslatorstothings.org
 +.opticsforthecloud.net
 +.optimizely.com
-+.orithegame.com
 +.osdinfra.net
 +.outingsapp.com
 +.outlook.cn
@@ -539,7 +524,6 @@ vsmarketplacebadge.apphb.com
 +.reactorms.com.cn
 +.renlifang.com
 +.renovacionoffice.com
-+.renovacionxboxlive.com
 +.s-microsoft.com
 +.s-msedge.net
 +.s-msft.com
@@ -576,7 +560,6 @@ vsmarketplacebadge.apphb.com
 +.sysinternals.com
 +.tailwindtraders.com
 +.techhub.ms
-+.tellmewhygame.com
 +.tenor.com
 +.tfsallin.net
 +.timelinestoryteller.com
@@ -634,25 +617,7 @@ vsmarketplacebadge.apphb.com
 +.working-bing-int.com
 +.wunderlist.com
 +.xamarin.com
-+.xbox.co
-+.xbox.com
-+.xbox.eu
-+.xbox.org
-+.xbox360.co
-+.xbox360.com
-+.xbox360.eu
-+.xbox360.org
-+.xboxab.com
-+.xboxgamepass.com
-+.xboxgamestudios.com
 +.xboxlive.cn
 +.xboxlive.com
-+.xboxone.co
-+.xboxone.com
-+.xboxone.eu
-+.xboxplayanywhere.com
-+.xboxservices.com
-+.xboxstudios.com
-+.xbx.lv
 +.yammer.com
 +.yammerusercontent.com

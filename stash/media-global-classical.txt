@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/media-global.list 生成，请勿手改。
-# behavior: classical   条数: 69
+# behavior: classical   条数: 68
 DOMAIN-KEYWORD,anthropic
 DOMAIN-KEYWORD,bbcfmt
 DOMAIN-KEYWORD,claude
@@ -57,7 +57,6 @@ USER-AGENT,TIDAL*
 USER-AGENT,TIDAL*dia
 USER-AGENT,TVer-Release*
 USER-AGENT,TaiwanGood*
-USER-AGENT,TikTok*
 USER-AGENT,Viu*
 USER-AGENT,ViuTV*
 USER-AGENT,WeMusic*

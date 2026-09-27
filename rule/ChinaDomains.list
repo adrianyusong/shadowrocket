@@ -7,8 +7,10 @@
 #   China        63 条中域名规则仅 11 条
 # 均不含 qq.com / pinduoduo / ele.me 等主流域名。
 #
-# 这类流量最终靠 GEOIP,CN 兜底命中，能直连，但要等 DNS 解析完成才能判定。
-# 域名规则在解析前即可匹配，更快也更可控。GEOIP,CN 仍作为后备保留。
+# 这个文件是域名层唯一的国内兜底。IP 层（china.list 的 IP-CIDR 与 GEOIP,CN）
+# 全部带 no-resolve，只接住直接用 IP 发起的连接，不会替域名请求做解析——
+# 那会把域名泄漏给国内 DNS。所以这里没覆盖到的国内域名会落到 FINAL 走代理。
+# 发现某个国内服务走了代理，补进本文件即可。
 #
 # 部分条目来自连接日志实测（拼多多、饿了么、阿里诚盾等）。
 
@@ -151,6 +153,37 @@ DOMAIN-SUFFIX,ccb.com
 DOMAIN-SUFFIX,icbc.com.cn
 DOMAIN-SUFFIX,cmbchina.com
 DOMAIN-SUFFIX,boc.cn
+
+# ---- 2026-09-24 补：之前靠「提前解析 + IP 兜底」才走直连的国内服务 ----
+# 规则集的 IP 规则补齐 no-resolve 后不再替域名做解析，这批域名会落到 FINAL。
+# 前 14 个经 AliDNS 解析全部落在 china.list 国内段；后 11 个的根域没有 A 记录
+# （CDN 常见），按公司归属判定为国内服务。
+# 刻意不收 dji.com / honor.com / nio.com：全球品牌，国际站本就该走代理。
+DOMAIN-SUFFIX,dewu.com
+DOMAIN-SUFFIX,poizon.com
+DOMAIN-SUFFIX,dewucdn.com
+DOMAIN-SUFFIX,vipshop.com
+DOMAIN-SUFFIX,ke.com
+DOMAIN-SUFFIX,zto.com
+DOMAIN-SUFFIX,chinaums.com
+DOMAIN-SUFFIX,kimi.com
+DOMAIN-SUFFIX,doubao.com
+DOMAIN-SUFFIX,kwimgs.com
+DOMAIN-SUFFIX,larkoffice.com
+DOMAIN-SUFFIX,xhslink.com
+DOMAIN-SUFFIX,keep.com
+DOMAIN-SUFFIX,vivo.com
+DOMAIN-SUFFIX,kwaicdn.com
+DOMAIN-SUFFIX,volccdn.com
+DOMAIN-SUFFIX,volcvideo.com
+DOMAIN-SUFFIX,byteacctimg.com
+DOMAIN-SUFFIX,alikunlun.net
+DOMAIN-SUFFIX,youkuimg.com
+DOMAIN-SUFFIX,lakala.com
+DOMAIN-SUFFIX,tdatamaster.com
+DOMAIN-SUFFIX,dayugslb.com
+DOMAIN-SUFFIX,tongcheng.com
+DOMAIN-SUFFIX,tencentmeeting.com
 
 # ---- 国家顶级域 ----
 # 放在最后：.cn 域名基本都是国内服务，作为域名层兜底

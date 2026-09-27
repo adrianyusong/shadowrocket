@@ -123,8 +123,10 @@ def check_type_drift():
                       '它们会漏进全部协议分组，补进 tools/build-clash.py 的 ALL_TYPES'
                       % (MIHOMO_REF, '、'.join(missing)))
     if extra:
-        _warn_summary('ALL_TYPES 含 mihomo %s 已无的协议: %s（无害，建议清理）'
-                      % (MIHOMO_REF, '、'.join(extra)))
+        # 只提示不告警：多列的类型名对不上就不起作用，无害；它们多半是 Alpha 分支
+        # 已有、Hako 尚未跟进的新协议（EasyTier），提前列上省得升级时再补。
+        print('ALL_TYPES 比 mihomo %s 多列了: %s（无害，为内核升级预留）'
+              % (MIHOMO_REF, '、'.join(extra)))
     if not missing and not extra:
         print('协议类型比对：与 mihomo %s 一致（%d 种节点协议）'
               % (MIHOMO_REF, len(upstream)))

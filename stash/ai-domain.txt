@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/ai.list 生成，请勿手改。
-# behavior: domain   条数: 85
+# behavior: domain   条数: 86
 +.chat.com
 +.chatgpt.com
 +.livekit.cloud
@@ -11,11 +11,12 @@ api.statsig.com
 api-iam.intercom.io
 o33249.ingest.sentry.io
 openaiapi-site.azureedge.net
-+.smoot.apple.com
 apple-relay.apple.com
 apple-relay.cloudflare.com
 apple-relay.fastly-edge.com
 cp4.cloudflare.com
+gspe1-ssl.ls.apple.com
+guzzoni.apple.com
 +.claude.ai
 +.anthropic.com
 copilot.microsoft.com

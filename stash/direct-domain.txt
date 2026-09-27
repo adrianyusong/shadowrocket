@@ -1,20 +1,5 @@
 # 由 tools/build-stash.py 从 rule/direct.list 生成，请勿手改。
-# behavior: domain   条数: 135
-alt1-mtalk.google.com
-alt2-mtalk.google.com
-alt3-mtalk.google.com
-alt4-mtalk.google.com
-alt5-mtalk.google.com
-alt6-mtalk.google.com
-alt7-mtalk.google.com
-alt8-mtalk.google.com
-android.apis.google.com
-device-provisioning.googleapis.com
-firebaseinstallations.googleapis.com
-mtalk-dev.google.com
-mtalk-staging.google.com
-mtalk.google.com
-mtalk4.google.com
+# behavior: domain   条数: 122
 asusrouter.com
 instant.arubanetworks.com
 local.adguard.org
@@ -118,6 +103,7 @@ www.asusrouter.com
 +.acl4.ssr
 +.b.e.f.ip6.arpa
 +.d.f.ip6.arpa
++.hiwifi.com
 +.home.arpa
 +.kis.v2.scr.kaspersky-labs.com
 +.leike.cc
@@ -133,5 +119,6 @@ www.asusrouter.com
 +.tendawifi.com
 +.tplinkwifi.net
 +.tplogin.cn
++.ts.net
 +.wifi.cmcc
 +.zte.home

@@ -6,6 +6,8 @@
 # 格式：
 #   类型,值            剔除所有策略下的该规则
 #   类型,值,策略slug   只剔除指定策略下的该规则
+#   值以 *. 开头时按后缀匹配：DOMAIN-SUFFIX,*.cn,game 剔除 game 策略下
+#   所有以 .cn 结尾的 DOMAIN-SUFFIX 规则（只对 DOMAIN / DOMAIN-SUFFIX 有意义）
 # 以 # 开头为注释，空行忽略。
 
 # blackmatrix7 Global.list 中用于匹配成人站点的关键词，
@@ -43,3 +45,87 @@ DOMAIN-SUFFIX,stripe.com,ai
 # 即小程序根本没走到拉代码包那步。两条都从广告策略剔除。
 DOMAIN-SUFFIX,dns.weixin.qq.com.cn,reject-ads
 IP-CIDR,101.124.19.122/32,reject-ads
+
+# anti-AD 的短关键词误伤。主投放域名 reject-ads.list 都有精确后缀
+# （openx.net、adform.com/net、adservice.google.com、amazon-adsystem.com），
+# 但关键词另外顺带拦住了几类没有精确后缀的：各国家后缀的 adservice.google.<cc>
+# （192 个）、servedbyopenx.com、adformdsp.net。这几类已在 default.conf 广告段
+# 用更窄的规则补回（DOMAIN-KEYWORD,adservice.google. 与两条后缀）。
+# 关键词本身的误伤，2026-09-24 审查实测命中：
+#   openx       -> openxla.org、openxlab.org.cn
+#   adform      -> autocadformac.com
+#   adservice   -> geeksquadservices.org
+#   adsystem    -> naiadsystems.com
+#   wixsite.com -> 所有 Wix 免费站
+#   m.suning.com -> 苏宁移动站整站
+DOMAIN-KEYWORD,openx,reject-ads
+DOMAIN-KEYWORD,adform,reject-ads
+DOMAIN-KEYWORD,adservice,reject-ads
+DOMAIN-KEYWORD,adsystem,reject-ads
+DOMAIN-KEYWORD,wixsite.com,reject-ads
+DOMAIN-KEYWORD,m.suning.com,reject-ads
+
+# 证书吊销列表，与 digicert 同理：拦掉它会让系统的证书吊销检查失败。
+DOMAIN-SUFFIX,crl.microsoft.com,reject-ads
+
+# .in.th 是泰国的国家域，不是中国域名。与 .ms 同类，从国内集剔除。
+# 实测 bx.in.th 被它送去直连。
+DOMAIN-SUFFIX,in.th,china
+
+# ---- 去重改按 [Rule] 顺序后的例外（见 sync-rules.py 的 order_by_rule）----
+# snssdk.com 是抖音与 TikTok 共用的字节域名。[Rule] 里 TikTok 排在国内媒体前，
+# 按新顺序它会归 TIKTOK 走代理，抖音就跟着走代理了。留在国内媒体。
+DOMAIN-SUFFIX,snssdk.com,tiktok
+# Apple TV 的 UA 同时在 GlobalMedia 与 AppleTV 集里，按新顺序会被国外媒体拿走。
+# 它该跟 Apple TV+ 的其余规则一起走 🎵 苹果媒体。
+USER-AGENT,AppleTV*,media-global
+USER-AGENT,com.apple.tv*,media-global
+# （另外三处改序例外——digicert、akadns、xboxlive——在本文件后面，
+#   是用真实日志重放查出来的，见后面「例外（续）」一节。）
+
+# ---- 其他上游缺陷（与去重顺序无关）----
+# smoot.apple.com 是 Spotlight / Siri 建议。上游 AI 集合并时顺带收了它，
+# 抢在 default.conf 的 iRingo 内联规则（🎵 苹果媒体）之前命中，那条内联规则
+# 从此成了死规则——注释里「避免日后别的规则集把它们抢走」说的正是这件事。
+DOMAIN-SUFFIX,smoot.apple.com,ai
+
+# Download 集用 thunder 关键词指迅雷，但也把 thunderbird.net、warthunder.com、
+# thundermail.com 送去直连。迅雷的 xunlei.com / thundercdn.com / thunderurl.com
+# 在 china.list 里另有精确后缀，去掉关键词不丢覆盖。
+DOMAIN-KEYWORD,thunder,direct-global
+
+# B 站国际版（bilibili.tv 的 API 与 CDN）被上游 BiliBili 集收进国内媒体走直连，
+# 只有 bilibili.tv 本身走代理。从国内媒体剔除，由 default.conf 内联规则送去国外媒体。
+DOMAIN-SUFFIX,biliintl.com,media-cn
+DOMAIN-SUFFIX,biliintl.co,media-cn
+DOMAIN,p.bstarstatic.com,media-cn
+DOMAIN-SUFFIX,p.bstarstatic.com,media-cn
+DOMAIN,p-bstarstatic.akamaized.net,media-cn
+DOMAIN-SUFFIX,p-bstarstatic.akamaized.net,media-cn
+DOMAIN,upos-bstar-mirrorakam.akamaized.net,media-cn
+DOMAIN-SUFFIX,upos-bstar-mirrorakam.akamaized.net,media-cn
+DOMAIN,upos-bstar1-mirrorakam.akamaized.net,media-cn
+DOMAIN-SUFFIX,upos-bstar1-mirrorakam.akamaized.net,media-cn
+
+# ---- 去重改按 [Rule] 顺序后的例外（续）----
+# 用真实日志重放又查出三处被改坏的：
+# digicert.com 被收进巴哈姆特集（它的证书是 DigiCert 签的，上游顺手收了），
+# 巴哈姆特在 [Rule] 里排在 digicert 的内联直连规则之前，于是证书吊销检查
+# 绕道台湾节点。与巴哈姆特无关，剔除。
+DOMAIN-SUFFIX,digicert.com,bahamut
+# akadns.net 是 Akamai 的 DNS 后缀，Apple 推送（*.push-apple.com.akadns.net）与
+# 微软都在用。新顺序把它从 Apple 挪到了微软（默认直连），APNs 因此改走直连，
+# 与「所有 Apple 走代理」矛盾。留在 Apple。
+DOMAIN-SUFFIX,akadns.net,microsoft
+# xboxlive.com 同时在 Xbox（游戏）与 Microsoft 两个上游里。新顺序把它整个挪进了
+# 🎮 游戏平台（默认代理），连带 assets1/2.xboxlive.com 这类下载 CDN——Clash Verge
+# 在 PC 上下 Xbox 游戏会烧机场流量。国内 Xbox Live 本就直连可用，留在微软。
+DOMAIN-SUFFIX,xboxlive.com,game
+DOMAIN-SUFFIX,xboxlive.cn,game
+
+# 游戏集里的 .cn / .com.cn 域名（网易暴雪 battlenet.com.cn、blzstatic.cn，
+# 腾讯 Switch nintendoswitch.cn，英雄联盟 leagueoflegends.cn / lpl.com.cn，
+# 索尼中国 sony.com.cn 等 29 条）都是只在国内提供的服务。游戏平台组默认走代理，
+# 而它在 [Rule] 里排在 DOMAIN-SUFFIX,cn 之前，这些国服域名就被拖去走境外节点。
+# 从游戏集剔除，交给 .cn 直连。Stash / Clash 改由 default.conf 推导后同样生效。
+DOMAIN-SUFFIX,*.cn,game

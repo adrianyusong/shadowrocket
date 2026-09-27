@@ -16,6 +16,7 @@
     python tools/check-config.py
 """
 import collections
+import fnmatch
 import glob
 import io
 import os
@@ -34,6 +35,7 @@ BUILTIN = {'DIRECT', 'REJECT', 'REJECT-DROP', 'REJECT-NO-DROP', 'REJECT-TINYGIF'
 # (先, 后) —— 含前者的规则行必须出现在含后者的规则行之前
 ORDER = [
     ('rmonitor.qq.com', 'reject-ads'),
+    ('jpush.cn', 'reject-ads'),
     ('linkedin.com', 'china.list'),
     ('jpush.cn', 'DOMAIN-SUFFIX,cn'),
     ('linkedin.com', 'DOMAIN-SUFFIX,cn'),
@@ -44,6 +46,19 @@ ORDER = [
     ('china.list', 'GEOIP'),
     ('DOMAIN-SUFFIX,apple.com', 'GEOIP'),
     ('IP-CIDR,17.0.0.0/8', 'GEOIP'),
+    # 去重改按 [Rule] 顺序后，这几条先后决定重复规则归哪个策略（sync-rules.py 的
+    # order_by_rule）。颠倒后下次同步就会换组，例如 bing.com 只在 bing.list 里，
+    # 排到 microsoft.list 之后就归 Ⓜ️ 微软服务 走直连。
+    ('ai.list', 'google.list'),
+    ('ai.list', 'microsoft.list'),
+    ('ai.list', 'twitter.list'),
+    ('bing.list', 'microsoft.list'),
+    ('apple-media.list', 'apple.list'),
+    ('biliintl.com', 'media-cn.list'),
+    ('media-global.list', 'media-cn.list'),
+    # 内联规则必须压过后面的规则集
+    ('android.apis.google.com', 'ai.list'),
+    ('adservice.google.', 'google.list'),
 ]
 
 # 正常服务不该被任何拦截类策略命中
@@ -53,6 +68,59 @@ MUST_NOT_BLOCK = [
     'mobilegw.alipay.com', 'acs.m.taobao.com', 'www.youtube.com', 'gw.alicdn.com',
     'dispatcher.is.autonavi.com', 'steampipe.akamaized.net', 'javascript.info',
     'javadoc.io',
+    # 2026-09 审查实测被 anti-AD 关键词或误分类拦掉的正常服务
+    'openxlab.org.cn', 'm.suning.com', 'example.wixsite.com', 'crl.microsoft.com',
+    'dns.weixin.qq.com.cn', 'geeksquadservices.org',
+]
+
+# 必须落到指定策略的主机（按 [Rule] 顺序逐条模拟首条命中）。
+# 每条都对应一次实测踩过的坑，改规则或同步上游后由它兜住。
+MUST_ROUTE = {
+    # anti-AD 短关键词剔除后，各国家后缀的 adservice 靠内联 KEYWORD 补回
+    'adservice.google.com.sg': '🛑 广告拦截',
+    'adservice.google.co.jp': '🛑 广告拦截',
+    'servedbyopenx.com': '🛑 广告拦截',
+    'adformdsp.net': '🛑 广告拦截',
+    # 国服游戏：从游戏集剔除 .cn 后交给 DOMAIN-SUFFIX,cn 直连
+    'client01.pdl.wow.battlenet.com.cn': '🇨🇳 国内服务',
+    'static.blzstatic.cn': '🇨🇳 国内服务',
+    'www.nintendoswitch.com.cn': '🇨🇳 国内服务',
+    'lol.leagueoflegends.cn': '🇨🇳 国内服务',
+    # FCM 的 Android 端点，ai.list 的 apis.google.com 后缀会抢走它
+    'android.apis.google.com': '📢 谷歌服务',
+    'mtalk.google.com': '📢 谷歌服务',
+    # 去重顺序相关
+    'www.bing.com': '🤖 AI 服务',
+    'ocsp.digicert.com': '🎯 全球直连',
+    # README「规则顺序」表各行的关键主机。ORDER 只查位置，这里查去向——
+    # 改了某行的策略（例如埋点从 REJECT-DROP 改成 REJECT），ORDER 查不出来。
+    'rmonitor.qq.com': 'REJECT-DROP',          # 埋点用 DROP 抑制重试
+    'api.jpush.cn': 'REJECT-DROP',             # DROP 压过 reject-ads 里的 jpush.cn
+    # LinkedIn：.cn 的两个主机守「压过 .cn」；www.linkedin.com 在 proxy.list 里也有，
+    # 只核对去向。「压过 GEOIP」不在模拟范围内，只靠 ORDER 的位置约束。
+    'www.linkedin.com': '🚀 节点选择',
+    'www.linkedin.cn': '🚀 节点选择',
+    'media.licdn.cn': '🚀 节点选择',
+    'cn.bing.com': '🔍 BING',                  # Bing 压过 Microsoft
+    'www.ifeng.com': '🇨🇳 国内服务',            # 只靠 china.list 接住的国内域名
+    'ad.12306.cn': '🛑 广告拦截',               # 广告规则压过 .cn
+    'searchads.apple.com': '🛑 广告拦截',       # 广告规则压过 apple.list
+    'appleid.apple.com': '🍎 苹果服务',         # AppleID 同走苹果服务
+    'steampipe.akamaized.net': '🎯 全球直连',   # 游戏下载 CDN 压过 game.list
+    'blzddist1-a.akamaihd.net': '🎯 全球直连',
+    'www.speedtest.net': '🎯 全球直连',         # 测本地真实带宽
+    'api.biliintl.com': '🌍 国外媒体',          # B 站国际版压过 media-cn
+    'gemini.google.com': '🤖 AI 服务',          # AI 压过 google.list
+}
+
+# fake-ip-filter 里的通配条目无法直接映射到域名，拿这组常见真实主机去撞。
+# 撞中且走代理即判失败。time.apple.com 就是 time.*.com 当年漏查的那个。
+WILDCARD_PROBES = [
+    'time.apple.com', 'time-ios.apple.com', 'time.google.com', 'time.windows.com',
+    'time.cloudflare.com', 'time.facebook.com', 'time.nist.gov', 'ntp.aliyun.com',
+    'ntp.tencent.com', 'time1.cloud.tencent.com', 'stun.l.google.com',
+    'stun.cloudflare.com', 'stun.qq.com', 'global.stun.twilio.com',
+    'router.asus.com', 'www.linksyssmartwifi.com', 'music.163.com', 'y.qq.com',
 ]
 
 # IP 类规则可带尾部修饰符，取策略名时必须先剥掉，
@@ -233,16 +301,24 @@ def matches(rtype, value, host):
         return host == value or host.endswith('.' + value)
     if rtype == 'DOMAIN-KEYWORD':
         return value in host
+    if rtype == 'DOMAIN-WILDCARD':
+        # ai.list 的 *mask*.icloud.com / *siri*.apple.com 用的就是它。不认它时，
+        # 模拟结果会把 Private Relay 判成 🍎 苹果服务，而设备上它先命中 🤖 AI 服务。
+        return fnmatch.fnmatchcase(host, value.lower())
     return False
+
+
+BLOCK_POLICIES = ('REJECT', '🛑 广告拦截', '🍃 应用净化')
 
 
 def check_no_block(rules, cfg):
     blockers = {'reject-ads', 'reject-privacy'}
     idx = [(t, v) for t, v, n in rules if n in blockers]
     for sec, i, s in sections(cfg):
-        if sec == '[Rule]' and s.startswith(('DOMAIN,', 'DOMAIN-SUFFIX,')) and 'REJECT' in s:
+        if sec == '[Rule]' and s.startswith('DOMAIN') and not s.startswith('RULE-SET'):
             p = [x.strip() for x in s.split(',')]
-            idx.append((p[0], p[1]))
+            if len(p) >= 3 and p[2].startswith(BLOCK_POLICIES):
+                idx.append((p[0], p[1]))
     for host in MUST_NOT_BLOCK:
         for rtype, value in idx:
             if matches(rtype, value, host):
@@ -286,20 +362,20 @@ def check_no_resolve():
     为域名请求触发一次本地 DNS 解析——既把域名泄漏给国内 DNS，又让被污染的
     解析结果把境外域名判成国内。sync-rules.py 曾因只取 (类型, 值) 而全部丢失。
     """
-    path = os.path.join(RULEDIR, 'china.list')
-    if not os.path.exists(path):
-        return
-    total = kept = 0
-    for line in io.open(path, encoding='utf-8'):
-        line = line.strip()
-        if not line.startswith('IP-CIDR'):
-            continue
-        total += 1
-        if 'no-resolve' in line:
-            kept += 1
-    if total and kept < total * 0.9:
-        fail('china.list 的 IP-CIDR 规则大量缺失 no-resolve（%d/%d 保留），'
-             '会为域名请求触发本地 DNS 解析' % (kept, total))
+    # 以前只查 china.list、容忍 10% 缺失，于是 apple.list 的 13 条全缺也照样通过——
+    # 而 apple.list 在 [Rule] 第 463 行，恰好是第一个触发解析的规则集，把之后所有
+    # 走代理的域名都先交给了国内 DoH。缺一条就够泄漏，所以查全部文件、零容忍。
+    ip_types = ('IP-CIDR,', 'IP-CIDR6,', 'IP6-CIDR,', 'IP-ASN,')
+    for path in sorted(glob.glob(os.path.join(RULEDIR, '*.list'))):
+        miss = [line.strip() for line in io.open(path, encoding='utf-8')
+                if line.startswith(ip_types) and 'no-resolve' not in line]
+        if miss:
+            fail('%s 有 %d 条 IP 规则缺 no-resolve（例 %s）：走到这里的域名会先经'
+                 '本地 DNS 解析，代理域名因此泄漏' % (os.path.basename(path), len(miss), miss[0]))
+    # 配置里的内联 IP 规则同理。
+    for sec, i, s in sections(io.open(CONFIG, encoding='utf-8').read()):
+        if sec == '[Rule]' and s.startswith(ip_types + ('GEOIP,',)) and 'no-resolve' not in s:
+            fail('L%d 内联 IP 规则缺 no-resolve: %s' % (i, s))
 
 
 def _expand(expr):
@@ -458,6 +534,18 @@ def _first_policy(cfg, host):
     return None
 
 
+def check_must_route(cfg):
+    """_first_policy 只模拟域名类规则与规则集里的域名条目，GEOIP / IP-CIDR / FINAL
+    不在模拟内。GEOIP,CN 这半行另外核对它的策略与 no-resolve，位置由 ORDER 管。"""
+    for host, want in MUST_ROUTE.items():
+        got = _first_policy(cfg, host)
+        if got != want:
+            fail('分流与预期不符: %s -> %s（应为 %s）' % (host, got, want))
+    geo = [s for sec, i, s in sections(cfg) if sec == '[Rule]' and s.startswith('GEOIP,CN,')]
+    if geo != ['GEOIP,CN,🇨🇳 国内服务,no-resolve']:
+        fail('GEOIP,CN 应恰好一条且为 GEOIP,CN,🇨🇳 国内服务,no-resolve，实际: %s' % geo)
+
+
 def check_fakeip(cfg):
     """fake-ip-filter 只能收录走直连的域名。
 
@@ -479,8 +567,17 @@ def check_fakeip(cfg):
             continue
         entry = line[2:].strip().strip('"')
         core = entry.lstrip('*+').lstrip('.')
-        # 含内部通配的条目（stun.*.* / time1.*.com）无法映射到具体域名，跳过
         if '*' in core or '.' not in core:
+            # 带内部通配的条目（time.*.com 这类）以前直接跳过，从没查过——
+            # time.*.com 命中 iOS 的 time.apple.com，而它随 Apple 走代理。
+            # 现在拿一组常见真实主机去撞，撞中的逐个核对策略。
+            pat = entry.replace('+.', '*.')
+            for host in WILDCARD_PROBES:
+                if fnmatch.fnmatchcase(host, pat):
+                    policy = _first_policy(cfg, host)
+                    if policy is not None and policy not in FAKEIP_OK_POLICIES:
+                        fail('fake-ip-filter 的通配 %s 命中走代理的 %s -> %s'
+                             % (entry, host, policy))
             continue
         policy = _first_policy(cfg, core)
         if policy is not None and policy not in FAKEIP_OK_POLICIES:
@@ -724,6 +821,62 @@ def check_direct_groups(cfg):
     return len(found)
 
 
+def check_derived_parity():
+    """Stash / Clash 的规则与业务组默认出口必须与 default.conf 一致。
+
+    两个生成器现在从 default.conf 推导，按构造就一致；这项检查防的是有人手改
+    生成物，或者往生成器里重新塞回手写规则。2026-09 之前正是手写拷贝导致
+    Stash / Clash 把 .cn 与 apple.com 排在广告规则集之前，3402 个广告域名放行。
+    """
+    try:
+        import yaml
+    except ImportError:
+        warn('未安装 PyYAML，跳过派生一致性检查')
+        return
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        'bs', os.path.join(ROOT, 'tools', 'build-stash.py'))
+    bs = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(bs)
+
+    kinds = {}
+    for f in glob.glob(os.path.join(ROOT, 'stash', '*.txt')):
+        slug, kind = os.path.basename(f)[:-4].rsplit('-', 1)
+        kinds.setdefault(slug, []).append(kind)
+    for slug in kinds:
+        kinds[slug].sort(key=['domain', 'ipcidr', 'classical'].index)
+    want = []
+    bs.emit_rules(want.append, kinds, indent='')
+    want = [x[2:] for x in want if x.startswith('- ')]
+
+    sel = bs.sr_select_groups()
+    for fname, label in (('stash.stoverride', 'Stash'), ('clash.yaml', 'Clash')):
+        path = os.path.join(os.path.dirname(CONFIG), fname)
+        if not os.path.exists(path):
+            continue
+        doc = yaml.safe_load(io.open(path, encoding='utf-8').read()
+                             .replace('#!replace', '')) or {}
+        got = [str(r) for r in doc.get('rules') or []]
+        if got != want:
+            i = next((k for k, (a, b) in enumerate(zip(got, want)) if a != b),
+                     min(len(got), len(want)))
+            fail('%s 的规则与 default.conf [Rule] 不一致（共 %d / 应为 %d 条），'
+                 '第 %d 条起不同：%s ≠ %s' % (label, len(got), len(want), i + 1,
+                                           got[i] if i < len(got) else '（缺）',
+                                           want[i] if i < len(want) else '（多）'))
+        groups = {g['name']: g for g in doc.get('proxy-groups') or []}
+        for name, (cands, psn) in sel.items():
+            g = groups.get(name)
+            if g is None:
+                fail('%s 缺少 default.conf 里的分组 %s' % (label, name))
+                continue
+            first = (g.get('proxies') or [None])[0]
+            expect = psn or next((c for c in cands if c in groups or c in
+                                  ('DIRECT', 'REJECT', 'REJECT-DROP')), None)
+            if first != expect:
+                fail('%s 的 %s 默认出口是 %s，default.conf 是 %s' % (label, name, first, expect))
+
+
 def check_workflows():
     """GitHub 只在推送后才报 YAML 错误，本地必须先挡住。"""
     paths = sorted(glob.glob(os.path.join(ROOT, '.github', 'workflows', '*.yml'))
@@ -858,10 +1011,12 @@ def main():
     check_skip_proxy(cfg)
     check_rewrite_mitm(cfg)
     check_fakeip(cfg)
+    check_must_route(cfg)
     check_realip_parity(cfg)
     nmod = check_modules()
     nclash = check_clash()
     ndirect = check_direct_groups(cfg)
+    check_derived_parity()
     rules = load_rules()
     check_keywords(rules)
     check_no_block(rules, cfg)

@@ -5,10 +5,12 @@
 指向本仓库的 URL，无法再从配置反推上游。
 
 做三件事：
-  1. 按 tools/sources.txt 中的顺序拉取所有上游规则集
-  2. 全局去重——同一条规则只保留首次出现的那个策略（首次即最高优先级，
-     与 Shadowrocket 自上而下的匹配语义一致）。这样合并后的文件之间
-     不再有跨文件冲突，顺序不再是隐式依赖
+  1. 拉取 tools/sources.txt 里的全部上游规则集
+  2. 全局去重——同一条规则只保留首次出现的那个策略。「首次」按
+     config/default.conf [Rule] 里 RULE-SET 的先后算（见 order_by_rule），
+     与设备的匹配顺序一致。只处理完全相同的规则；关键词、宽后缀这类
+     重叠而非重复的规则不去重，谁先命中仍由 [Rule] 顺序决定
+     IP 类规则一律补 no-resolve
   3. 按策略合并，每个策略输出一个 rule/*.list
 
 同时把 QuantumultX 的 HOST / HOST-SUFFIX / HOST-KEYWORD 归一化成
@@ -82,11 +84,16 @@ NORMALIZE = {
 # 规则尾部的修饰符。no-resolve 让 IP 类规则跳过域名请求，不触发本地 DNS 查询。
 MODIFIERS = {"no-resolve", "extended-matching", "pre-matching", "force-remote-dns"}
 
+# 会按 IP 匹配的规则类型。它们不带 no-resolve 时，遇到域名请求会先做本地解析。
+IP_TYPES = {"IP-CIDR", "IP-CIDR6", "IP6-CIDR", "IP-ASN", "GEOIP"}
+
 SELF_HOSTED = 'adrianyusong/shadowrocket'
 
 
 def read_excludes():
-    """读黑名单。返回 {(type, value): policy_slug or None}，None 表示所有策略。"""
+    """读黑名单。返回 {(type, value): policy_slug or None}，None 表示所有策略。
+
+    值以 *. 开头的是后缀模式（如 DOMAIN-SUFFIX,*.cn,game），由 excluded_by 处理。"""
     out = {}
     if not os.path.exists(EXCLUDE):
         return out
@@ -101,8 +108,20 @@ def read_excludes():
     return out
 
 
+def excluded_by(excludes, rtype, value, slug):
+    """返回命中的黑名单键，没命中返回 None。先查精确条目，再查 *. 后缀模式。"""
+    for key in [(rtype, value)] + [(rtype, '*' + value[i:])
+                                   for i in range(len(value)) if value[i] == '.']:
+        if key in excludes and excludes[key] in (None, slug):
+            return key
+    return None
+
+
 def read_rulesets():
-    """按 tools/sources.txt 中的顺序取出 (url, policy)。顺序即优先级。"""
+    """按 tools/sources.txt 中的顺序取出 (url, policy)。
+
+    这个顺序只决定同一策略内多个上游的先后；跨策略的优先级由 order_by_rule
+    按 [Rule] 重新排定。"""
     out = []
     for line in io.open(SOURCES, encoding='utf-8'):
         line = line.split('#')[0].strip()
@@ -116,6 +135,27 @@ def read_rulesets():
             continue
         out.append((url, policy))
     return out
+
+
+def order_by_rule(sets):
+    """按 config/default.conf 的 [Rule] 里 RULE-SET 的先后给上游排序。
+
+    去重是「首次出现者胜」。之前按 sources.txt 的顺序去重，而设备按 [Rule]
+    的顺序匹配——两者有 181 对前后颠倒。于是同一条规则同时出现在两个上游时，
+    它归哪个策略由 sources.txt 决定，你在 [Rule] 里排的优先级对它不起作用，
+    文件头「按配置顺序全局去重」的说法也不成立。
+
+    改为按 [Rule] 顺序后，重复规则的归属与设备实际的匹配顺序一致：[Rule] 里
+    写在前面的策略拿走它。同一策略内的多个上游仍保持 sources.txt 的顺序
+    （sort 是稳定的）。没在 [Rule] 里出现的策略排到最后。
+    切换时实测 157710 条里有 66 条换了组，逐条核对出 snssdk.com（抖音与
+    TikTok 共用）与 AppleTV 的 UA 需要例外；之后用真实日志重放又查出 digicert.com、
+    akadns.net、xboxlive.com/.cn 三处。都已写进 exclude.txt。
+    """
+    cfg = io.open(os.path.join(ROOT, 'config', 'default.conf'), encoding='utf-8').read()
+    order = [m.group(1) for m in re.finditer(r'^RULE-SET,\S+/rule/(\S+?)\.list,', cfg, re.M)]
+    rank = {slug: i for i, slug in enumerate(order)}
+    return sorted(sets, key=lambda s: rank.get(SLUG.get(s[1]), len(order)))
 
 
 def fetch(url, attempts=3):
@@ -143,6 +183,16 @@ def parse(body):
             continue
         rtype = NORMALIZE.get(parts[0], parts[0])
         mods = tuple(x for x in parts[2:] if x in MODIFIERS)
+        # IP 类规则一律补 no-resolve，不再依赖上游是否写了。
+        # 只「保留」不够：Apple 源取的是 QuantumultX 格式，IP 行第三段是策略名、
+        # 不带 no-resolve；proxy / china 集也各有几十条缺失（共 88 条）。
+        # 缺一条就够：求值走到它时，域名会先交给本地（国内）DNS 解析以判断 IP 归属。
+        # 泄漏范围取决于 Shadowrocket 的求值方式——严格逐行时，apple.list（[Rule]
+        # 第一个带这种规则的集）之后所有没被前面域名规则接住的域名都会被解析；
+        # 若按手册「域名类的规则优先于 IP 类规则」，则只有没有任何域名规则命中、
+        # 最终落到 FINAL 的域名会被解析。两种情况下补上 no-resolve 都能堵住。
+        if rtype in IP_TYPES and 'no-resolve' not in mods:
+            mods = mods + ('no-resolve',)
         yield rtype, parts[1], mods
 
 def main():
@@ -150,7 +200,7 @@ def main():
     ap.add_argument('--dry-run', action='store_true')
     args = ap.parse_args()
 
-    sets = read_rulesets()
+    sets = order_by_rule(read_rulesets())
     excludes = read_excludes()
     print('配置中引用的上游规则集: %d 个' % len(sets))
     print('黑名单条目: %d 条' % len(excludes))
@@ -177,11 +227,10 @@ def main():
         for rtype, value, mods in parse(bodies[url]):
             total += 1
             key = (rtype, value)
-            if key in excludes:
-                want = excludes[key]
-                if want is None or want == SLUG.get(policy):
-                    excluded[key] += 1
-                    continue
+            hit = excluded_by(excludes, rtype, value, SLUG.get(policy))
+            if hit:
+                excluded[hit] += 1
+                continue
             if key in seen:
                 # 首次出现的策略优先，与自上而下匹配一致
                 if seen[key] != policy:
@@ -233,13 +282,17 @@ def main():
     declared = {pol for _, pol in sets}
     empty = sorted(declared - set(merged))
     if empty:
-        print('以下策略产出 0 条规则，多半是 sources.txt 的顺序把它们的域名'
-              '让给了更靠前的源:')
+        print('以下策略产出 0 条规则：规则全被 default.conf [Rule] 里排在更前面的'
+              ' RULE-SET 拿走，或被 exclude.txt 剔除（sources.txt 的顺序只影响同一'
+              '策略内的上游，不会造成这种情况）:')
         for pol in empty:
             path = os.path.join(OUTDIR, SLUG[pol] + '.list')
             stale = '  <-- 磁盘上仍有旧文件，配置会继续引用陈旧内容' \
                 if os.path.exists(path) else ''
+            winners = sorted({w for (w, loser) in dropped if loser == pol})
             print('   %s -> rule/%s.list%s' % (pol, SLUG[pol], stale))
+            if winners:
+                print('      被这些策略拿走: %s' % '、'.join(winners))
         return 1
 
     print('\n写出 %d 个文件:' % len(written))

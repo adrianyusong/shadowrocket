@@ -1,15 +1,19 @@
 # 上游规则集清单——tools/sync-rules.py 的唯一数据来源。
 #
 # 顺序与策略映射以 Johnshall/lazy_group.conf（2026-08-18 导出）为基准，
-# 但补回的源必须插在语义正确的位置而非堆在末尾——首次实现时堆在末尾，
+# 但补回的源当初必须插在语义正确的位置而非堆在末尾（那时本文件顺序决定去重）——首次实现时堆在末尾，
 # 导致 Bing/GoogleFCM/BiliBiliIntl/AppleID/AppleMusic 五项被前面的总集吞掉，
 # 其中 bing.list 直接产出 0 条。
 #
-# 顺序即优先级：同一条规则只保留首个出现的策略，与 Shadowrocket 自上而下
-# 的匹配语义一致。以下先后关系是硬约束，改动会造成功能性回归：
-#   细分苹果集 < Apple 总集      BiliBiliIntl < BiliBili
-#   AI 各集    < Twitter/Global  Bing < Microsoft
-#   GoogleFCM  < Google          SteamCN < Steam
+# 本文件的顺序不决定优先级（见下方「2026-09-24 起」一段）：跨策略的先后由
+# config/default.conf [Rule] 里 RULE-SET 的顺序决定，本文件只决定同一策略内
+# 多个上游的先后。以下先后关系是硬约束，在 [Rule] 里颠倒会造成功能性回归
+# （以 check-config.py 的 ORDER 为准，这里只是摘要）：
+#   AppleMusic/TV (apple-media) < Apple   BiliBiliIntl < BiliBili
+#   AI 各集 < Google/Microsoft/Twitter/Global   Bing < Microsoft
+#   SteamCN (direct-global) < Steam (game)
+# 已不再是约束的：GoogleFCM 与 Google 同属 📢 谷歌服务、AppleID 与 Apple 同属
+# 🍎 苹果服务，同策略内先后不影响分流。
 #
 # 三处刻意偏离 lazy_group，均有实测依据：
 #   1. 保留广告拦截四源——它完全没有
@@ -19,15 +23,26 @@
 # 格式：URL<空格>策略名
 
 # ===== 广告拦截（lazy_group 完全没有，保留否则丢掉 10 万条） =====
+#
+# 【2026-09-24 起】本文件的顺序不再决定重复规则归哪个策略。sync-rules.py 按
+# config/default.conf [Rule] 里 RULE-SET 的先后去重（见 order_by_rule），与设备
+# 的匹配顺序一致。下面的「硬约束」仍然成立，但现在由 [Rule] 的顺序保证，
+# check-config.py 的 ORDER 核对其中跨文件的几条（ai < google / microsoft /
+# twitter / proxy，bing < microsoft，apple-media < apple，media-global 与
+# B 站国际版内联 < media-cn，direct-global < game），以 ORDER 为准。
+# 本文件的顺序只影响同一策略内的多个上游。下面各节标题里的「先于 / 早于」
+# 指的都是对应 RULE-SET 在 [Rule] 里的先后，不是本文件里的行序。
+#
 https://anti-ad.net/surge.txt 🛑 广告拦截
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/AdvertisingLite/AdvertisingLite.list 🛑 广告拦截
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Privacy/Privacy.list 🍃 应用净化
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Hijacking/Hijacking.list 🛑 广告拦截
 
-# ===== 苹果：细分项必须先于 Apple 总集，否则被吞 =====
-# AppleID 与 Apple 现在同组，位置仍前置以防日后拆分
+# ===== 苹果：[Rule] 里细分项（apple-media）须早于 Apple 总集，否则被吞 =====
+# AppleID 与 Apple 现在同组，本文件内先后无影响。日后若拆分，要在 [Rule] 里
+# 把新组排在 apple.list 之前，并加进 check-config.py 的 ORDER。
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/AppleID/AppleID.list 🍎 苹果服务
-# 外区 Apple Music / TV 需要代理组，必须早于 Apple 总集
+# 外区 Apple Music / TV 需要代理组，[Rule] 里 apple-media 须早于 apple
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/AppleMusic/AppleMusic.list 🎵 苹果媒体
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/AppleTV/AppleTV.list 🎵 苹果媒体
 # AppleProxy 是 Apple 通用代理集（开发者站、TestFlight、Private Relay、
@@ -37,7 +52,7 @@ https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shado
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/Apple/Apple.list 🍎 苹果服务
 
 # ===== 国内媒体：国际版先于国内版 =====
-# 国际版需代理，必须早于 BiliBili
+# 国际版需代理，[Rule] 里须早于 media-cn（BiliBili）
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/BiliBiliIntl/BiliBiliIntl.list 🌍 国外媒体
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/BiliBili/BiliBili.list 🌏 国内媒体
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/ChinaMedia/ChinaMedia.list 🌏 国内媒体
@@ -66,7 +81,7 @@ https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shado
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/PikPak/PikPak.list ☁️ PIKPAK
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/GlobalMedia/GlobalMedia.list 🌍 国外媒体
 
-# ===== AI：必须早于 Twitter（Twitter 集含 grok.com）与 Global =====
+# ===== AI：[Rule] 里须早于 Twitter（Twitter 集含 grok.com）与 Global =====
 https://raw.githubusercontent.com/iab0x00/ProxyRules/main/Rule/AI.txt 🤖 AI 服务
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/OpenAI/OpenAI.list 🤖 AI 服务
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Claude/Claude.list 🤖 AI 服务
@@ -90,18 +105,24 @@ https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shado
 # 我们没有 Amazon 组，归入节点选择
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Amazon/Amazon.list 🚀 节点选择
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/GitHub/GitHub.list 🐱 GITHUB
-# 必须早于 Microsoft，否则 Bing 域名被 Microsoft 吞掉走直连
+# [Rule] 里 bing 须早于 microsoft，否则 Bing 域名被 Microsoft 吞掉走直连
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Bing/Bing.list 🔍 BING
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/OneDrive/OneDrive.list Ⓜ️ 微软服务
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Microsoft/Microsoft.list Ⓜ️ 微软服务
-# 必须早于 Google 总集，避免被它吞掉。
-# 策略仍是 DIRECT（境外环境的惯例），但 mtalk.* 那批端点已在两份配置的
-# 内联规则里改走代理——国内直连根本连不上，见 clash-verge/README.md。
-https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/GoogleFCM/GoogleFCM.list DIRECT
+# 与 Google 同属 📢 谷歌服务、合并进 google.list，本文件内先后无影响。
+# 走 📢 谷歌服务 而不是 DIRECT。上游把 FCM 归为直连是境外环境的惯例（长连接
+# 过代理更不稳），但在国内这些端点直连根本连不上，推送整个失效。
+# 之前只在内联规则里把 11 个 mtalk 主机改走代理，漏了
+# firebaseinstallations.googleapis.com、device-provisioning.googleapis.com、
+# android.apis.google.com、mtalk4.google.com 和 26 条 FCM IP 段，它们仍经
+# direct.list 直连。改在源头映射后，内联那 11 条就不需要了。
+# android.apis.google.com 例外：ai.list 的 apis.google.com 后缀排在 google.list
+# 之前会先接住它，default.conf 在 ai.list 之前单独内联了一条。
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/GoogleFCM/GoogleFCM.list 📢 谷歌服务
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Google/Google.list 📢 谷歌服务
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/TikTok/TikTok.list 🎶 TIKTOK
 
-# ===== 游戏：SteamCN 先于 Steam =====
+# ===== 游戏：[Rule] 里 SteamCN（direct-global）须早于 Steam（game） =====
 # lazy_group 归游戏平台，但那是代理优先，会把几十 GB 游戏本体
 # 拖进代理。刻意偏离，仍归全球直连。
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/SteamCN/SteamCN.list 🎯 全球直连

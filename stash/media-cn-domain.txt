@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/media-cn.list 生成，请勿手改。
-# behavior: domain   条数: 310
+# behavior: domain   条数: 300
 0gr4uqmtt8y41hcjsgrzdrc31.ourdvsss.com
 0gr4uqmtt8y41hcjsgrzdrc3s.ourdvsss.com
 0gr4uqmtt8y41hcjsgrzdrc3z.ourdvsss.com
@@ -49,10 +49,6 @@
 3geauymtsgrzdrcbzfahue.ourdvsss.com
 3geauymtsgrzdrcbzfahuk.ourdvsss.com
 4go41hcjtgazdoctqge4o.ourdvsss.com
-p-bstarstatic.akamaized.net
-p.bstarstatic.com
-upos-bstar-mirrorakam.akamaized.net
-upos-bstar1-mirrorakam.akamaized.net
 +.acg.tv
 +.acgvideo.com
 +.animetamashi.cn
@@ -91,8 +87,6 @@ upos-bstar1-mirrorakam.akamaized.net
 +.biligame.net
 +.biligo.com
 +.biliimg.com
-+.biliintl.co
-+.biliintl.com
 +.biliplus.com
 +.bilivideo.cn
 +.bilivideo.com
@@ -248,8 +242,6 @@ yoo.gtimg.com
 +.music.tc.qq.com
 +.music.xiaomi.com
 +.ns6mitkxo.cn
-+.p-bstarstatic.akamaized.net
-+.p.bstarstatic.com
 +.pplive.cn
 +.pps.tv
 +.ppsimg.com
@@ -281,8 +273,6 @@ yoo.gtimg.com
 +.tencentmusic.com
 +.tudou.com
 +.ukoo.com.cn
-+.upos-bstar-mirrorakam.akamaized.net
-+.upos-bstar1-mirrorakam.akamaized.net
 +.v-56.com
 +.v.qq.com
 +.v.smtcdns.com

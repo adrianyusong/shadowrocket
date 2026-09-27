@@ -37,8 +37,10 @@ TEST_URL = bs.TEST_URL
 # 「排除其余所有类型」实现的，而且同样不报错。
 # 首次写这份清单时一口气漏了 8 个（Sudoku / Masque / TrustTunnel /
 # ShadowQuic / OpenVPN / Tailscale / ZeroTier / GostRelay），是 Shadowrocket
-# 2.2.92 加入 Sudoku 才暴露出来的。tools/sync-modules.py 现在会拉
-# mihomo 源码比对，漏了就让同步失败。
+# 2.2.92 加入 Sudoku 才暴露出来的。tools/sync-modules.py 会拉 Hako 锁定的
+# mihomo 版本（v1.19.30）比对，漏了在 CI 摘要里告警（不阻断同步）。
+# EasyTier 只在 mihomo 的 Alpha 分支有、v1.19.30 没有：留着无害（名字对不上
+# 就不起作用），等 Hako 升级内核时也不用再补。
 ALL_TYPES = ['Shadowsocks', 'ShadowsocksR', 'Snell', 'Socks5', 'Http',
              'Vmess', 'Vless', 'Trojan', 'Hysteria', 'Hysteria2',
              'WireGuard', 'Tuic', 'Ssh', 'Mieru', 'AnyTLS', 'Sudoku',
@@ -53,11 +55,16 @@ SECRET_PLACEHOLDER = 'CHANGE-ME-generate-a-random-secret'
 # 协议分组。Stash 上做不到（exclude-type 被静默忽略，Hy2 会混进 VLESS 组），
 # mihomo 的 adapter/outboundgroup/groupbase.go:211 实现了它，所以这里能做。
 # 没有 include-type，只能反着排除其余全部类型。
+#
+# 只列订阅里确实有的协议。筛完为空的组在 mihomo 里只剩 COMPATIBLE（等同 DIRECT），
+# 挂在 🚀 / 🤖 上就是一个标着协议名、实际直连的开关——与 🇰🇷 韩国 被移除同理。
+# 当前订阅只有 vless 与 hysteria2；有 vmess / trojan 节点后把下面两行加回，
+# 并用 tools/check-direct.py 核对（它会按节点真实 type 算出每个协议组的成员）。
+#   ('🧩 VMESS 节点',  'Vmess'),
+#   ('🐴 TROJAN 节点', 'Trojan'),
 PROTOCOLS = [
     ('🔐 VLESS 节点',  'Vless'),
     ('⚡ HY2 节点',    'Hysteria2'),
-    ('🧩 VMESS 节点',  'Vmess'),
-    ('🐴 TROJAN 节点', 'Trojan'),
 ]
 
 
@@ -255,91 +262,59 @@ def main():
             for x in proxies:
                 A('      - %s' % q(x))
 
-    regions = [r[0] for r in bs.REGIONS]
-    attrs = [a[0] for a in bs.ATTRS]
     protos = [x[0] for x in PROTOCOLS]
 
-    A('  # 总入口。手动选择排最前，其余按维度铺开。')
-    # 首选美国直连：mihomo 的 select 组默认选中第一项（此后记住手动选择），
-    # DIRECTS 以 🇺🇲 美国直连 打头，与 Shadowrocket 的 policy-select-name 对齐。
-    grp('🚀 节点选择', 'select',
-        [n for n, _ in bs.DIRECTS] + ['♻️ 自动选择', '🔧 手动选择']
-        + regions + attrs + protos + [bs.CF_GROUP[0], 'DIRECT'])
-    grp('🔧 手动选择', 'select', include_all='true')
+    A('  # 自动测速类与手动选择。filter 排除信息类伪节点与自建 CF 节点。')
     grp('♻️ 自动选择', 'url-test', include_all='true',
         filter=q(bs.AUTO_FILTER), url=TEST_URL, interval=300, tolerance=50)
+    grp('🔯 故障转移', 'fallback', include_all='true',
+        filter=q(bs.AUTO_FILTER), url=TEST_URL, interval=300)
+    grp('🔮 负载均衡', 'load-balance', include_all='true',
+        filter=q(bs.AUTO_FILTER), url=TEST_URL, interval=300, strategy='consistent-hashing')
+    grp('🔧 手动选择', 'select', include_all='true', filter=q(bs.AUTO_FILTER))
 
-    A('  # 地区分组：按节点名正则筛。英文缩写用逆序环视包裹，')
-    A('  # 否则裸 US 在忽略大小写下会吃掉 Russia / Australia / Brussels。')
-    for name, rex in bs.REGIONS:
-        grp(name, 'url-test', include_all='true', filter=q(rex),
+    filtered = (list(bs.ATTRS) + list(bs.REGIONS) + list(bs.DIRECTS) + [bs.CF_GROUP])
+    A('  # 线路属性、地区、直连线路（地区 × 无中转）、自建 CF。与 Stash 同一份定义')
+    A('  # （build-stash.py 的 ATTRS / REGIONS / DIRECTS / CF_GROUP），都过 guard() 排除伪节点。')
+    A('  # 英文缩写用逆序环视包裹，否则裸 US 在忽略大小写下会吃掉 Russia / Australia。')
+    for name, rex in filtered:
+        grp(name, 'url-test', include_all='true', filter=q(bs.guard(rex)),
             url=TEST_URL, interval=300, tolerance=50)
 
-    A('  # 线路属性分组，与地区维度正交。')
-    for name, rex in bs.ATTRS:
-        grp(name, 'url-test', include_all='true', filter=q(rex),
-            url=TEST_URL, interval=300, tolerance=50)
-
-    A('  # 直连线路：地区 × 无中转，与 Shadowrocket / Stash 同一判据（build-stash.DIRECTS）。')
-    for name, rex in bs.DIRECTS:
-        grp(name, 'url-test', include_all='true', filter=q(rex),
-            url=TEST_URL, interval=300, tolerance=50)
-
-    A('  # 自建 CF 节点（edgetunnel 一类）：只在这里出现，自动测速组与协议组一律排除。')
-    grp(bs.CF_GROUP[0], 'url-test', include_all='true', filter=q(bs.CF_GROUP[1]),
-        url=TEST_URL, interval=300, tolerance=50)
-
-    A('  # 协议分组。mihomo 没有 include-type，只能反着排除其余全部类型。')
+    A('  # 协议分组（Clash 独有）。mihomo 没有 include-type，只能反着排除其余全部类型。')
     A('  # 这些名字是 AdapterType.String() 的形式——group 层比较的是它，')
     A('  # 不是配置里的 type: 值，所以必须写 Shadowsocks 而不是 ss。')
-    A('  # exclude-filter 排掉自建 CF 节点：它们是 VLESS，优选 IP 延迟最低，')
-    A('  # 不排掉的话 🔐 VLESS 节点 会测速选中 CF，绕开「CF 只作备用」的约定。')
+    A('  # exclude-filter 排掉自建 CF 节点与信息类伪节点。')
     for name, keep in PROTOCOLS:
         ex = '|'.join(t for t in ALL_TYPES if t != keep)
         grp(name, 'url-test', include_all='true', exclude_type=q(ex),
-            exclude_filter=q('(?i)(' + bs.CF_NODE + ')'),
+            exclude_filter=q('(?i)(' + bs.CF_NODE + '|剩余|剩餘|流量|到期|过期|過期|重置|套餐)'),
             url=TEST_URL, interval=300, tolerance=50)
 
-    A('  # 业务分组。候选顺序即默认优先级。')
-    common = ['🚀 节点选择', '♻️ 自动选择', '🔧 手动选择'] + regions + ['DIRECT']
-    # 预置已定义的组：POLICIES 里的 proxy -> 🚀 节点选择 与上面的总入口同名，
-    # 不排掉会生成两个同名分组。
-    seen = {'🚀 节点选择', '🔧 手动选择', '♻️ 自动选择'}
-    for policy, _slug in bs.POLICIES:
-        if policy in seen or policy == 'DIRECT':
-            continue
-        seen.add(policy)
-        if policy in ('🛑 广告拦截', '🍃 应用净化'):
-            grp(policy, 'select', ['REJECT', 'DIRECT'])
-        elif policy in ('🎯 全球直连', '🇨🇳 国内服务', '🌏 国内媒体'):
-            grp(policy, 'select', ['DIRECT', '🚀 节点选择'])
-        elif policy == '💰 支付服务':
-            A('  # 支付默认直连：走机房 IP 正是风控最敏感的特征。')
-            grp(policy, 'select', ['DIRECT', '🚀 节点选择'] + regions)
-        elif policy == '🤖 AI 服务':
-            A('  # AI 组不含 🚀 节点选择：避免落到自动测速上每请求换出口，')
-            A('  # 出口频繁跳变会被判为异常。协议分组一并列为候选。')
-            grp(policy, 'select',
-                ['🇺🇲 美国直连', '🇯🇵 日本直连', '🇸🇬 狮城直连', '🇬🇧 英国直连',
-                 '🏠 住宅IP', '🛣️ 专线', '🔧 手动选择'] + protos +
-                ['🇺🇲 美国', '🇯🇵 日本', '🇸🇬 狮城', '🇬🇧 英国', 'DIRECT'])
-        else:
-            grp(policy, 'select', common)
-    A('  # 兜底：没有任何规则命中的流量。')
-    grp('🐟 漏网之鱼', 'select', common)
+    # select 组：候选照抄 config/default.conf，policy-select-name 挪到首位。
+    # 协议分组是 Clash 独有的，作为附加候选挂在节点选择与 AI 服务上。
+    known = ({'♻️ 自动选择', '🔯 故障转移', '🔮 负载均衡', '🔧 手动选择',
+              'DIRECT', 'REJECT', 'REJECT-DROP'}
+             | {n for n, _ in filtered} | set(protos) | set(bs.sr_select_groups()))
+    extras = {'🚀 节点选择': protos, '🤖 AI 服务': protos}
+    A('  # 以下 select 组的候选由 tools/build-clash.py 从 config/default.conf 照抄，')
+    A('  # Shadowrocket 的 policy-select-name 在这里体现为「排第一」。')
+    for name in bs.sr_select_groups():
+        grp(name, 'select', bs.derived_candidates(name, known, extras.get(name)))
     A('')
 
     # ---- rule-providers ----
     A('rule-providers:')
-    providers = []
+    kinds = {}
+    nprov = 0
     for policy, slug in bs.POLICIES:
         for kind in ('domain', 'ipcidr', 'classical'):
             fname = '%s-%s.txt' % (slug, kind)
             if not os.path.exists(os.path.join(ROOT, 'stash', fname)):
                 continue
-            pname = '%s-%s' % (slug, kind)
-            providers.append((pname, policy, kind))
-            A('  %s:' % pname)
+            kinds.setdefault(slug, []).append(kind)
+            nprov += 1
+            A('  %s-%s:' % (slug, kind))
             A('    type: http')
             A('    behavior: %s' % kind)
             A('    format: text')
@@ -352,77 +327,18 @@ def main():
     A('')
 
     # ---- rules ----
+    A('# 规则由 tools/build-clash.py 从 config/default.conf 的 [Rule] 逐行翻译，')
+    A('# 顺序与内联规则与 Shadowrocket 完全一致；注释也一并带过来。')
     A('rules:')
-    A('  # 高频埋点用 REJECT-DROP：静默丢包让 App 等超时才重试。')
-    for d in ['rmonitor.qq.com', 'h.trace.qq.com']:
-        A('  - DOMAIN,%s,REJECT-DROP' % d)
-    for d in ['jpush.cn', 'jpush.io', 'pangolin-sdk-toutiao1.com', 'pangle.io',
-              'iadsdk.apple.com']:
-        A('  - DOMAIN-SUFFIX,%s,REJECT-DROP' % d)
-    A('  # LinkedIn 中国已停运，国内 DNS 仍把它解析到国内 IP，')
-    A('  # 不显式指定会被后面的 GEOIP,CN 判成国内而直连。')
-    for d in ['linkedin.com', 'licdn.com', 'linkedin-ei.com', 'linkedin.cn',
-              'licdn.cn']:
-        A('  - DOMAIN-SUFFIX,%s,🚀 节点选择' % d)
-    for d in ['poe.com', 'huggingface.co', 'hf.co', 'cursor.sh', 'cursor.com',
-              'midjourney.com', 'meta.ai', 'ai.meta.com', 'llama.meta.com',
-              'muse.ai']:
-        A('  - DOMAIN-SUFFIX,%s,🤖 AI 服务' % d)
-    A('  # DigiCert 是通用 CA，走代理会给每次 TLS 握手多加一跳。')
-    for d in ['digicert.com', 'digicert-validation.com']:
-        A('  - DOMAIN-SUFFIX,%s,🎯 全球直连' % d)
-    A('  # FCM 推送端点走代理。上游 GoogleFCM 集把它们归为 DIRECT，那是境外环境的')
-    A('  # 惯例（长连接过代理更不稳）；但在国内 mtalk.google.com 是通不了的，')
-    A('  # 直连等于完全收不到推送。clash-verge/README.md 记录了设备上的实测结果。')
-    A('  # 注意 sources.txt 里「FCM 走代理收不到推送」那条注释与此相反，已一并更正。')
-    A('  # statsigapi.net 用 REJECT-DROP：主动拒绝会让客户端毫秒级重试，')
-    A('  # 静默丢包让它等超时，与 rmonitor.qq.com 是同一类处理。')
-    for d in ['mtalk.google.com', 'mtalk-dev.google.com', 'mtalk-staging.google.com', 'alt1-mtalk.google.com', 'alt2-mtalk.google.com', 'alt3-mtalk.google.com', 'alt4-mtalk.google.com', 'alt5-mtalk.google.com', 'alt6-mtalk.google.com', 'alt7-mtalk.google.com', 'alt8-mtalk.google.com']:
-        A('  - DOMAIN,%s,📢 谷歌服务' % d)
-    A('  - DOMAIN-SUFFIX,statsigapi.net,REJECT-DROP')
-    A('  # 联网检测、局域网设备、NTP 校时必须直连。')
-    for d in ['msftconnecttest.com', 'msftncsi.com', 'ipv6.microsoft.com',
-              'router.asus.com', 'linksys.com', 'linksyssmartwifi.com',
-              'belkin.com', 'pool.ntp.org', 'ntp.org.cn', 'time.edu.cn']:
-        A('  - DOMAIN-SUFFIX,%s,🎯 全球直连' % d)
-    A('  # 中国区地图服务器直连，走代理会让地图数据错乱。')
-    for d in ['gspe11-2-cn-ssl.ls.apple.com', 'gspe12-cn-ssl.ls.apple.com',
-              'gspe19-cn-ssl.ls.apple.com', 'gspe19-2-cn-ssl.ls.apple.com',
-              'gspe79-cn-ssl.ls.apple.com']:
-        A('  - DOMAIN,%s,🎯 全球直连' % d)
-    A('  - DOMAIN-SUFFIX,is.autonavi.com,🎯 全球直连')
-    A('  # 游戏本体下载走直连，否则几十 GB 烧机场套餐。')
-    for d in ['steampipe.akamaized.net', 'steampipe-kr.akamaized.net',
-              'steampipe-partner.akamaized.net', 'steamcdn-a.akamaihd.net',
-              'steamusercontent-a.akamaihd.net', 'steamcontent.tnkjmec.com',
-              'blzddist1-a.akamaihd.net', 'blzddistkr1-a.akamaihd.net',
-              'blzmedia-a.akamaihd.net', 'blznav.akamaized.net',
-              'blizzcon-a.akamaihd.net', 'blz-contentstack.com', 'eac-cdn.com']:
-        A('  - DOMAIN-SUFFIX,%s,🎯 全球直连' % d)
-    for d in ['pinduoduo.com', 'pinduoduo.net', 'pddpic.com', 'yangkeduo.com']:
-        A('  - DOMAIN-SUFFIX,%s,🇨🇳 国内服务' % d)
-    A('  - DOMAIN-SUFFIX,cn,🇨🇳 国内服务')
-    A('  # 全部 Apple 流量走代理。')
-    for d in ['apple.com', 'apple.news', 'aaplimg.com', 'icloud.com',
-              'icloud-content.com', 'cdn-apple.com', 'mzstatic.com',
-              'apple-cloudkit.com', 'apple-mapkit.com', 'itunes.com', 'me.com']:
-        A('  - DOMAIN-SUFFIX,%s,🍎 苹果服务' % d)
-    A('  - IP-CIDR,17.0.0.0/8,🍎 苹果服务,no-resolve')
-    A('')
-    A('  # 规则集')
-    for pname, policy, kind in providers:
-        suffix = ',no-resolve' if kind == 'ipcidr' else ''
-        A('  - RULE-SET,%s,%s%s' % (pname, policy, suffix))
-    A('  - GEOIP,CN,🇨🇳 国内服务,no-resolve')
-    A('  - MATCH,🐟 漏网之鱼')
+    nrules = bs.emit_rules(A, kinds)
     A('')
 
     with io.open(OUT, 'w', encoding='utf-8', newline=chr(10)) as fh:
         fh.write(chr(10).join(out))
-    print('config/clash.yaml  %d 行 / 分组 %d / 规则集 %d / fake-ip-filter %d 条'
+    print('config/clash.yaml  %d 行 / 分组 %d / 规则集 %d / 规则 %d / fake-ip-filter %d 条'
           % (len(out),
              sum(1 for x in out if x.startswith('  - name:')),
-             len(providers), n))
+             nprov, nrules, n))
     return 0
 
 

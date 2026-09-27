@@ -61,7 +61,9 @@ REGIONS = [
     ('🇯🇵 日本', r'(?i)(日本|東京|东京|大阪|名古屋|埼玉|Japan|(?<![A-Za-z])(JP|JPN|NRT|KIX)(?![A-Za-z]))'),
     ('🇸🇬 狮城', r'(?i)(新加坡|狮城|獅城|Singapore|(?<![A-Za-z])(SG|SIN)(?![A-Za-z]))'),
     ('🇺🇲 美国', r'(?i)(美国|美國|美西|美东|美東|洛杉矶|圣何塞|西雅图|达拉斯|凤凰城|United ?States|(?<![A-Za-z])(US|USA|LAX|SJC)(?![A-Za-z]))'),
-    ('🇰🇷 韩国', r'(?i)(韩国|韓國|首尔|首爾|Korea|(?<![A-Za-z])(KR|ICN)(?![A-Za-z]))'),
+    # 🇰🇷 韩国 已移除：订阅里没有韩国节点，空组在 Shadowrocket 里只剩 DIRECT，
+    # default.conf 已注释掉它，这里保持一致。有韩国节点后两边一起加回：
+    # ('🇰🇷 韩国', r'(?i)(韩国|韓國|首尔|首爾|Korea|(?<![A-Za-z])(KR|ICN)(?![A-Za-z]))'),
     ('🇬🇧 英国', r'(?i)(英国|英國|伦敦|倫敦|London|(?<![A-Za-z])(UK|GB|LHR)(?![A-Za-z]))'),
 ]
 
@@ -95,6 +97,127 @@ def direct_filter(region_rx):
 
 DIRECTS = [(n + '直连', direct_filter(rx)) for n, rx in REGIONS if n in DIRECT_REGIONS]
 DIRECTS.sort(key=lambda d: DIRECT_REGIONS.index(d[0][:-2]))
+
+# 信息类伪节点（「剩余流量：412 GB」「套餐到期：…」）排除。所有按节点名筛选的
+# 组都要带：「GB」会被英国组当成地区标签，把一个 ws 中转伪节点收进 🇬🇧 英国直连。
+# 与 Shadowrocket 各组用同一段。
+PSEUDO = '(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|Expire|Traffic|Reset))'
+
+
+def guard(f):
+    """给筛选正则加上伪节点排除。"""
+    if f.startswith('(?i)^'):
+        return '(?i)^' + PSEUDO + f[5:]
+    inner = f[4:] if f.startswith('(?i)') else f
+    return '(?i)^' + PSEUDO + '(?=.*' + inner + ').*$'
+
+
+# ---------------------------------------------------------------------------
+# 从 config/default.conf 推导规则与分组候选。
+#
+# 以前 Stash / Clash 的内联规则、规则顺序、业务组候选都是在生成器里手写的第二份
+# 拷贝，于是反复漂移：2026-09-24 审查实测 Stash / Clash 把 DOMAIN-SUFFIX,cn 与
+# apple.com 排在广告规则集之前，Shadowrocket 会拦的 3402 个广告域名在这两边
+# 全部放行；Steam CDN、MapKit、Claude 等内联规则缺失；Clash 的微软、EMBY 默认
+# 出口也与另外两份不同。生成器里还写着「规则顺序与 Shadowrocket 配置一致」。
+#
+# 现在 default.conf 是唯一来源：[Rule] 逐行翻译，select 组的候选照抄。
+# ---------------------------------------------------------------------------
+SR_CONFIG = os.path.join(ROOT, 'config', 'default.conf')
+SR_RULE_TYPES = {'DOMAIN', 'DOMAIN-SUFFIX', 'DOMAIN-KEYWORD', 'IP-CIDR', 'IP-CIDR6',
+                 'GEOIP', 'USER-AGENT'}
+
+
+def _sr_section(name):
+    out, inside = [], False
+    for line in io.open(SR_CONFIG, encoding='utf-8').read().splitlines():
+        s = line.strip()
+        if s.startswith('[') and s.endswith(']'):
+            inside = (s == name)
+            continue
+        if inside:
+            out.append(s)
+    return out
+
+
+def sr_rules():
+    """把 [Rule] 解析成有序条目：('comment', 文本) / ('rule', 行) /
+    ('set', slug, 策略) / ('final', 策略)。遇到不认识的类型直接报错——
+    静默跳过会让两边悄悄不一致，那正是这次要消灭的问题。"""
+    out = []
+    for s in _sr_section('[Rule]'):
+        if not s:
+            continue
+        if s.startswith('#'):
+            out.append(('comment', s.lstrip('#').strip()))
+            continue
+        parts = [x.strip() for x in s.split(',')]
+        t = parts[0]
+        if t == 'RULE-SET':
+            slug = parts[1].rsplit('/', 1)[-1].replace('.list', '')
+            out.append(('set', slug, parts[2]))
+        elif t == 'FINAL':
+            out.append(('final', parts[1]))
+        elif t in SR_RULE_TYPES:
+            out.append(('rule', ','.join(parts)))
+        else:
+            raise SystemExit('default.conf [Rule] 出现生成器不认识的类型 %s：%s' % (t, s))
+    return out
+
+
+def sr_select_groups():
+    """[Proxy Group] 里的 select 组：名字 -> (候选列表, policy-select-name)。
+    带 policy-regex-filter 的 select 组（🔧 手动选择）没有显式候选，不在此列。"""
+    out = {}
+    for s in _sr_section('[Proxy Group]'):
+        if not s or s.startswith('#') or '=' not in s:
+            continue
+        name, body = s.split('=', 1)
+        parts = [x.strip() for x in body.split(',')]
+        if parts[0] != 'select' or any(x.startswith('policy-regex-filter') for x in parts):
+            continue
+        cands = [x for x in parts[1:] if x and '=' not in x]
+        psn = next((x.split('=', 1)[1].strip() for x in parts
+                    if x.startswith('policy-select-name')), None)
+        out[name.strip()] = (cands, psn)
+    return out
+
+
+def derived_candidates(name, known, extra=None):
+    """按 default.conf 给出某个 select 组的候选：policy-select-name 挪到首位
+    （Stash / Clash 没有这个键，select 组默认选第一项），过滤掉目标配置里
+    不存在的名字。extra 是目标独有的附加候选，插在 DIRECT 之前。"""
+    cands, psn = sr_select_groups()[name]
+    if psn:
+        cands = [psn] + [c for c in cands if c != psn]
+    cands = [c for c in cands if c in known]
+    if extra:
+        tail = [c for c in cands if c == 'DIRECT']
+        cands = [c for c in cands if c != 'DIRECT'] + [e for e in extra if e not in cands] + tail
+    return cands
+
+
+def emit_rules(A, kinds, indent='  '):
+    """把 [Rule] 翻译成 Stash / Clash 的 rules。kinds: slug -> 已生成的 behavior 列表。
+    RULE-SET 按 domain / ipcidr / classical 展开，ipcidr 一律带 no-resolve。"""
+    n = 0
+    for item in sr_rules():
+        if item[0] == 'comment':
+            A('%s# %s' % (indent, item[1]) if item[1] else indent + '#')
+        elif item[0] == 'rule':
+            A('%s- %s' % (indent, item[1])); n += 1
+        elif item[0] == 'set':
+            slug, pol = item[1], item[2]
+            if slug not in kinds:
+                raise SystemExit('default.conf 引用了 rule/%s.list，但没有为它生成规则集' % slug)
+            for kind in kinds[slug]:
+                A('%s- RULE-SET,%s-%s,%s%s' % (indent, slug, kind, pol,
+                                              ',no-resolve' if kind == 'ipcidr' else ''))
+                n += 1
+        elif item[0] == 'final':
+            A('%s- MATCH,%s' % (indent, item[1])); n += 1
+    return n
+
 
 # 协议分组：Stash 做不到，已移除。
 #
@@ -211,7 +334,7 @@ def main():
             os.remove(os.path.join(OUTDIR, f))
 
     providers = []          # (provider_name, behavior, filename)
-    rule_lines = []         # 最终 rules: 列表
+    kinds = {}              # slug -> 实际生成了的 behavior，供 emit_rules 展开 RULE-SET
     stats = {'domain': 0, 'ipcidr': 0, 'classical': 0}
 
     for policy, slug in POLICIES:
@@ -225,12 +348,8 @@ def main():
             if not fname:
                 continue
             stats[kind] += len(data)
-            pname = '%s-%s' % (slug, kind)
-            providers.append((pname, kind, fname))
-            # ipcidr 一律加 no-resolve：不加的话每个域名请求都会为了判断 IP
-            # 归属而触发一次本地 DNS 查询，既泄漏域名也让污染结果影响分流。
-            suffix = ',no-resolve' if kind == 'ipcidr' else ''
-            rule_lines.append('  - RULE-SET,%s,%s%s' % (pname, policy, suffix))
+            providers.append(('%s-%s' % (slug, kind), kind, fname))
+            kinds.setdefault(slug, []).append(kind)
 
     out = []
     A = out.append
@@ -246,7 +365,7 @@ def main():
     A('# 然后在订阅配置上启用该覆写。')
     A('')
     A('name: Shadowrocket 全量配置 (Stash)')
-    A('desc: 与 Shadowrocket 配置共用规则数据。含协议分组、地区分组、线路属性分组。')
+    A('desc: 规则与分组候选由 default.conf 推导，与 Shadowrocket 一致。含地区、直连线路、线路属性分组。')
     A('author: adrianyusong')
     A('homepage: https://github.com/adrianyusong/shadowrocket')
     A('category: rules')
@@ -262,7 +381,7 @@ def main():
     A('  fake-ip-range: 198.18.0.1/16')
     A('  # 收录原则：只放【走直连 + 需要真实 IP】的域名。')
     A('  # 走代理的域名不放——对它们 fake-ip 恰恰是优点（免本地解析、免污染）。')
-    A('  # 需要真实 IP 的四类：局域网/内网发现、NTP 校时、P2P 与 STUN 打洞、')
+    A('  # 需要真实 IP 的三类：局域网/内网发现、NTP 校时、')
     A('  # 以及靠出口 IP 判定版权区域的国内音乐服务。')
     A('  # 常见配置里的 battle.net / srv.nintendo.net / pvp.net 一类不收：')
     A('  # 本配置把游戏平台整体送去代理，对代理域名 fake-ip 才是正解，')
@@ -288,36 +407,40 @@ def main():
     A('    - "+.ipv6.microsoft.com"')
     A('    - "localhost.ptlogin2.qq.com"')
     A('    - "localhost.sec.qq.com"')
-    A('  # NTP 校时走 UDP 123。假 IP 对不上时间，会连锁导致 TLS 证书校验失败')
-    A('    - "time.*.com"')
-    A('    - "time.*.gov"')
-    A('    - "time.*.edu.cn"')
-    A('    - "time1.*.com"')
-    A('    - "time2.*.com"')
-    A('    - "time3.*.com"')
-    A('    - "time4.*.com"')
-    A('    - "time5.*.com"')
-    A('    - "time6.*.com"')
-    A('    - "time7.*.com"')
-    A('    - "ntp.*.com"')
-    A('    - "ntp1.*.com"')
-    A('    - "ntp2.*.com"')
-    A('    - "ntp3.*.com"')
-    A('    - "ntp4.*.com"')
-    A('    - "ntp5.*.com"')
-    A('    - "ntp6.*.com"')
-    A('    - "ntp7.*.com"')
+    A('  # NTP 校时走 UDP 123。假 IP 对不上时间，会连锁导致 TLS 证书校验失败。')
+    A('  # 只列具体的直连校时主机。之前用 time.*.com / ntp*.*.com 这类泛通配，')
+    A('  # 会命中走代理的域名（例如 time.apple.com 曾随 Apple 走代理），违反上面的')
+    A('  # 收录原则，而 check-config 的 check_fakeip 跳过带内部通配的条目，从没查到。')
+    A('    - "time.apple.com"')
+    A('    - "time-ios.apple.com"')
+    A('    - "time-macos.apple.com"')
+    A('    - "time.asia.apple.com"')
+    A('    - "time.euro.apple.com"')
+    A('    - "time.windows.com"')
+    A('    - "ntp.aliyun.com"')
+    A('    - "ntp1.aliyun.com"')
+    A('    - "ntp2.aliyun.com"')
+    A('    - "ntp3.aliyun.com"')
+    A('    - "ntp4.aliyun.com"')
+    A('    - "ntp5.aliyun.com"')
+    A('    - "ntp6.aliyun.com"')
+    A('    - "ntp7.aliyun.com"')
+    A('    - "ntp.tencent.com"')
+    A('    - "ntp1.tencent.com"')
+    A('    - "ntp2.tencent.com"')
+    A('    - "ntp3.tencent.com"')
+    A('    - "ntp4.tencent.com"')
+    A('    - "ntp5.tencent.com"')
+    A('    - "time1.cloud.tencent.com"')
+    A('    - "time2.cloud.tencent.com"')
+    A('    - "time3.cloud.tencent.com"')
+    A('    - "time4.cloud.tencent.com"')
+    A('    - "time5.cloud.tencent.com"')
     A('    - "*.time.edu.cn"')
     A('    - "*.ntp.org.cn"')
     A('    - "+.pool.ntp.org"')
-    A('    - "time1.cloud.tencent.com"')
-    A('  # STUN：P2P 打洞靠真实公网 IP 回包，假 IP 会让 NAT 类型探测永远失败')
-    A('    - "stun.*"')
-    A('    - "stun.*.*"')
-    A('    - "stun.*.*.*"')
-    A('    - "+.stun.*.*"')
-    A('    - "+.stun.*.*.*"')
-    A('    - "+.stun.*.*.*.*"')
+    A('  # STUN 泛通配（stun.* 等）已去掉：stun.l.google.com 这类走代理，与收录原则')
+    A('  # 冲突；而 P2P 打洞在 Shadowrocket 侧本就被 stun-response-ip 伪造响应挡掉了。')
     A('  # 国内音乐：版权区域按出口 IP 判定，假 IP 会被判成海外 -> 大量歌曲变灰')
     A('    - "music.163.com"')
     A('    - "*.music.163.com"')
@@ -390,79 +513,34 @@ def main():
             for p in proxies:
                 A('      - %s' % q(p))
 
-    main_cands = (['♻️ 自动选择', '🔯 故障转移', '🔮 负载均衡', '🔧 手动选择']
-                  + [n for n, _ in ATTRS] + [n for n, _ in REGIONS]
-                  + [CF_GROUP[0], 'DIRECT'])
-    # 首选美国直连：Stash 没有 policy-select-name，select 组默认选中第一项，
-    # DIRECTS 以 🇺🇲 美国直连 打头。与 Shadowrocket 的 policy-select-name 对齐。
-    main_cands = ([n for n, _ in DIRECTS]
-                  + [c for c in main_cands if c != '🇺🇲 美国直连'])
-    A('  # 主策略。候选里同时给出协议、线路属性、地区三个维度，按需切换。')
-    grp('🚀 节点选择', 'select', main_cands)
-
-    A('  # 自动测速类。filter 排除机场的信息类伪节点。')
-    A('  # include-all 不可省：filter / exclude-type 只对 use 引入的 provider 或')
-    A('  # include-all 之后的全体节点生效，两者都没有时组内无节点可筛，会是空组。')
+    # 按节点名筛选的组。filter 一律过 guard()，排除信息类伪节点。
+    # include-all 不可省：filter 只对 use 引入的 provider 或 include-all 之后的
+    # 全体节点生效，两者都没有时组内无节点可筛，会是空组。
+    A('  # 自动测速类。filter 排除机场的信息类伪节点与自建 CF 节点。')
     grp('♻️ 自动选择', 'url-test', None, include_all='true', filter=q(AUTO_FILTER),
         url=q(TEST_URL), interval=300, tolerance=100, lazy='true')
     grp('🔯 故障转移', 'fallback', None, include_all='true', filter=q(AUTO_FILTER),
         url=q(TEST_URL), interval=300, lazy='true')
     grp('🔮 负载均衡', 'load-balance', None, include_all='true', filter=q(AUTO_FILTER),
         url=q(TEST_URL), interval=300, strategy='consistent-hashing')
-
     A('  # 手动挑单个节点用。上面几组都是自动的，没有这一组就只能选组不能选节点。')
     grp('🔧 手动选择', 'select', None, include_all='true', filter=q(AUTO_FILTER))
 
-    A('  # 线路属性分组，与地区维度正交。')
-    for name, f in ATTRS:
-        grp(name, 'url-test', None, include_all='true', filter=q(f),
+    filtered = ([(n, f) for n, f in ATTRS] + [(n, f) for n, f in REGIONS]
+                + [(n, f) for n, f in DIRECTS] + [CF_GROUP])
+    A('  # 线路属性、地区、直连线路（地区 × 无中转，判据见文件头 DIRECTS）、自建 CF。')
+    for name, f in filtered:
+        grp(name, 'url-test', None, include_all='true', filter=q(guard(f)),
             url=q(TEST_URL), interval=600, tolerance=200, lazy='true')
 
-    A('  # 地区分组。')
-    for name, f in REGIONS:
-        grp(name, 'url-test', None, include_all='true', filter=q(f),
-            url=q(TEST_URL), interval=600, tolerance=200, lazy='true')
-
-    A('  # 直连线路：地区 × 无中转，判据见文件头 DIRECTS。')
-    for name, f in DIRECTS:
-        grp(name, 'url-test', None, include_all='true', filter=q(f),
-            url=q(TEST_URL), interval=600, tolerance=200, lazy='true')
-
-    A('  # 自建 CF 节点：只在这里出现，自动测速组一律排除（见 CF_NODE 注释）。')
-    grp(CF_GROUP[0], 'url-test', None, include_all='true', filter=q(CF_GROUP[1]),
-        url=q(TEST_URL), interval=600, tolerance=200, lazy='true')
-
-    A('  # AI 对 IP 风控极严。住宅 IP 排首位——机房 IP 是判定代理的首要特征。')
-    A('  # 无法按协议指定（Stash 不支持 exclude-type，见文件头说明），')
-    A('  # 要钉死某个具体节点就用 🔧 手动选择，它列出全部真实节点。')
-    A('  # 候选里刻意不放 🚀 节点选择，避免间接落到负载均衡上每请求换出口。')
-    grp('🤖 AI 服务', 'select',
-        ['🇺🇲 美国直连', '🇯🇵 日本直连', '🇸🇬 狮城直连', '🇬🇧 英国直连',
-         '🏠 住宅IP', '🛣️ 专线', '🔧 手动选择',
-         '🇺🇲 美国', '🇯🇵 日本', '🇸🇬 狮城', '🇬🇧 英国', 'DIRECT'])
-
-    A('  # 流媒体对 IP 跳变敏感，机场自标的流媒体节点排首位。')
-    for n in ['📹 YOUTUBE', '🎥 NETFLIX', '🎬 DISNEY+', '🎦 HBO', '📦 PRIMEVIDEO']:
-        grp(n, 'select', ['🎞️ 流媒体节点', '🏠 住宅IP', '🇸🇬 狮城', '🇭🇰 香港',
-                          '🇯🇵 日本', '🇺🇲 美国', '🚀 节点选择', 'DIRECT'])
-    for n in ['🎧 SPOTIFY', '🎶 TIKTOK', '🎙️ TWITCH', '☁️ PIKPAK', '🌍 国外媒体',
-              '📲 TELEGRAM', '🐦 TWITTER', '📘 META', '💬 DISCORD', '🐱 GITHUB',
-              '🔍 BING', '📢 谷歌服务', '🎵 苹果媒体']:
-        grp(n, 'select', ['🚀 节点选择', '♻️ 自动选择', 'DIRECT'])
-    grp('🕹️ 巴哈姆特', 'select', ['🇹🇼 台湾', '🚀 节点选择', 'DIRECT'])
-    grp('📺 ABEMATV', 'select', ['🇯🇵 日本', '🚀 节点选择', 'DIRECT'])
-    grp('💚 LINE', 'select', ['🇯🇵 日本', '🚀 节点选择', 'DIRECT'])
-    grp('🍎 苹果服务', 'select', ['🚀 节点选择', 'DIRECT'])
-    grp('🎮 游戏平台', 'select', ['🚀 节点选择', 'DIRECT'])
-
-    A('  # 以下默认直连。')
-    for n in ['Ⓜ️ 微软服务', '💰 支付服务', '🌏 国内媒体', '📀 EMBY']:
-        grp(n, 'select', ['DIRECT', '🚀 节点选择'])
-    grp('🎯 全球直连', 'select', ['DIRECT', '💴 低倍率', '🚀 节点选择'])
-    grp('🇨🇳 国内服务', 'select', ['DIRECT', '🚀 节点选择'])
-    grp('🛑 广告拦截', 'select', ['REJECT', 'REJECT-DROP', 'DIRECT'])
-    grp('🍃 应用净化', 'select', ['REJECT', 'REJECT-DROP', 'DIRECT'])
-    grp('🐟 漏网之鱼', 'select', ['🚀 节点选择', 'DIRECT', '♻️ 自动选择'])
+    # select 组：候选一律照抄 default.conf，policy-select-name 挪到首位。
+    known = ({'♻️ 自动选择', '🔯 故障转移', '🔮 负载均衡', '🔧 手动选择',
+              'DIRECT', 'REJECT', 'REJECT-DROP'}
+             | {n for n, _ in filtered} | set(sr_select_groups()))
+    A('  # 以下 select 组的候选由 tools/build-stash.py 从 config/default.conf 照抄，')
+    A('  # Shadowrocket 的 policy-select-name 在这里体现为「排第一」。')
+    for name in sr_select_groups():
+        grp(name, 'select', derived_candidates(name, known))
     A('')
 
     # ---- rule-providers ----
@@ -480,70 +558,11 @@ def main():
     A('')
 
     # ---- rules ----
-    A('# 规则顺序与 Shadowrocket 配置一致，几处刻意安排见 README。')
+    A('# 规则由 tools/build-stash.py 从 config/default.conf 的 [Rule] 逐行翻译，')
+    A('# 顺序与内联规则与 Shadowrocket 完全一致；注释也一并带过来。')
+    A('# RULE-SET 按 domain / ipcidr / classical 展开成本仓库的规则集，FINAL 写作 MATCH。')
     A('rules: #!replace')
-    A('  # 高频埋点用 REJECT-DROP：静默丢包让 App 等超时才重试，')
-    A('  # 日志实测 rmonitor.qq.com 从 1592 次/小时降到 9 次/小时。')
-    for d in ['rmonitor.qq.com', 'h.trace.qq.com']:
-        A('  - DOMAIN,%s,REJECT-DROP' % d)
-    for d in ['jpush.cn', 'jpush.io', 'pangolin-sdk-toutiao1.com', 'pangle.io',
-              'iadsdk.apple.com']:
-        A('  - DOMAIN-SUFFIX,%s,REJECT-DROP' % d)
-    A('  # LinkedIn 中国 2023 年停运，国内 DNS 仍会把 linkedin.com 解析到国内 IP，')
-    A('  # 不显式指定就会被后面的 GEOIP,CN 判成国内服务走直连。')
-    for d in ['linkedin.com', 'licdn.com', 'linkedin-ei.com', 'linkedin.cn', 'licdn.cn']:
-        A('  - DOMAIN-SUFFIX,%s,🚀 节点选择' % d)
-    A('  # 境外 AI 服务，上游规则集未覆盖。meta.ai / ai.meta.com / llama.meta.com')
-    A('  # 原本落到 META 或节点选择，muse.ai 无命中，一并归入 AI 组。')
-    for d in ['poe.com', 'huggingface.co', 'hf.co', 'cursor.sh', 'cursor.com',
-              'midjourney.com', 'meta.ai', 'ai.meta.com', 'llama.meta.com',
-              'muse.ai']:
-        A('  - DOMAIN-SUFFIX,%s,🤖 AI 服务' % d)
-    A('  # DigiCert 是通用 CA，不只 Apple 在用。上游 AppleProxy 收录了 digicert.com，')
-    A('  # proxy 集又收录了 digicert-validation.com——大量网站的 OCSP / CRL 校验会')
-    A('  # 跟着走代理，给每次 TLS 握手多加一跳。改直连。')
-    A('  # 注意：seal / smetrics / app.updates 等追踪子域在 reject-ads 规则集里，')
-    A('  # 那个规则集排在更前面，仍会被拦截，不受这两条影响。')
-    for d in ['digicert.com', 'digicert-validation.com']:
-        A('  - DOMAIN-SUFFIX,%s,🎯 全球直连' % d)
-    A('  # FCM 推送端点走代理。上游 GoogleFCM 集把它们归为 DIRECT，那是境外环境的')
-    A('  # 惯例（长连接过代理更不稳）；但在国内 mtalk.google.com 是通不了的，')
-    A('  # 直连等于完全收不到推送。clash-verge/README.md 记录了设备上的实测结果。')
-    A('  # 注意 sources.txt 里「FCM 走代理收不到推送」那条注释与此相反，已一并更正。')
-    A('  # statsigapi.net 用 REJECT-DROP：主动拒绝会让客户端毫秒级重试，')
-    A('  # 静默丢包让它等超时，与 rmonitor.qq.com 是同一类处理。')
-    for d in ['mtalk.google.com', 'mtalk-dev.google.com', 'mtalk-staging.google.com', 'alt1-mtalk.google.com', 'alt2-mtalk.google.com', 'alt3-mtalk.google.com', 'alt4-mtalk.google.com', 'alt5-mtalk.google.com', 'alt6-mtalk.google.com', 'alt7-mtalk.google.com', 'alt8-mtalk.google.com']:
-        A('  - DOMAIN,%s,📢 谷歌服务' % d)
-    A('  - DOMAIN-SUFFIX,statsigapi.net,REJECT-DROP')
-    A('  # 联网检测、局域网设备管理页、NTP 校时必须直连。')
-    A('  # 上游规则集把它们归进了微软/代理集，走代理会导致强制门户误判、')
-    A('  # 路由器后台打不开、校时失败。内联规则在规则集之前命中。')
-    for d in ['msftconnecttest.com', 'msftncsi.com', 'ipv6.microsoft.com',
-              'router.asus.com', 'linksys.com', 'linksyssmartwifi.com',
-              'belkin.com', 'pool.ntp.org', 'ntp.org.cn', 'time.edu.cn']:
-        A('  - DOMAIN-SUFFIX,%s,🎯 全球直连' % d)
-    A('  # 游戏本体下载走直连，否则几十 GB 烧机场套餐。')
-    for d in ['steampipe.akamaized.net', 'steampipe-kr.akamaized.net',
-              'steampipe-partner.akamaized.net', 'steamcdn-a.akamaihd.net',
-              'steamusercontent-a.akamaihd.net', 'steamcontent.tnkjmec.com',
-              'blzddist1-a.akamaihd.net', 'blzddistkr1-a.akamaihd.net',
-              'blzmedia-a.akamaihd.net', 'blznav.akamaized.net',
-              'blizzcon-a.akamaihd.net', 'blz-contentstack.com', 'eac-cdn.com']:
-        A('  - DOMAIN-SUFFIX,%s,🎯 全球直连' % d)
-    A('  # 拼多多与 .cn 顶级域。')
-    for d in ['pinduoduo.com', 'pinduoduo.net', 'pddpic.com', 'yangkeduo.com']:
-        A('  - DOMAIN-SUFFIX,%s,🇨🇳 国内服务' % d)
-    A('  - DOMAIN-SUFFIX,cn,🇨🇳 国内服务')
-    A('  # 全部 Apple 流量走代理。')
-    for d in ['apple.com', 'apple.news', 'aaplimg.com', 'icloud.com',
-              'icloud-content.com', 'cdn-apple.com', 'mzstatic.com',
-              'apple-cloudkit.com', 'apple-mapkit.com', 'itunes.com', 'me.com']:
-        A('  - DOMAIN-SUFFIX,%s,🍎 苹果服务' % d)
-    A('  - IP-CIDR,17.0.0.0/8,🍎 苹果服务,no-resolve')
-    rule_lines_sorted = rule_lines
-    out.extend([''] + ['  # 规则集'] + rule_lines_sorted)
-    A('  - GEOIP,CN,🇨🇳 国内服务,no-resolve')
-    A('  - MATCH,🐟 漏网之鱼')
+    nrules = emit_rules(A, kinds)
     A('')
 
     with io.open(OVERRIDE, 'w', encoding='utf-8', newline='\n') as fh:
@@ -552,7 +571,7 @@ def main():
     print('规则集文件 %d 个  domain %d 条 / ipcidr %d 条 / classical %d 条'
           % (len(providers), stats['domain'], stats['ipcidr'], stats['classical']))
     print('合计 %d 条' % sum(stats.values()))
-    print('覆写文件: config/stash.stoverride  (%d 行)' % len(out))
+    print('覆写文件: config/stash.stoverride  (%d 行，规则 %d 条)' % (len(out), nrules))
     return 0
 
 

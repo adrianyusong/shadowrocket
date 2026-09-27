@@ -2,7 +2,7 @@
 # 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
 # 需要增补规则请写进 config/default.conf 的内联规则段。
 # 上游: blackmatrix7/ios_rule_script
-# 规则数: 16337
+# 规则数: 16330
 
 DOMAIN,netease.ugcvideoss.ourdvs.com
 DOMAIN-SUFFIX,163yun.com
@@ -308,7 +308,7 @@ DOMAIN-SUFFIX,wxapp.tc.qq.com
 DOMAIN-SUFFIX,yun-hl.3g.qq.com
 USER-AGENT,MicroMessenger*
 USER-AGENT,WeChat*
-IP-ASN,132203
+IP-ASN,132203,no-resolve
 DOMAIN,lf3-static.bytednsdoc.com
 DOMAIN,v5-dy-o-abtest.zjcdn.com
 DOMAIN-SUFFIX,amemv.com
@@ -928,6 +928,7 @@ DOMAIN-SUFFIX,bibaodao.com
 DOMAIN-SUFFIX,bidchance.com
 DOMAIN-SUFFIX,bihu.com
 DOMAIN-SUFFIX,biji.com
+DOMAIN-SUFFIX,biliintl.com
 DOMAIN-SUFFIX,bio-equip.com
 DOMAIN-SUFFIX,bio360.net
 DOMAIN-SUFFIX,bio4p.com
@@ -2060,6 +2061,7 @@ DOMAIN-SUFFIX,ijinshan.com
 DOMAIN-SUFFIX,ikafan.com
 DOMAIN-SUFFIX,im-cc.com
 DOMAIN-SUFFIX,im2maker.com
+DOMAIN-SUFFIX,images-amazon.com
 DOMAIN-SUFFIX,imcapptest.com
 DOMAIN-SUFFIX,imedao.com
 DOMAIN-SUFFIX,imf.org
@@ -2068,7 +2070,6 @@ DOMAIN-SUFFIX,img4me.com
 DOMAIN-SUFFIX,imooc.com
 DOMAIN-SUFFIX,imqq.com
 DOMAIN-SUFFIX,imweb.io
-DOMAIN-SUFFIX,in.th
 DOMAIN-SUFFIX,incopat.com
 DOMAIN-SUFFIX,indienova.com
 DOMAIN-SUFFIX,infinitynewtab.com
@@ -3858,32 +3859,37 @@ USER-AGENT,balls*
 USER-AGENT,cmb*
 USER-AGENT,cmblife*
 USER-AGENT,eusoft_ting_en_iphone
+USER-AGENT,hearthstone*
 USER-AGENT,hide*
 USER-AGENT,ting_en
-IP-CIDR,1.255.62.0/24
-IP-CIDR,101.32.104.0/21
-IP-CIDR,119.28.28.28/32
-IP-CIDR,120.195.181.180/32
-IP-CIDR,182.254.116.0/24
-IP-CIDR,183.128.0.0/11
-IP-CIDR,183.131.48.0/20
-IP-CIDR,185.188.32.0/22
-IP-CIDR,185.188.32.0/24
-IP-CIDR,185.188.33.0/24
-IP-CIDR,185.188.34.0/24
-IP-CIDR,185.188.35.0/24
-IP-CIDR,203.205.238.0/23
-IP-CIDR,203.205.254.0/23
-IP6-CIDR,2a0b:b580::/48
-IP6-CIDR,2a0b:b581::/48
-IP6-CIDR,2a0b:b582::/48
-IP6-CIDR,2a0b:b583::/48
+IP-CIDR,1.255.62.0/24,no-resolve
+IP-CIDR,101.32.104.0/21,no-resolve
+IP-CIDR,101.32.118.0/23,no-resolve
+IP-CIDR,101.32.96.0/20,no-resolve
+IP-CIDR,119.28.28.28/32,no-resolve
+IP-CIDR,120.195.181.180/32,no-resolve
+IP-CIDR,129.226.0.0/16,no-resolve
+IP-CIDR,182.254.116.0/24,no-resolve
+IP-CIDR,183.128.0.0/11,no-resolve
+IP-CIDR,183.131.48.0/20,no-resolve
+IP-CIDR,185.188.32.0/22,no-resolve
+IP-CIDR,185.188.32.0/24,no-resolve
+IP-CIDR,185.188.33.0/24,no-resolve
+IP-CIDR,185.188.34.0/24,no-resolve
+IP-CIDR,185.188.35.0/24,no-resolve
+IP-CIDR,203.205.238.0/23,no-resolve
+IP-CIDR,203.205.254.0/23,no-resolve
+IP6-CIDR,2a0b:b580::/48,no-resolve
+IP6-CIDR,2a0b:b581::/48,no-resolve
+IP6-CIDR,2a0b:b582::/48,no-resolve
+IP6-CIDR,2a0b:b583::/48,no-resolve
 DOMAIN-SUFFIX,neixin.cn
-DOMAIN-SUFFIX,alipay
 DOMAIN-SUFFIX,alibaba
+DOMAIN-SUFFIX,alipay
 DOMAIN-SUFFIX,anquan
 DOMAIN-SUFFIX,baidu
 DOMAIN-SUFFIX,citic
+DOMAIN-SUFFIX,icbc
 DOMAIN-SUFFIX,shouji
 DOMAIN-SUFFIX,sina
 DOMAIN-SUFFIX,sohu
@@ -3927,7 +3933,6 @@ DOMAIN-SUFFIX,xn--vuq861b
 DOMAIN-SUFFIX,xn--xhq521b
 DOMAIN-SUFFIX,xn--zfr164b
 DOMAIN-SUFFIX,yun
-DOMAIN-SUFFIX,icbc
 DOMAIN-KEYWORD,hnagroup
 USER-AGENT,iQIYI*
 IP-CIDR,0.0.0.0/32,no-resolve
@@ -7395,7 +7400,6 @@ IP-CIDR,14.192.76.0/22,no-resolve
 IP-CIDR,14.196.0.0/15,no-resolve
 IP-CIDR,14.204.0.0/15,no-resolve
 IP-CIDR,14.208.0.0/12,no-resolve
-IP-CIDR,14.238.34.0/24,no-resolve
 IP-CIDR,14.255.16.0/24,no-resolve
 IP-CIDR,14.255.238.0/24,no-resolve
 IP-CIDR,14.255.249.0/24,no-resolve
@@ -7889,6 +7893,7 @@ IP-CIDR,163.228.0.0/16,no-resolve
 IP-CIDR,163.244.246.0/24,no-resolve
 IP-CIDR,163.47.4.0/22,no-resolve
 IP-CIDR,163.52.108.0/23,no-resolve
+IP-CIDR,163.52.246.0/23,no-resolve
 IP-CIDR,163.52.28.0/23,no-resolve
 IP-CIDR,163.52.76.0/23,no-resolve
 IP-CIDR,163.53.0.0/20,no-resolve
@@ -7940,7 +7945,6 @@ IP-CIDR,17.127.128.0/23,no-resolve
 IP-CIDR,17.127.130.0/24,no-resolve
 IP-CIDR,17.188.211.0/24,no-resolve
 IP-CIDR,17.235.160.0/20,no-resolve
-IP-CIDR,17.33.144.0/24,no-resolve
 IP-CIDR,17.80.0.0/17,no-resolve
 IP-CIDR,17.80.128.0/18,no-resolve
 IP-CIDR,17.80.192.0/19,no-resolve
@@ -8281,7 +8285,6 @@ IP-CIDR,185.194.148.0/24,no-resolve
 IP-CIDR,185.196.210.68/30,no-resolve
 IP-CIDR,185.196.211.68/30,no-resolve
 IP-CIDR,185.2.48.0/24,no-resolve
-IP-CIDR,185.2.51.0/24,no-resolve
 IP-CIDR,185.201.226.0/23,no-resolve
 IP-CIDR,185.203.36.0/22,no-resolve
 IP-CIDR,185.217.120.0/23,no-resolve
@@ -8407,15 +8410,10 @@ IP-CIDR,2001:4438::/32,no-resolve
 IP-CIDR,2001:4510::/29,no-resolve
 IP-CIDR,2001:470:ee53::/48,no-resolve
 IP-CIDR,2001:500:15:3200::/56,no-resolve
-IP-CIDR,2001:678:12b8::/48,no-resolve
-IP-CIDR,2001:678:12c4::/48,no-resolve
-IP-CIDR,2001:678:12cc::/48,no-resolve
-IP-CIDR,2001:67c:2c1c::/48,no-resolve
 IP-CIDR,2001:67c:a1c::/48,no-resolve
 IP-CIDR,2001:67c:a38:f086::/64,no-resolve
 IP-CIDR,2001:67c:aec::/48,no-resolve
 IP-CIDR,2001:67c:c28::/48,no-resolve
-IP-CIDR,2001:67c:ebc::/48,no-resolve
 IP-CIDR,2001:7fa:10::/48,no-resolve
 IP-CIDR,2001:7fa:5::/48,no-resolve
 IP-CIDR,2001:c68::/32,no-resolve
@@ -8480,7 +8478,6 @@ IP-CIDR,2001:df3:a680::/48,no-resolve
 IP-CIDR,2001:df3:b380::/48,no-resolve
 IP-CIDR,2001:df3:c380::/48,no-resolve
 IP-CIDR,2001:df3:c680::/48,no-resolve
-IP-CIDR,2001:df3:d0c0::/48,no-resolve
 IP-CIDR,2001:df3:d880::/48,no-resolve
 IP-CIDR,2001:df3:ed80::/48,no-resolve
 IP-CIDR,2001:df3:ef80::/48,no-resolve
@@ -8501,11 +8498,7 @@ IP-CIDR,2001:df4:c780::/48,no-resolve
 IP-CIDR,2001:df4:cf00::/48,no-resolve
 IP-CIDR,2001:df4:d80::/48,no-resolve
 IP-CIDR,2001:df4:de80::/48,no-resolve
-IP-CIDR,2001:df4:e140::/48,no-resolve
-IP-CIDR,2001:df4:e142::/47,no-resolve
 IP-CIDR,2001:df5:2080::/48,no-resolve
-IP-CIDR,2001:df5:2fc0::/48,no-resolve
-IP-CIDR,2001:df5:4cc0::/48,no-resolve
 IP-CIDR,2001:df5:5f80::/48,no-resolve
 IP-CIDR,2001:df5:7800::/48,no-resolve
 IP-CIDR,2001:df6:100::/48,no-resolve
@@ -11995,6 +11988,7 @@ IP-CIDR,2402:73e0::/32,no-resolve
 IP-CIDR,2402:7540::/32,no-resolve
 IP-CIDR,2402:75c0::/32,no-resolve
 IP-CIDR,2402:7740::/32,no-resolve
+IP-CIDR,2402:7820::/32,no-resolve
 IP-CIDR,2402:7d00::/32,no-resolve
 IP-CIDR,2402:7d80::/32,no-resolve
 IP-CIDR,2402:8180::/32,no-resolve
@@ -16251,7 +16245,7 @@ IP-CIDR,64.188.44.0/23,no-resolve
 IP-CIDR,64.235.227.160/29,no-resolve
 IP-CIDR,64.235.230.152/30,no-resolve
 IP-CIDR,64.71.138.0/25,no-resolve
-IP-CIDR,64.96.4.0/24,no-resolve
+IP-CIDR,64.96.4.0/23,no-resolve
 IP-CIDR,65.111.0.0/19,no-resolve
 IP-CIDR,65.55.60.184/30,no-resolve
 IP-CIDR,65.97.55.248/29,no-resolve
@@ -16297,7 +16291,6 @@ IP-CIDR,74.119.193.32/27,no-resolve
 IP-CIDR,74.119.193.4/30,no-resolve
 IP-CIDR,74.119.193.64/26,no-resolve
 IP-CIDR,74.119.193.8/29,no-resolve
-IP-CIDR,74.122.26.0/23,no-resolve
 IP-CIDR,74.125.16.64/26,no-resolve
 IP-CIDR,74.2.225.0/24,no-resolve
 IP-CIDR,74.214.161.0/24,no-resolve

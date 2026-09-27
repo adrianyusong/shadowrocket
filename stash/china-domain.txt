@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/china.list 生成，请勿手改。
-# behavior: domain   条数: 3856
+# behavior: domain   条数: 3857
 netease.ugcvideoss.ourdvs.com
 +.163yun.com
 +.api.iplay.163.com
@@ -906,6 +906,7 @@ www.yxssp.com
 +.bidchance.com
 +.bihu.com
 +.biji.com
++.biliintl.com
 +.bio-equip.com
 +.bio360.net
 +.bio4p.com
@@ -2038,6 +2039,7 @@ www.yxssp.com
 +.ikafan.com
 +.im-cc.com
 +.im2maker.com
++.images-amazon.com
 +.imcapptest.com
 +.imedao.com
 +.imf.org
@@ -2046,7 +2048,6 @@ www.yxssp.com
 +.imooc.com
 +.imqq.com
 +.imweb.io
-+.in.th
 +.incopat.com
 +.indienova.com
 +.infinitynewtab.com
@@ -3807,11 +3808,12 @@ www.yxssp.com
 +.zyh365.com
 +.zzdtec.com
 +.neixin.cn
-+.alipay
 +.alibaba
++.alipay
 +.anquan
 +.baidu
 +.citic
++.icbc
 +.shouji
 +.sina
 +.sohu
@@ -3855,4 +3857,3 @@ www.yxssp.com
 +.xn--xhq521b
 +.xn--zfr164b
 +.yun
-+.icbc
