@@ -47,10 +47,15 @@ function main(config) {
     'use-hosts': true,
     'use-system-hosts': true,
     'default-nameserver': ['223.5.5.5', '119.29.29.29'],
-    nameserver: ['https://doh.pub/dns-query', 'https://dns.alidns.com/dns-query'],
+    // 預設解析器用境外 DoH（respect-rules 讓查詢本身也走代理）。原本預設是 doh.pub / alidns，
+    // 導致不在兩份 geosite 裡的境外長尾網域全交給騰訊／阿里解析（bash.ws 實測出現聯通解析器）。
+    // 國內網域仍由下面 nameserver-policy 的 geosite:cn 交給國內 DoH
+    nameserver: ['https://cloudflare-dns.com/dns-query', 'https://dns.google/dns-query'],
     'proxy-server-nameserver': ['https://doh.pub/dns-query', 'https://dns.alidns.com/dns-query', 'tls://223.5.5.5'],
-    'direct-nameserver': [],
-    'direct-nameserver-follow-policy': true,
+    // DIRECT 出站撥號時用國內 DoH 重新解析，拿到離本機最近的 CDN 節點；
+    // 不跟隨 policy，否則 PayPal 這類「境外網域但走直連」的連線會拿到代理地區的 CDN 答案
+    'direct-nameserver': ['https://doh.pub/dns-query', 'https://dns.alidns.com/dns-query'],
+    'direct-nameserver-follow-policy': false,
     'nameserver-policy': {
       '+.cloudflare-dns.com,+.dns.google,+.doh.pub,+.alidns.com': ['223.5.5.5', '119.29.29.29'],
       'geosite:cn,private': ['https://doh.pub/dns-query', 'https://dns.alidns.com/dns-query'],
@@ -210,10 +215,12 @@ function main(config) {
   const cfName = safeAdd('🌍 CF/未知 (自動最快)', 'url-test', cfWorkers);
 
   // --- 穩定備援 (fallback) - 專為 AI 設計 ---
-  const usFallback = safeAdd('🇺🇸 美國 VLESS (穩定)', 'fallback', us.filter(isVless), 300);
-  const jpFallback = safeAdd('🇯🇵 日本 VLESS (穩定)', 'fallback', jp.filter(isVless), 300);
-  const sgFallback = safeAdd('🇸🇬 獅城 VLESS (穩定)', 'fallback', sg.filter(isVless), 300);
-  const usHy2Fallback = safeAdd('🇺🇸 美國 Hy2 (穩定)', 'fallback', us.filter(isHy2), 300);
+  // fallback 永遠用第一個存活的成員，所以非中轉節點必須排前面；
+  // 照訂閱原順序的話，日本、美國組排第一的是 CF 中轉（ws / cfyes），和「AI 避開中轉」矛盾
+  const nonRelayFirst = list => [...noRelay(list), ...list.filter(n => relaySet.has(n))];
+  const usFallback = safeAdd('🇺🇸 美國 VLESS (穩定)', 'fallback', nonRelayFirst(us.filter(isVless)), 300);
+  const jpFallback = safeAdd('🇯🇵 日本 VLESS (穩定)', 'fallback', nonRelayFirst(jp.filter(isVless)), 300);
+  const sgFallback = safeAdd('🇸🇬 獅城 VLESS (穩定)', 'fallback', nonRelayFirst(sg.filter(isVless)), 300);
 
   // --- 協議細分 (url-test) ---
   const hkHy2Name  = safeAdd('🇭🇰 香港 Hy2 專線', 'url-test', hk.filter(isHy2));
@@ -226,7 +233,7 @@ function main(config) {
   const usVlessName = safeAdd('🇺🇸 美國 VLESS', 'url-test', us.filter(isVless));
   const krHy2Name  = safeAdd('🇰🇷 韓國 Hy2 專線', 'url-test', kr.filter(isHy2));
   const twHy2Name  = safeAdd('🇹🇼 台灣 Hy2 專線', 'url-test', tw.filter(isHy2));
-  const gbHy2Name  = safeAdd('🇬🇧 英國 Hy2 專線', 'url-test', gb.filter(isHy2));
+  // 🇺🇸 美國 Hy2 (穩定)、🇬🇧 英國 Hy2 專線 已移除：沒有任何規則或組引用，只是介面上的孤兒組
 
   // --- 支付／風控專用：排除 CF 中轉，只留直連節點 ---
   const usDirectName = safeAdd('🇺🇸 美國 直連 (無中轉)', 'url-test', noRelay(us));
@@ -246,7 +253,7 @@ function main(config) {
 
   // 支付／帳號綁定類流程專用清單。這類長交互對連線穩定度敏感，
   // Hy2 走 UDP 在部分網路會被 QoS 掉；VLESS over TCP 相容性較好。
-  // 注意：只有「🇭🇰 香港 VLESS」全部是 REALITY 直連，其餘地區的 VLESS
+  // 注意：只有「🇭🇰 香港 VLESS」全部是直連（03-05 為 REALITY，01-02 為 TLS + 憑證指紋），其餘地區的 VLESS
   // 組裡混有 Cloudflare 中轉的 ws 節點（server: cfyes.*），中轉節點跑
   // 支付流程容易中途斷，選節點時優先香港。
   const vlessNames = [hkVlessName, sgVlessName, jpVlessName, usVlessName,
@@ -375,7 +382,7 @@ function main(config) {
 
     { name: '🤖 AI 服務', type: 'select', proxies: uniq(aiProxies) },
     { name: '💻 AI 編程', type: 'select', proxies: uniq([jpFallback, usDirectName, sgDirectName, jpVlessName, jpName, usFallback, usVlessName, sgFallback, allVlessName, allHy2Name, '🚀 節點選擇', ...regionNames]) },
-    { name: '🐙 GitHub', type: 'select', proxies: [usName, jpName, sgName, usVlessName, jpVlessName, '🚀 節點選擇', ...regionNames].filter(Boolean) },
+    { name: '🐙 GitHub', type: 'select', proxies: uniq([usName, jpName, sgName, usVlessName, jpVlessName, '🚀 節點選擇', ...regionNames]) },
     { name: '🎥 串流媒體', type: 'select', proxies: uniq([usDirectName, sgDirectName, jpDirectName, '🚀 節點選擇', ...protocolNames, ...regionNames, ...edgeNames]) },
     { name: '🎌 巴哈姆特', type: 'select', proxies: [twName, twHy2Name, '🚀 節點選擇'].filter(Boolean) },
     // 預設沿用目前實際落點（美國直連），避免改動後行為突變；
@@ -530,7 +537,12 @@ function main(config) {
 
     // 🛡️ 廣告與劫持攔截
     'RULE-SET,AdBlock,🛡️ 廣告攔截',
-    'RULE-SET,Hijacking,🛡️ 廣告攔截',
+    // no-resolve：含 IP 規則的 RULE-SET 若不帶它，比對到這裡時 mihomo 會先把網域解析成 IP，
+    // fake-ip 等於白費 —— 之後每個新網域都要先等一次 DNS 才撥號。帶上後 IP 規則照樣比對
+    // 「直接連 IP」的連線（電報客戶端、營運商劫持 IP 正是這種），只是不再為網域去解析。
+    // 下面 Privacy / OpenAI / Copilot / YouTube / Google / Telegram / Spotify 同理；
+    // 全規則唯一需要解析的只剩最後的 GEOIP,cn
+    'RULE-SET,Hijacking,🛡️ 廣告攔截,no-resolve',
     // 走 🛡️ 廣告攔截 而不是直接 REJECT：少數 App 在 HTTPDNS 不通時不會優雅退回，
     // 掛在可切換的組上，真出事時改成 DIRECT 就能立刻恢復
     'RULE-SET,HTTPDNS,🛡️ 廣告攔截',
@@ -576,7 +588,7 @@ function main(config) {
     'DOMAIN-SUFFIX,beijing.gov.cn,DIRECT',
 
     // 🔏 隱私追蹤（預設 DIRECT 只觀察；確認無誤傷後在代理組改 REJECT）
-    'RULE-SET,Privacy,🔏 隱私追蹤',
+    'RULE-SET,Privacy,🔏 隱私追蹤,no-resolve',
     'RULE-SET,PrivacyDomain,🔏 隱私追蹤',
 
     'RULE-SET,ChinaMax,DIRECT',
@@ -638,18 +650,17 @@ function main(config) {
     'DOMAIN-SUFFIX,auth0.com,🚀 節點選擇',
     'DOMAIN-SUFFIX,algolia.net,🚀 節點選擇',
 
-    // DeepSeek（深度求索）：一條後綴涵蓋 chat / api / platform / cdn / www 等相關域名。
-    // 實測直連與代理皆可達,依需求歸入 AI 服務組(走無中轉直連出口)
-    'DOMAIN-SUFFIX,deepseek.com,🤖 AI 服務',
+    // DeepSeek 刻意不設規則：上面的 RULE-SET,ChinaMax 已把 +.deepseek.com 判成直連。
+    // 伺服器在國內，直連延遲最低也不吃機場流量；之前放在這裡的 AI 服務規則從未命中過
 
     // OpenAI 移到 AI 編程規則之後：openai.yaml 收了 api.statsig.com、
     // browser-intake-datadoghq.com，放前面會把編程工具的遙測搶進 🤖 AI 服務
-    'RULE-SET,OpenAI,🤖 AI 服務',
+    'RULE-SET,OpenAI,🤖 AI 服務,no-resolve',
     // 以下三組主要域名已被上面的 AI 編程規則接走，這裡只補殘餘：
     // Gemini → colab / ai.google.dev 等；Claude → 僅剩 cdn.usefathom.com
     'RULE-SET,Gemini,🤖 AI 服務',
     'RULE-SET,Claude,🤖 AI 服務',
-    'RULE-SET,Copilot,🤖 AI 服務',
+    'RULE-SET,Copilot,🤖 AI 服務,no-resolve',
 
     // GitHub 在 Google 之前，避免部分資源被寬鬆規則誤傷
     'RULE-SET,GitHub,🐙 GitHub',
@@ -663,9 +674,9 @@ function main(config) {
     // google.yaml 裡有 DOMAIN-KEYWORD,google，會把 googlevideo.com（影片流本體、
     // 也是最大宗流量）撈進 🔍 Google，而其餘 YouTube 域名落在 GlobalMedia →
     // 同一個服務被拆成兩個組，調整串流地區時影片流根本不跟著走。
-    'RULE-SET,YouTube,📹 YouTube',
-    'RULE-SET,Google,🔍 Google',
-    'RULE-SET,Telegram,📲 Telegram',
+    'RULE-SET,YouTube,📹 YouTube,no-resolve',
+    'RULE-SET,Google,🔍 Google,no-resolve',
+    'RULE-SET,Telegram,📲 Telegram,no-resolve',
     'RULE-SET,Steam,🎮 遊戲平台',
 
     // 🎬 串流精細分流（各服務 → 對應解鎖地區）
@@ -674,8 +685,21 @@ function main(config) {
     'RULE-SET,Bahamut,🎌 巴哈姆特',
     'RULE-SET,Netflix,🎬 Netflix',
     'RULE-SET,Disney,🏰 Disney+',
-    'RULE-SET,Spotify,🎵 Spotify',
+    'RULE-SET,Spotify,🎵 Spotify,no-resolve',
     'RULE-SET,PrimeVideo,📺 Prime Video',
+    // GlobalMedia 收了一批和串流無關的東西，要在它之前搶回：
+    // ① 通用雲端／CDN 後綴：AWS API、S3 下載、Office 與 Apple 的 akamaized 資源原本全擠進
+    //    🎥 串流媒體 —— 那組常被切到單一地區節點，一掛全斷。各串流服務自己的 CDN
+    //    已由上面 Netflix / Disney / PrimeVideo / Steam 等規則集先接走，不受影響
+    'DOMAIN-SUFFIX,amazonaws.com,🚀 節點選擇',
+    'DOMAIN-SUFFIX,cloudfront.net,🚀 節點選擇',
+    'DOMAIN-SUFFIX,akamaized.net,🚀 節點選擇',
+    'DOMAIN-SUFFIX,llnwd.net,🚀 節點選擇',
+    'DOMAIN-SUFFIX,bootstrapcdn.com,🚀 節點選擇',
+    // ② AI 服務：上面的 AI 規則沒涵蓋這幾家
+    'DOMAIN-SUFFIX,meta.ai,🤖 AI 服務',
+    'DOMAIN-SUFFIX,mistral.ai,🤖 AI 服務',
+    'DOMAIN-SUFFIX,jetbrains.ai,💻 AI 編程',
     'RULE-SET,GlobalMedia,🎥 串流媒體',
 
     // 🍎 蘋果服務精細分流

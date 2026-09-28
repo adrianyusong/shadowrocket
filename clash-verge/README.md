@@ -18,7 +18,7 @@ YAML 沒有腳本能力，以下兩項無法移植：
 - **中轉節點識別**（腳本靠節點屬性判斷，見下）。`filter` 只能比對節點名稱，讀不到節點屬性，所以「直連（無中轉）」那組不存在。支付與帳號綁定若要求固定出口，得自己手動選節點
 - **`PROCESS-NAME` 規則**（10 條，本地播放器直連用）。iOS 沒有進程概念，已移除
 
-其餘完整保留：150 條規則、24 個規則集、DNS 設定（fake-ip 過濾 58 條）、統一延遲、sniffer、geox 鏡像。地區分組改用 `filter` 正則、協議分組改用 `exclude-type`，效果等價。
+其餘完整保留：157 條規則、24 個規則集、DNS 設定（fake-ip 過濾 58 條、境外 DoH 為預設、直連用國內 DoH）、統一延遲、sniffer、geox 鏡像。地區分組改用 `filter` 正則、協議分組改用 `exclude-type`，效果等價。
 
 ## 取用地址
 
@@ -36,13 +36,13 @@ YAML 沒有腳本能力，以下兩項無法移植：
 
 ## 這份腳本做什麼
 
-從訂閱的節點清單即時生成**約 50 個代理組**（實際數量依訂閱裡有哪些地區與協議而定）與 **160 條規則**，全部由節點屬性推導，機場增減節點或改名都不用手動維護：
+從訂閱的節點清單即時生成**約 48 個代理組**（實際數量依訂閱裡有哪些地區與協議而定）與 **167 條規則**，全部由節點屬性推導，機場增減節點或改名都不用手動維護：
 
 - **地區分類**：以正則比對節點名分成港／台／日／新／美／韓／英，未命中的一律歸入「CF／未知」（反向排除法，不會漏節點）
 - **中轉識別**：`network === 'ws'`，或伺服器主機名以 `cfyes.` 開頭，就判定為 Cloudflare 前置的中轉節點，另外生成「直連（無中轉）」分組。中轉節點出口是共享邊緣 IP，支付風控命中率高、長連線也容易中斷。第二個條件是防範機場推出走 CF 前置、但不是 ws 的節點；`cfyes.` 是目前這家機場的前置域名，**換機場要改成對應的前綴**
 - **協議拆分**：Hysteria2 與 VLESS 各自成組，另有 fallback 型的「穩定」組
 - **分流規則**：24 個雲端規則集，涵蓋廣告攔截、HTTPDNS、國內直連、串流解鎖、AI 服務、支付與帳號綁定
-- **DNS**：整段 DNS 設定（fake-ip、按域名歸屬分流的 `nameserver-policy`、58 條 fake-ip 過濾）直接寫在腳本裡。前提是 Verge 的「DNS 覆寫」開關保持關閉，見下
+- **DNS**：整段 DNS 設定直接寫在腳本裡：fake-ip、58 條 fake-ip 過濾、按網域歸屬分流的 `nameserver-policy`（國內網域走國內 DoH，其餘預設走 Cloudflare / Google DoH 且經過代理），直連流量另用國內 DoH 解析以取得最近的 CDN。前提是 Verge 的「DNS 覆寫」開關保持關閉，見下
 
 ## 使用方式
 
@@ -71,6 +71,8 @@ YAML 沒有腳本能力，以下兩項無法移植：
 - **測速位址一律用 `https://`**。開了統一延遲後 mihomo 會送兩次 HEAD 請求，機場若劫持了測速位址就會在第二次逾時，好節點被誤判成失敗而踢出候選
 - **規則集透過代理抓取**。直連時 CDN 一被污染，所有 `RULE-SET` 會靜默失效，流量整批掉到兜底規則，而且不會報錯
 - **DNS 寫在腳本，Verge 的 DNS 覆寫保持關閉**。Verge v2.5.4 起的「DNS 覆寫保護」會自動關掉這個開關，GUI 更新也曾把 IPv6 開關翻回開啟，兩次都是悄悄發生、沒有提示。DNS 放進腳本後就不怕開關被關；IPv6 則只能靠 GUI，腳本裡的 `ipv6 = false` 鎖不住，只能當警報：GUI 一旦被翻開，這個值會被丟棄，Verge 會跳出通知
+- **含 IP 規則的 `RULE-SET` 一律加 `no-resolve`**（Hijacking、Privacy、Google、YouTube、Telegram、OpenAI、Copilot、Spotify）。不加的話，連線比對到這條規則時 mihomo 會先把網域解析成 IP，fake-ip 等於白費：每個新網域都要先等一次 DNS，而且預設解析器若是國內 DoH，境外長尾網域的查詢紀錄會全部交給國內業者。加了之後 IP 規則照樣比對「直接連 IP」的連線
+- **GlobalMedia 會把 AWS、CloudFront、Akamai 整批撈走**。這個規則集收了 `amazonaws.com`、`cloudfront.net`、`akamaized.net` 等通用 CDN 後綴，不攔的話 S3 下載、Office 與 Apple 的資源全擠進串流組；腳本在它之前把這些後綴改走 `🚀 節點選擇`
 - **`RULE-SET,YouTube` 必須排在 `RULE-SET,Google` 之前**。Google 規則集裡有 `DOMAIN-KEYWORD,google`，會把 `googlevideo.com`（影片流本體）撈走
 - **Stripe 各子域必須跟 PayPal 共用出口**。`r.stripe.com` 是風險訊號端點，與 `api.stripe.com` 來自不同 IP 會直接觸發拒付
 - **`statsigapi.net`、`qdp.qidian.com` 用 `REJECT-DROP` 而非 `REJECT`**。主動拒絕會讓客戶端毫秒級重試（實測起點的廣告端點每分鐘重試 20–130 次，佔掉整份日誌的 85%），靜默丟棄則要等它自己逾時

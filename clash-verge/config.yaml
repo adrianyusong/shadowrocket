@@ -30,6 +30,9 @@ sniffer:
     HTTP: { ports: [80, '8080-8880'] }
     TLS: { ports: [443, 8443] }
     QUIC: { ports: [443, 8443] }
+  skip-domain:
+  - 'Mijia Cloud'
+  - '+.push.apple.com'
 
 dns:
   enable: true
@@ -106,15 +109,19 @@ dns:
   default-nameserver:
   - 223.5.5.5
   - 119.29.29.29
+  # 預設解析器用境外 DoH（respect-rules 讓查詢也走代理），避免境外長尾網域交給國內 DoH
   nameserver:
-  - https://doh.pub/dns-query
-  - https://dns.alidns.com/dns-query
+  - https://cloudflare-dns.com/dns-query
+  - https://dns.google/dns-query
   proxy-server-nameserver:
   - https://doh.pub/dns-query
   - https://dns.alidns.com/dns-query
   - tls://223.5.5.5
-  direct-nameserver: []
-  direct-nameserver-follow-policy: true
+  # DIRECT 出站用國內 DoH 重新解析，拿到離本機最近的 CDN 節點
+  direct-nameserver:
+  - https://doh.pub/dns-query
+  - https://dns.alidns.com/dns-query
+  direct-nameserver-follow-policy: false
   # 取代舊的 fallback + fallback-filter：直接按域名歸屬指定解析器，
   # 不必先查一次再用 geoip 判斷要不要重查，少一個 round-trip
   nameserver-policy:
@@ -496,7 +503,7 @@ rules:
   - 'DOMAIN-SUFFIX,statsigapi.net,REJECT-DROP'
   - 'DOMAIN,qdp.qidian.com,REJECT-DROP'
   - 'RULE-SET,AdBlock,🛡️ 廣告攔截'
-  - 'RULE-SET,Hijacking,🛡️ 廣告攔截'
+  - 'RULE-SET,Hijacking,🛡️ 廣告攔截,no-resolve'
   - 'RULE-SET,HTTPDNS,🛡️ 廣告攔截'
   - 'RULE-SET,AliPay,DIRECT'
   - 'DOMAIN-SUFFIX,alipay.com,DIRECT'
@@ -534,7 +541,7 @@ rules:
   - 'DOMAIN-SUFFIX,www.gov.cn,DIRECT'
   - 'DOMAIN-SUFFIX,12333.gov.cn,DIRECT'
   - 'DOMAIN-SUFFIX,beijing.gov.cn,DIRECT'
-  - 'RULE-SET,Privacy,🔏 隱私追蹤'
+  - 'RULE-SET,Privacy,🔏 隱私追蹤,no-resolve'
   - 'RULE-SET,PrivacyDomain,🔏 隱私追蹤'
   - 'RULE-SET,ChinaMax,DIRECT'
   - 'DOMAIN-SUFFIX,antigravity.google.com,💻 AI 編程'
@@ -573,27 +580,34 @@ rules:
   - 'DOMAIN-SUFFIX,default.exp-tas.com,💻 AI 編程'
   - 'DOMAIN-SUFFIX,auth0.com,🚀 節點選擇'
   - 'DOMAIN-SUFFIX,algolia.net,🚀 節點選擇'
-  - 'DOMAIN-SUFFIX,deepseek.com,🤖 AI 服務'
-  - 'RULE-SET,OpenAI,🤖 AI 服務'
+  - 'RULE-SET,OpenAI,🤖 AI 服務,no-resolve'
   - 'RULE-SET,Gemini,🤖 AI 服務'
   - 'RULE-SET,Claude,🤖 AI 服務'
-  - 'RULE-SET,Copilot,🤖 AI 服務'
+  - 'RULE-SET,Copilot,🤖 AI 服務,no-resolve'
   - 'RULE-SET,GitHub,🐙 GitHub'
   - 'DOMAIN-SUFFIX,github.com,🐙 GitHub'
   - 'DOMAIN-SUFFIX,githubassets.com,🐙 GitHub'
   - 'DOMAIN-SUFFIX,ghcr.io,🐙 GitHub'
   - 'DOMAIN-SUFFIX,npm.pkg.github.com,🐙 GitHub'
-  - 'RULE-SET,YouTube,📹 YouTube'
-  - 'RULE-SET,Google,🔍 Google'
-  - 'RULE-SET,Telegram,📲 Telegram'
+  - 'RULE-SET,YouTube,📹 YouTube,no-resolve'
+  - 'RULE-SET,Google,🔍 Google,no-resolve'
+  - 'RULE-SET,Telegram,📲 Telegram,no-resolve'
   - 'RULE-SET,Steam,🎮 遊戲平台'
   - 'DOMAIN-SUFFIX,90zhibo.net,🎥 串流媒體'
   - 'DOMAIN-SUFFIX,90zhibo.com,🎥 串流媒體'
   - 'RULE-SET,Bahamut,🎌 巴哈姆特'
   - 'RULE-SET,Netflix,🎬 Netflix'
   - 'RULE-SET,Disney,🏰 Disney+'
-  - 'RULE-SET,Spotify,🎵 Spotify'
+  - 'RULE-SET,Spotify,🎵 Spotify,no-resolve'
   - 'RULE-SET,PrimeVideo,📺 Prime Video'
+  - 'DOMAIN-SUFFIX,amazonaws.com,🚀 節點選擇'
+  - 'DOMAIN-SUFFIX,cloudfront.net,🚀 節點選擇'
+  - 'DOMAIN-SUFFIX,akamaized.net,🚀 節點選擇'
+  - 'DOMAIN-SUFFIX,llnwd.net,🚀 節點選擇'
+  - 'DOMAIN-SUFFIX,bootstrapcdn.com,🚀 節點選擇'
+  - 'DOMAIN-SUFFIX,meta.ai,🤖 AI 服務'
+  - 'DOMAIN-SUFFIX,mistral.ai,🤖 AI 服務'
+  - 'DOMAIN-SUFFIX,jetbrains.ai,💻 AI 編程'
   - 'RULE-SET,GlobalMedia,🎥 串流媒體'
   - 'DOMAIN,iosapps.itunes.apple.com,🍎 蘋果下載'
   - 'DOMAIN,osxapps.itunes.apple.com,🍎 蘋果下載'
