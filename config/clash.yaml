@@ -12,6 +12,7 @@
 # update / rename / export / remove），所以必须先改好再导入：
 #   1. 在电脑上下载本文件，改两处：
 #      a) proxy-providers.airport.url  -> 你的订阅地址
+#         两家机场都用时，再取消 airport-b 的注释填第二个地址
 #      b) secret                       -> 你自己生成的随机串
 #         生成：python -c "import secrets;print(secrets.token_urlsafe(32))"
 #   2. 存成 *.local.yaml，放进 iCloud Drive 或用 AirDrop 传到手机
@@ -211,7 +212,18 @@ proxy-providers:
       enable: true
       url: https://www.gstatic.com/generate_204
       interval: 300
-  # 自建 CF 节点（edgetunnel 一类）作第二个来源时取消下面的注释。
+  # 第二家机场（例如落云）。分组都是 include-all，加进来就会按节点名自动归组；
+  # 🇰🇷 韩国 / 🔒 ANYTLS 等只有它有节点，只装一家时这些组是空的（空组等同直连）。
+  # airport-b:
+  #   type: http
+  #   url: "https://第二家机场的订阅地址?flag=clash"
+  #   path: ./providers/airport-b.yaml
+  #   interval: 3600
+  #   health-check:
+  #     enable: true
+  #     url: https://www.gstatic.com/generate_204
+  #     interval: 300
+  # 自建 CF 节点（edgetunnel 一类）作另一个来源时取消下面的注释。
   # 节点名须含独立的 CF 或 Cloudflare 才会进 ☁️ CF优选。
   # 该订阅地址含 UUID，等同密码：只写进 *.local.yaml，别提交。
   # cf:
@@ -225,146 +237,160 @@ proxy-groups:
   - name: "♻️ 自动选择"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|群组|群組|直连|直連|Expire|Traffic|Reset|Website|(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
+    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|群组|群組|直连|直連|Expire|Traffic|Reset|Website|(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
     url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🔯 故障转移"
     type: fallback
     include-all: true
-    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|群组|群組|直连|直連|Expire|Traffic|Reset|Website|(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
+    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|群组|群組|直连|直連|Expire|Traffic|Reset|Website|(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
     url: https://www.gstatic.com/generate_204
     interval: 300
   - name: "🔮 负载均衡"
     type: load-balance
     include-all: true
-    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|群组|群組|直连|直連|Expire|Traffic|Reset|Website|(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
+    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|群组|群組|直连|直連|Expire|Traffic|Reset|Website|(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
     url: https://www.gstatic.com/generate_204
     interval: 300
     strategy: consistent-hashing
   - name: "🔧 手动选择"
     type: select
     include-all: true
-    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|群组|群組|直连|直連|Expire|Traffic|Reset|Website|(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
+    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|群组|群組|直连|直連|Expire|Traffic|Reset|Website|(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
   # 线路属性、地区、直连线路（地区 × 无中转）、自建 CF。与 Stash 同一份定义
   # （build-stash.py 的 ATTRS / REGIONS / DIRECTS / CF_GROUP），都过 guard() 排除伪节点。
   # 英文缩写用逆序环视包裹，否则裸 US 在忽略大小写下会吃掉 Russia / Australia。
   - name: "🏠 住宅IP"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|Expire|Traffic|Reset))(?=.*(住宅|家宽|家寬|原生|Residential)).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(住宅|家宽|家寬|Residential)).*$"
     url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🛣️ 专线"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|Expire|Traffic|Reset))(?=.*(专线|專線|IPLC|IEPL)).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(专线|專線|IPLC|IEPL)).*$"
     url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🎞️ 流媒体节点"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|Expire|Traffic|Reset))(?=.*(流媒体|流媒體)).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?!.*(俄罗斯|俄羅斯|Russia|越南|Vietnam|马来西亚|馬來西亞|Malaysia|印度|(?<![A-Za-z])India(?![A-Za-z])|印尼|Indonesia|泰国|泰國|Thailand|菲律宾|菲律賓|Philippines))(?=.*(流媒体|流媒體|原生|解锁|解鎖)).*$"
     url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "💴 低倍率"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|Expire|Traffic|Reset))(?=.*(?<![0-9.])0\\.[0-9]+ ?x).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(?<![0-9.])0\\.[0-9]+ ?x).*$"
     url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🇭🇰 香港"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|Expire|Traffic|Reset))(?=.*(香港|港岛|深港|沪港|Hong ?Kong|(?<![A-Za-z])(HK|HKG)(?![A-Za-z]))).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(香港|港岛|深港|沪港|Hong ?Kong|(?<![A-Za-z])(HK|HKG)(?![A-Za-z]))).*$"
     url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🇹🇼 台湾"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|Expire|Traffic|Reset))(?=.*(台湾|台灣|台北|臺灣|Taiwan|(?<![A-Za-z])(TW|TPE)(?![A-Za-z]))).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(台湾|台灣|台北|臺灣|Taiwan|(?<![A-Za-z])(TW|TPE)(?![A-Za-z]))).*$"
     url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🇯🇵 日本"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|Expire|Traffic|Reset))(?=.*(日本|東京|东京|大阪|名古屋|埼玉|Japan|(?<![A-Za-z])(JP|JPN|NRT|KIX)(?![A-Za-z]))).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(日本|東京|东京|大阪|名古屋|埼玉|Japan|(?<![A-Za-z])(JP|JPN|NRT|KIX)(?![A-Za-z]))).*$"
     url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🇸🇬 狮城"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|Expire|Traffic|Reset))(?=.*(新加坡|狮城|獅城|Singapore|(?<![A-Za-z])(SG|SIN)(?![A-Za-z]))).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(新加坡|狮城|獅城|Singapore|(?<![A-Za-z])(SG|SIN)(?![A-Za-z]))).*$"
     url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🇺🇲 美国"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|Expire|Traffic|Reset))(?=.*(美国|美國|美西|美东|美東|洛杉矶|圣何塞|西雅图|达拉斯|凤凰城|United ?States|(?<![A-Za-z])(US|USA|LAX|SJC)(?![A-Za-z]))).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(美国|美國|美西|美东|美東|洛杉矶|圣何塞|西雅图|达拉斯|凤凰城|United ?States|(?<![A-Za-z])(US|USA|LAX|SJC)(?![A-Za-z]))).*$"
+    url: https://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 50
+  - name: "🇰🇷 韩国"
+    type: url-test
+    include-all: true
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(韩国|韓國|首尔|首爾|Korea|(?<![A-Za-z])(KR|ICN)(?![A-Za-z]))).*$"
     url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🇬🇧 英国"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|Expire|Traffic|Reset))(?=.*(英国|英國|伦敦|倫敦|London|(?<![A-Za-z])(UK|GB|LHR)(?![A-Za-z]))).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(英国|英國|伦敦|倫敦|London|(?<![A-Za-z])(UK|GB|LHR)(?![A-Za-z]))).*$"
     url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🇺🇲 美国直连"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|Expire|Traffic|Reset))(?=.*(美国|美國|美西|美东|美東|洛杉矶|圣何塞|西雅图|达拉斯|凤凰城|United ?States|(?<![A-Za-z])(US|USA|LAX|SJC)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(美国|美國|美西|美东|美東|洛杉矶|圣何塞|西雅图|达拉斯|凤凰城|United ?States|(?<![A-Za-z])(US|USA|LAX|SJC)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
     url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🇯🇵 日本直连"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|Expire|Traffic|Reset))(?=.*(日本|東京|东京|大阪|名古屋|埼玉|Japan|(?<![A-Za-z])(JP|JPN|NRT|KIX)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(日本|東京|东京|大阪|名古屋|埼玉|Japan|(?<![A-Za-z])(JP|JPN|NRT|KIX)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
     url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🇸🇬 狮城直连"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|Expire|Traffic|Reset))(?=.*(新加坡|狮城|獅城|Singapore|(?<![A-Za-z])(SG|SIN)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(新加坡|狮城|獅城|Singapore|(?<![A-Za-z])(SG|SIN)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
     url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🇭🇰 香港直连"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|Expire|Traffic|Reset))(?=.*(香港|港岛|深港|沪港|Hong ?Kong|(?<![A-Za-z])(HK|HKG)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(香港|港岛|深港|沪港|Hong ?Kong|(?<![A-Za-z])(HK|HKG)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
     url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🇹🇼 台湾直连"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|Expire|Traffic|Reset))(?=.*(台湾|台灣|台北|臺灣|Taiwan|(?<![A-Za-z])(TW|TPE)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(台湾|台灣|台北|臺灣|Taiwan|(?<![A-Za-z])(TW|TPE)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
     url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "🇬🇧 英国直连"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|Expire|Traffic|Reset))(?=.*(英国|英國|伦敦|倫敦|London|(?<![A-Za-z])(UK|GB|LHR)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(英国|英國|伦敦|倫敦|London|(?<![A-Za-z])(UK|GB|LHR)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
+    url: https://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 50
+  - name: "🇰🇷 韩国直连"
+    type: url-test
+    include-all: true
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(韩国|韓國|首尔|首爾|Korea|(?<![A-Za-z])(KR|ICN)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
     url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
   - name: "☁️ CF优选"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|Expire|Traffic|Reset))(?=.*((?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*((?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
     url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
@@ -376,7 +402,7 @@ proxy-groups:
     type: url-test
     include-all: true
     exclude-type: "Shadowsocks|ShadowsocksR|Snell|Socks5|Http|Vmess|Trojan|Hysteria|Hysteria2|WireGuard|Tuic|Ssh|Mieru|AnyTLS|Sudoku|Masque|TrustTunnel|ShadowQuic|OpenVPN|Tailscale|ZeroTier|EasyTier|GostRelay"
-    exclude-filter: "(?i)((?<![A-Za-z])CF(?![A-Za-z])|Cloudflare|剩余|剩餘|流量|到期|过期|過期|重置|套餐)"
+    exclude-filter: "(?i)((?<![A-Za-z])CF(?![A-Za-z])|Cloudflare|剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset)"
     url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
@@ -384,7 +410,15 @@ proxy-groups:
     type: url-test
     include-all: true
     exclude-type: "Shadowsocks|ShadowsocksR|Snell|Socks5|Http|Vmess|Vless|Trojan|Hysteria|WireGuard|Tuic|Ssh|Mieru|AnyTLS|Sudoku|Masque|TrustTunnel|ShadowQuic|OpenVPN|Tailscale|ZeroTier|EasyTier|GostRelay"
-    exclude-filter: "(?i)((?<![A-Za-z])CF(?![A-Za-z])|Cloudflare|剩余|剩餘|流量|到期|过期|過期|重置|套餐)"
+    exclude-filter: "(?i)((?<![A-Za-z])CF(?![A-Za-z])|Cloudflare|剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset)"
+    url: https://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 50
+  - name: "🔒 ANYTLS 节点"
+    type: url-test
+    include-all: true
+    exclude-type: "Shadowsocks|ShadowsocksR|Snell|Socks5|Http|Vmess|Vless|Trojan|Hysteria|Hysteria2|WireGuard|Tuic|Ssh|Mieru|Sudoku|Masque|TrustTunnel|ShadowQuic|OpenVPN|Tailscale|ZeroTier|EasyTier|GostRelay"
+    exclude-filter: "(?i)((?<![A-Za-z])CF(?![A-Za-z])|Cloudflare|剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset)"
     url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
@@ -404,6 +438,7 @@ proxy-groups:
       - "🇭🇰 香港直连"
       - "🇹🇼 台湾直连"
       - "🇬🇧 英国直连"
+      - "🇰🇷 韩国直连"
       - "🏠 住宅IP"
       - "💴 低倍率"
       - "🇭🇰 香港"
@@ -411,10 +446,12 @@ proxy-groups:
       - "🇯🇵 日本"
       - "🇸🇬 狮城"
       - "🇺🇲 美国"
+      - "🇰🇷 韩国"
       - "🇬🇧 英国"
       - "☁️ CF优选"
       - "🔐 VLESS 节点"
       - "⚡ HY2 节点"
+      - "🔒 ANYTLS 节点"
       - "DIRECT"
   - name: "🤖 AI 服务"
     type: select
@@ -431,6 +468,7 @@ proxy-groups:
       - "🔧 手动选择"
       - "🔐 VLESS 节点"
       - "⚡ HY2 节点"
+      - "🔒 ANYTLS 节点"
       - "DIRECT"
   - name: "📹 YOUTUBE"
     type: select

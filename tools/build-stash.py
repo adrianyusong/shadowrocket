@@ -32,8 +32,11 @@ OVERRIDE = os.path.join(ROOT, 'config', 'stash.stoverride')
 BASE = 'https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/'
 
 # 排除信息类伪节点（机场把剩余流量、到期时间也做成节点）
+# 落云（第二家机场）的公告节点：「续费地址」「请更新订阅」「客户端不对」，
+# 以及一整排以 🇦🇶 打头的节点（有一个名字只有 🇦🇶 加空白）。
 EXCLUDE_INFO = ('官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|'
-                '流量|套餐|订阅|訂閱|群组|群組|直连|直連|Expire|Traffic|Reset|Website')
+                '流量|套餐|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|群组|群組|直连|直連|'
+                'Expire|Traffic|Reset|Website')
 
 # 自动测速类分组的 filter：排除上面那些信息类伪节点。
 # 自建 Cloudflare 节点（edgetunnel 一类：Pages/Workers + 优选 IP）。
@@ -61,17 +64,20 @@ REGIONS = [
     ('🇯🇵 日本', r'(?i)(日本|東京|东京|大阪|名古屋|埼玉|Japan|(?<![A-Za-z])(JP|JPN|NRT|KIX)(?![A-Za-z]))'),
     ('🇸🇬 狮城', r'(?i)(新加坡|狮城|獅城|Singapore|(?<![A-Za-z])(SG|SIN)(?![A-Za-z]))'),
     ('🇺🇲 美国', r'(?i)(美国|美國|美西|美东|美東|洛杉矶|圣何塞|西雅图|达拉斯|凤凰城|United ?States|(?<![A-Za-z])(US|USA|LAX|SJC)(?![A-Za-z]))'),
-    # 🇰🇷 韩国 已移除：订阅里没有韩国节点，空组在 Shadowrocket 里只剩 DIRECT，
-    # default.conf 已注释掉它，这里保持一致。有韩国节点后两边一起加回：
-    # ('🇰🇷 韩国', r'(?i)(韩国|韓國|首尔|首爾|Korea|(?<![A-Za-z])(KR|ICN)(?![A-Za-z]))'),
+    # 🇰🇷 韩国：落云有 3 个韩国节点，已加回。只装旧机场订阅时为空。
+    ('🇰🇷 韩国', r'(?i)(韩国|韓國|首尔|首爾|Korea|(?<![A-Za-z])(KR|ICN)(?![A-Za-z]))'),
     ('🇬🇧 英国', r'(?i)(英国|英國|伦敦|倫敦|London|(?<![A-Za-z])(UK|GB|LHR)(?![A-Za-z]))'),
 ]
 
 # 线路属性分组。取自节点名的实际标签，与地区维度正交。
 ATTRS = [
-    ('🏠 住宅IP', r'(?i)(住宅|家宽|家寬|原生|Residential)'),
+    # 只收住宅 / 家宽。「原生」是当地 ISP 名下的机房 IP，归流媒体组。
+    ('🏠 住宅IP', r'(?i)(住宅|家宽|家寬|Residential)'),
     ('🛣️ 专线', r'(?i)(专线|專線|IPLC|IEPL)'),
-    ('🎞️ 流媒体节点', r'(?i)(流媒体|流媒體)'),
+    # 旧机场的「流媒体」标签，加上落云的「原生」IP。它是 🎬 DISNEY+ 的默认首选，排除
+    # Disney+ 用不了的国家：俄罗斯、越南（未进入），马来西亚 / 印尼 / 泰国 / 菲律宾 / 印度
+    # （跑在本地 Hotstar 上，只对当地账号开放）。东南亚离国内近，url-test 很容易选中。
+    ('🎞️ 流媒体节点', r'(?i)^(?!.*(俄罗斯|俄羅斯|Russia|越南|Vietnam|马来西亚|馬來西亞|Malaysia|印度|(?<![A-Za-z])India(?![A-Za-z])|印尼|Indonesia|泰国|泰國|Thailand|菲律宾|菲律賓|Philippines))(?=.*(流媒体|流媒體|原生|解锁|解鎖)).*$'),
     ('💴 低倍率', r'(?i)(?<![0-9.])0\.[0-9]+ ?x'),
 ]
 
@@ -80,13 +86,13 @@ ATTRS = [
 # 判据是节点名里单独出现的 CTCU 标签 = Cloudflare 中转（network: ws）。
 # 用机场订阅的真实传输方式核对：15 个中转全带裸 CTCU，39 个直连里只有
 # 1 个带（被误排除，安全方向）。CTCUCM 是三网直连，用 (?![A-Za-z]) 截断。
-# 这是当前机场的命名规律，换机场后用 tools/check-direct.py 重新核对。
+# 这是旧机场的命名规律。落云没有 ws 中转、名字里也没有 CTCU，它的地区节点全算直连。
+# 换机场后用 tools/check-direct.py 重新核对。
 #
 # mihomo 用 dlclark/regexp2（.NET 兼容），Stash 用系统正则，两者都支持
 # (?= / (?! / (?<!，所以直接用单条带环视的 filter，与 Shadowrocket 一致。
-# 韩国不开：订阅里没有韩国节点。
 RELAY_EXCLUDE = r'(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發))'
-DIRECT_REGIONS = ['🇺🇲 美国', '🇯🇵 日本', '🇸🇬 狮城', '🇭🇰 香港', '🇹🇼 台湾', '🇬🇧 英国']
+DIRECT_REGIONS = ['🇺🇲 美国', '🇯🇵 日本', '🇸🇬 狮城', '🇭🇰 香港', '🇹🇼 台湾', '🇬🇧 英国', '🇰🇷 韩国']
 
 
 def direct_filter(region_rx):
@@ -101,7 +107,10 @@ DIRECTS.sort(key=lambda d: DIRECT_REGIONS.index(d[0][:-2]))
 # 信息类伪节点（「剩余流量：412 GB」「套餐到期：…」）排除。所有按节点名筛选的
 # 组都要带：「GB」会被英国组当成地区标签，把一个 ws 中转伪节点收进 🇬🇧 英国直连。
 # 与 Shadowrocket 各组用同一段。
-PSEUDO = '(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|Expire|Traffic|Reset))'
+# 落云的公告节点另加「订阅 / 续费 / 客户端 / 🇦🇶」，见 EXCLUDE_INFO 处的说明。
+PSEUDO_WORDS = ('剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|'
+                '客户端|客戶端|🇦🇶|Expire|Traffic|Reset')
+PSEUDO = '(?!.*(?:' + PSEUDO_WORDS + '))'
 
 
 def guard(f):

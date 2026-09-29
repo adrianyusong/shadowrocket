@@ -47,14 +47,17 @@ https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/config/clash.ya
 update / rename / export / remove），所以必须先改好再导入：
 
 1. 在电脑上下载 `clash.yaml`，把 `proxy-providers.airport.url` 换成你自己的
-   Clash 格式订阅地址
+   Clash 格式订阅地址；两家机场都用时，再取消 `airport-b` 的注释填第二个地址
 2. 存成 `*.local.yaml`，放进 iCloud Drive 或 AirDrop 传到手机
 3. Clash → Add Profile → **配置文件**（不是 Subscription link）
 
 想保留自动更新就把改好的文件放进**私有**仓库再订阅那个 raw 地址 ——
 文件里带着你的订阅地址，绝不能放公开仓库。
 
-**Clash Verge**：直接改本地文件，或用下面的扩展脚本从节点属性动态重建分组：
+**Clash Verge**：直接改本地文件，或用下面的扩展脚本从节点属性动态重建分组。
+注意 `clash-verge/` 下的脚本与配置是按旧机场调的，**还没有适配落云**：套在落云上时
+伪节点过滤漏掉「请更新订阅」「客户端」和 `🇦🇶` 公告节点，AnyTLS 节点会被当成
+Hy2 / VLESS，AI 默认会落到香港。落云请用 `config/clash.yaml`（两家都已适配）。
 
 ```
 https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/clash-verge/script.js
@@ -239,17 +242,32 @@ proxy-providers:
 `select, policy-regex-filter = …`，手册「代理分组」一节确认 select 组支持正则筛选。
 
 所有按节点名筛选的组都排除了信息类伪节点。之前「剩余流量：412 GB」里的 `GB`
-被英国组当成地区标签，把一个 ws 中转伪节点收进了 `🇬🇧 英国直连`。
+被英国组当成地区标签，把一个 ws 中转伪节点收进了 `🇬🇧 英国直连`。排除词覆盖两家
+机场的写法：剩余 / 到期 / 流量 / 重置 / 套餐 / 官网，以及落云的「续费地址」「请更新
+订阅」「客户端不对」和整排以 `🇦🇶` 打头的公告节点（其中一个名字只有旗子加空白）。
+
+**两家机场。** 配置按两份订阅同时装载来设计：旧机场（名字带 `CTCU` / `流媒体` /
+`0.1x` 这类标签）和落云（`[地区]₁`、`原生`、`家宽` 这类标签）。各组的来源：
+- `🛣️ 专线`、`💴 低倍率` 只有旧机场的节点；`🇰🇷 韩国` / `🇰🇷 韩国直连`、`🔒 ANYTLS`
+  只有落云的节点。只装一家时对应的组是空的——空的 url-test 组等同 DIRECT，别在 `🚀` 里选它。
+- `🏠 住宅IP` 只收住宅 / 家宽（香港 9、台湾 7、越南 3）。`原生` 是在当地 ISP 名下注册的
+  机房 IP，不算住宅，归 `🎞️ 流媒体节点`。
+- `🎞️ 流媒体节点` = 旧机场的「流媒体」节点 + 落云的「原生」节点，共 8 个国家。它是
+  `🎬 DISNEY+` 的默认首选，所以排除 Disney+ 用不了的国家：俄罗斯、越南（未进入），
+  马来西亚 / 印尼 / 泰国 / 菲律宾 / 印度（跑在本地 Hotstar 上，只对当地账号开放）。
+  东南亚离国内近，url-test 很容易选中它们，不能只靠延迟。
+- 落云没有 ws 中转，名字里也没有 `CTCU`，它的地区节点全部算「直连」。
+- 泰国、德国、澳洲、加拿大等二十来个其他地区没有单独分组，在 `🔧 手动选择` 里点。
 
 三个维度正交，按需切换：
 
 | 维度 | 分组 |
 |---|---|
 | 线路属性 | `🏠 住宅IP` `🛣️ 专线` `🎞️ 流媒体节点` `💴 低倍率` |
-| 地区 | 港 / 台 / 日 / 新 / 美 / 英（韩国无节点，已注释掉） |
-| 直连线路 | `🇺🇲 美国直连` `🇯🇵 日本直连` `🇸🇬 狮城直连` `🇭🇰 香港直连` `🇹🇼 台湾直连` `🇬🇧 英国直连`（地区 × 无中转，三份配置都有） |
+| 地区 | 港 / 台 / 日 / 新 / 美 / 韩 / 英（韩国只有落云的节点） |
+| 直连线路 | `🇺🇲 美国直连` `🇯🇵 日本直连` `🇸🇬 狮城直连` `🇭🇰 香港直连` `🇹🇼 台湾直连` `🇬🇧 英国直连` `🇰🇷 韩国直连`（地区 × 无中转，三份配置都有） |
 
-| 协议 | **仅 Clash**：`🔐 VLESS` `⚡ HY2`（只列订阅里有的协议——筛完为空的组在 mihomo 里只剩 COMPATIBLE，等同 DIRECT；VMESS / TROJAN 因此移除，有节点后在 `build-clash.py` 加回） |
+| 协议 | **仅 Clash**：`🔐 VLESS` `⚡ HY2` `🔒 ANYTLS`（落云以 AnyTLS 为主；只列订阅里有的协议——筛完为空的组在 mihomo 里只剩 COMPATIBLE，等同 DIRECT；VMESS / TROJAN 因此移除，有节点后在 `build-clash.py` 加回） |
 
 **协议维度在 Shadowrocket 与 Stash 上做不到**，原因见上方更正。
 `tools/check-config.py` 会拒绝任何 Stash 未记载的 `proxy-groups` 选项，
@@ -405,7 +423,7 @@ IP 类规则补上 `no-resolve`（见下文「DNS 泄漏」）。
 **这个判据只对当前机场的命名成立。** 换机场或机场改名后要重新核对：
 
 ```bash
-python tools/check-direct.py 你的Clash格式订阅.yaml
+python tools/check-direct.py 旧机场订阅.yaml 落云订阅.yaml
 ```
 
 它只读订阅文件里每个节点的 `name` / `type` / `network` 三个字段，以 `network`
@@ -419,7 +437,8 @@ python tools/check-direct.py 你的Clash格式订阅.yaml
 `CTCU` 写成正向条件、三份配置的直连组必须一致。CI 拿不到私有订阅，所以真实数据
 的核对只能靠上面那个本地工具。
 
-韩国不开直连组：订阅里没有韩国节点，Shadowrocket 的空 `url-test` 组只剩 `DIRECT`。
+可以一次传多份订阅，按合并后的节点核对——两家都装时就该这样查。只传旧机场一份时，
+`🇰🇷 韩国直连` 为空会报 FAIL（直连组为空一律 FAIL），这是预期的。
 
 ### DNS 泄漏与 DNS 服务器
 
@@ -449,7 +468,7 @@ NXDOMAIN 算不算「查询失败」手册没写，也没在设备上验证，�
 
 `🤖 AI 服务` 的候选中**刻意不放** `🚀 节点选择` —— 它可间接指向 `🔮 负载均衡`，
 导致每个请求换一次出口，会被 OpenAI 判定异常。AI 组以直连线路组打头，默认
-`🇺🇲 美国直连`；不放 `🏠 住宅IP`，因为当前订阅的住宅节点全在香港，而 OpenAI /
+`🇺🇲 美国直连`；不放 `🏠 住宅IP`，因为它混着 9 个香港住宅节点，而 OpenAI /
 Claude / Gemini 都不对香港开放。
 
 YouTube / Netflix / Disney+ / HBO / Prime Video / 巴哈姆特 / AbemaTV 把流媒体或
@@ -457,8 +476,8 @@ YouTube / Netflix / Disney+ / HBO / Prime Video / 巴哈姆特 / AbemaTV 把流�
 与实际不符）。Spotify / TikTok / Twitch / 国外媒体 / PikPak 则以 `🚀` 打头、默认
 跟随它——把 `🚀` 切到 `🔮 负载均衡` 时，它们也会跟着每请求换出口。
 HBO / Prime Video 以 `🇺🇲 美国直连` 打头，
-它的 7 个节点恰好全带机场的流媒体标签；Netflix / Disney+ 没有这样的单一地区组，
-仍以跨 5 国的 `🎞️ 流媒体节点` 打头。
+旧机场的 7 个美国直连节点全带流媒体标签、落云的 4 个美国节点全是原生 IP；
+Netflix / Disney+ 没有这样的单一地区组，仍以跨 8 个国家的 `🎞️ 流媒体节点` 打头。
 
 地区分组的测速间隔调为 `interval = 600, tolerance = 200` 抑制抖动。
 要彻底稳定，选 `🔧 手动选择` 再点具体节点。

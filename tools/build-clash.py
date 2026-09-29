@@ -56,15 +56,18 @@ SECRET_PLACEHOLDER = 'CHANGE-ME-generate-a-random-secret'
 # mihomo 的 adapter/outboundgroup/groupbase.go:211 实现了它，所以这里能做。
 # 没有 include-type，只能反着排除其余全部类型。
 #
-# 只列订阅里确实有的协议。筛完为空的组在 mihomo 里只剩 COMPATIBLE（等同 DIRECT），
-# 挂在 🚀 / 🤖 上就是一个标着协议名、实际直连的开关——与 🇰🇷 韩国 被移除同理。
-# 当前订阅只有 vless 与 hysteria2；有 vmess / trojan 节点后把下面两行加回，
+# 只列两家机场合并后确实有的协议。筛完为空的组在 mihomo 里只剩 COMPATIBLE（等同
+# DIRECT），挂在 🚀 / 🤖 上就是一个标着协议名、实际直连的开关。只装一家时 🔒 ANYTLS
+# （只有落云有）会是空的——README 已写明，这时别选它。
+# 旧机场只有 vless 与 hysteria2，落云以 anytls 为主（另有 1 个 vless、2 个 hysteria2；
+# 它的 5 个 vmess 全是公告伪节点）。有真实 vmess / trojan 节点后把下面两行加回，
 # 并用 tools/check-direct.py 核对（它会按节点真实 type 算出每个协议组的成员）。
 #   ('🧩 VMESS 节点',  'Vmess'),
 #   ('🐴 TROJAN 节点', 'Trojan'),
 PROTOCOLS = [
     ('🔐 VLESS 节点',  'Vless'),
     ('⚡ HY2 节点',    'Hysteria2'),
+    ('🔒 ANYTLS 节点', 'AnyTLS'),
 ]
 
 
@@ -95,6 +98,7 @@ def main():
     A('# update / rename / export / remove），所以必须先改好再导入：')
     A('#   1. 在电脑上下载本文件，改两处：')
     A('#      a) proxy-providers.airport.url  -> 你的订阅地址')
+    A('#         两家机场都用时，再取消 airport-b 的注释填第二个地址')
     A('#      b) secret                       -> 你自己生成的随机串')
     A('#         生成：python -c "import secrets;print(secrets.token_urlsafe(32))"')
     A('#   2. 存成 *.local.yaml，放进 iCloud Drive 或用 AirDrop 传到手机')
@@ -239,7 +243,18 @@ def main():
     A('      enable: true')
     A('      url: %s' % TEST_URL)
     A('      interval: 300')
-    A('  # 自建 CF 节点（edgetunnel 一类）作第二个来源时取消下面的注释。')
+    A('  # 第二家机场（例如落云）。分组都是 include-all，加进来就会按节点名自动归组；')
+    A('  # 🇰🇷 韩国 / 🔒 ANYTLS 等只有它有节点，只装一家时这些组是空的（空组等同直连）。')
+    A('  # airport-b:')
+    A('  #   type: http')
+    A('  #   url: "https://第二家机场的订阅地址?flag=clash"')
+    A('  #   path: ./providers/airport-b.yaml')
+    A('  #   interval: 3600')
+    A('  #   health-check:')
+    A('  #     enable: true')
+    A('  #     url: %s' % TEST_URL)
+    A('  #     interval: 300')
+    A('  # 自建 CF 节点（edgetunnel 一类）作另一个来源时取消下面的注释。')
     A('  # 节点名须含独立的 CF 或 Cloudflare 才会进 ☁️ CF优选。')
     A('  # 该订阅地址含 UUID，等同密码：只写进 *.local.yaml，别提交。')
     A('  # cf:')
@@ -288,7 +303,7 @@ def main():
     for name, keep in PROTOCOLS:
         ex = '|'.join(t for t in ALL_TYPES if t != keep)
         grp(name, 'url-test', include_all='true', exclude_type=q(ex),
-            exclude_filter=q('(?i)(' + bs.CF_NODE + '|剩余|剩餘|流量|到期|过期|過期|重置|套餐)'),
+            exclude_filter=q('(?i)(' + bs.CF_NODE + '|' + bs.PSEUDO_WORDS + ')'),
             url=TEST_URL, interval=300, tolerance=50)
 
     # select 组：候选照抄 config/default.conf，policy-select-name 挪到首位。

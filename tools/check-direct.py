@@ -17,7 +17,8 @@
 换机场或机场改了命名后重跑一次即可。
 
 用法：
-    python tools/check-direct.py <Clash 订阅文件.yaml>
+    python tools/check-direct.py <Clash 订阅文件.yaml> [更多订阅文件.yaml …]
+传多份时按合并后的节点核对（配置同时装两家机场订阅时就该这样查）。
 退出码 1 的情形：
   - 任一直连组混进中转
   - 任一按名筛选的组收进信息类伪节点
@@ -40,12 +41,18 @@ except ImportError:
     sys.exit(2)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, 'tools'))
+import importlib.util
+_spec = importlib.util.spec_from_file_location('_bs', os.path.join(ROOT, 'tools', 'build-stash.py'))
+_bs = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_bs)
 CONFIG = os.path.join(ROOT, 'config')
 
 # 信息类伪节点（剩余流量、到期时间）。它们留在节点清单里一起核对，不预先剔除：
 # 以前这里先把它们滤掉，于是「剩余流量：412 GB」被 🇬🇧 英国直连 当成英国节点
 # （GB 命中了地区标签）收进组里、而且它还是 ws 中转——本工具却报「通过」。
-INFO = re.compile(r'剩余|剩餘|到期|重置|流量|套餐|官网|官網')
+# 与分组里的伪节点排除词同源（build-stash.py 的 PSEUDO_WORDS）。
+INFO = re.compile(_bs.PSEUDO_WORDS, re.I)
 
 # ☁️ CF优选 的节点来自另外添加的 CF 订阅，只看机场订阅时必然为空，不报。
 EMPTY_OK = {'☁️ CF优选'}
@@ -178,10 +185,13 @@ def main():
     if len(sys.argv) < 2:
         print(__doc__)
         return 2
-    doc = yaml.safe_load(io.open(sys.argv[1], encoding='utf-8'))
+    proxies = []
+    for path in sys.argv[1:]:
+        doc = yaml.safe_load(io.open(path, encoding='utf-8')) or {}
+        proxies += doc.get('proxies') or []
     # (名字, 是否中转, 是否伪节点, AdapterType 小写)。不读其余字段。
     nodes = [(p['name'], is_relay(p), bool(INFO.search(p.get('name', ''))), adapter_type(p))
-             for p in doc.get('proxies') or []]
+             for p in proxies]
     real = [x for x in nodes if not x[2]]
     print('节点 %d 个：中转 %d / 直连 %d / 信息类伪节点 %d'
           % (len(nodes), sum(x[1] for x in real), sum(not x[1] for x in real),
