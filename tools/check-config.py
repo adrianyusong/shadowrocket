@@ -342,6 +342,12 @@ def check_rulesets_exist(cfg):
 # 唯一例外是 WiFi 门户检测——走代理会连不上酒店与机场热点。
 SKIP_PROXY_ALLOWED_APPLE = {'captive.apple.com'}
 
+# skip-proxy 命中即绕过规则层。除上面的门户检测外，只允许规则本来就判直连的域名：
+# 判拦截的放进来等于让拦截失效，判代理的放进来等于绕过代理，解析也脱离本配置的
+# DNS 设置。*.crashlytics.com（Surge 模板遗留，规则判 🛑 广告拦截）就是因为这里
+# 以前只查 Apple 域名才一直没被发现。
+SKIP_PROXY_OK_POLICIES = {'DIRECT', '🎯 全球直连', '🇨🇳 国内服务', '🌏 国内媒体'}
+
 
 def check_skip_proxy(cfg):
     for sec, i, s in sections(cfg):
@@ -353,6 +359,34 @@ def check_skip_proxy(cfg):
             if 'apple' in low or 'icloud' in low:
                 if item not in SKIP_PROXY_ALLOWED_APPLE:
                     fail('skip-proxy 含 Apple 域名，会绕过隧道使代理规则失效: %s' % item)
+                continue
+            if re.match(r'^[0-9a-f:.]+(/[0-9]+)?$', low) or low in ('localhost', 'local'):
+                continue
+            policy = _first_policy(cfg, low)
+            if policy not in SKIP_PROXY_OK_POLICIES:
+                fail('skip-proxy 的 %s 绕过规则层，而规则把它判给 %s：放在这里等于让该策略'
+                     '失效，解析也脱离本配置的 DNS 设置' % (item, policy or 'FINAL（走代理）'))
+
+
+# 发往这些国内公共 DNS 的明文查询按目的 IP 命中 GEOIP,CN 走直连，App 查的任何域名
+# （包括境外的）都以明文交给国内 DNS——这是绕得过 no-resolve 的唯一泄漏路径。
+# 境外公共 DNS 原本就随 FINAL 走代理，不强制。
+HIJACK_REQUIRED = ['114.114.114.114', '114.114.115.115', '223.5.5.5', '223.6.6.6',
+                   '119.29.29.29', '182.254.116.116', '1.12.12.12', '120.53.53.53',
+                   '180.76.76.76', '1.2.4.8', '210.2.4.8', '101.226.4.6']
+
+
+def check_hijack_dns(cfg):
+    for sec, i, s in sections(cfg):
+        if sec == '[General]' and s.startswith('hijack-dns'):
+            have = {x.strip() for x in s.split('=', 1)[1].split(',')}
+            miss = [ip for ip in HIJACK_REQUIRED if ip + ':53' not in have]
+            if miss:
+                fail('hijack-dns 缺少国内公共 DNS: %s。App 硬编码这些地址时，查询按 '
+                     'GEOIP,CN 直连、以明文送达国内 DNS，绕过 no-resolve 造成泄漏'
+                     % '、'.join(miss))
+            return
+    fail('[General] 缺少 hijack-dns：App 硬编码的国内 DNS 查询会直连泄漏')
 
 
 def check_no_resolve():
@@ -1009,6 +1043,7 @@ def main():
     check_workflows()
     check_no_resolve()
     check_skip_proxy(cfg)
+    check_hijack_dns(cfg)
     check_rewrite_mitm(cfg)
     check_fakeip(cfg)
     check_must_route(cfg)

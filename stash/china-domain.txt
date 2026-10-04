@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/china.list 生成，请勿手改。
-# behavior: domain   条数: 3857
+# behavior: domain   条数: 3856
 netease.ugcvideoss.ourdvs.com
 +.163yun.com
 +.api.iplay.163.com
@@ -946,7 +946,6 @@ www.yxssp.com
 +.bosera.com
 +.bosszhipin.com
 +.broadcasthe.net
-+.browserleaks.com
 +.bstatic.com
 +.btcfans.com
 +.btgtravel.com
