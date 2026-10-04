@@ -129,3 +129,8 @@ DOMAIN-SUFFIX,xboxlive.cn,game
 # 而它在 [Rule] 里排在 DOMAIN-SUFFIX,cn 之前，这些国服域名就被拖去走境外节点。
 # 从游戏集剔除，交给 .cn 直连。Stash / Clash 改由 default.conf 推导后同样生效。
 DOMAIN-SUFFIX,*.cn,game
+# browserleaks.com 是境外的浏览器隐私 / DNS 泄漏检测站，blackmatrix7 的国内规则
+# 把它收进来，于是走直连。它的 DNS 测试靠随机子域名观察是谁在解析，直连时必然
+# 显示国内 DNS——配置本身没有泄漏也会被它报成泄漏，拿它验证只会得出错误结论。
+# 只从国内策略剔除，落到 FINAL 走代理，与 ipleak.net / dnsleaktest.com 一致。
+DOMAIN-SUFFIX,browserleaks.com,china

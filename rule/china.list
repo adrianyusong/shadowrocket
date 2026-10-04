@@ -2,7 +2,7 @@
 # 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
 # 需要增补规则请写进 config/default.conf 的内联规则段。
 # 上游: blackmatrix7/ios_rule_script
-# 规则数: 16330
+# 规则数: 16329
 
 DOMAIN,netease.ugcvideoss.ourdvs.com
 DOMAIN-SUFFIX,163yun.com
@@ -968,7 +968,6 @@ DOMAIN-SUFFIX,boosj.com
 DOMAIN-SUFFIX,bosera.com
 DOMAIN-SUFFIX,bosszhipin.com
 DOMAIN-SUFFIX,broadcasthe.net
-DOMAIN-SUFFIX,browserleaks.com
 DOMAIN-SUFFIX,bstatic.com
 DOMAIN-SUFFIX,btcfans.com
 DOMAIN-SUFFIX,btgtravel.com
