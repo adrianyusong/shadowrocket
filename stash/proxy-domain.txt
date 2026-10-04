@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/proxy.list 生成，请勿手改。
-# behavior: domain   条数: 31007
+# behavior: domain   条数: 31017
 +.a2z.com
 +.aboutamazon.cn
 +.aboutamazon.co.uk
@@ -392,6 +392,8 @@ foxnewsplayer-a.akamaihd.net
 gamedownloads-rockstargames-com.akamaized.net
 gamer-cds.cdn.hinet.net
 gamer2-cds.cdn.hinet.net
+geminiweb-pa.clients.google.com
+geminiweb-pa.clients6.google.com
 gigabyte2.azureedge.net
 github-cloud.s3.amazonaws.com
 github-production-release-asset-2e65be.s3.amazonaws.com
@@ -5568,6 +5570,7 @@ login.microsoftonline.com
 +.classics.ac.uk
 +.classymomsex.com
 +.clau.de
++.claude.dev
 +.claudemcpclient.com
 +.claudemcpcontent.com
 +.claudeusercontent.com
@@ -10826,6 +10829,7 @@ login.microsoftonline.com
 +.huanyuju.com
 +.huarenav.com
 +.huarenporn.com
++.huarun.win
 +.huashundg.com
 +.huawen.ac.uk
 +.huaxin-lls.xyz
@@ -13931,6 +13935,7 @@ login.microsoftonline.com
 +.messytube.com
 +.met-nude.com
 +.meta.ai
++.metaaivm.com
 +.metabolomics.ac.uk
 +.metabora.io
 +.metabrainz.org
@@ -16260,6 +16265,7 @@ login.microsoftonline.com
 +.openbook.org.tw
 +.opencas.io
 +.openclaw.ai
++.opencode.ai
 +.opencollective.com
 +.opendesktop.org
 +.opendns.com
@@ -22713,7 +22719,6 @@ login.microsoftonline.com
 +.walker-institute.ac.uk
 +.walker.ac.uk
 +.wallberis.ru
-+.wallhaven.cc
 +.walmart-content.com
 +.walmart.com
 +.walmart.pharmacy
@@ -23020,7 +23025,6 @@ login.microsoftonline.com
 +.wikifeet.com
 +.wikihow.com
 +.wikimediacloud.org
-+.wikimediafoundation.org
 +.wikiporn.tv
 +.wikisexguide.com
 +.wilberes.ru
@@ -26478,6 +26482,7 @@ login.microsoftonline.com
 +.fututrustee.com
 +.fux.com
 +.fuyin.net
++.fuyin116.com
 +.fuyindiantai.org
 +.fuyu.org.tw
 +.fw.cm
@@ -28074,6 +28079,7 @@ login.microsoftonline.com
 +.multiupload.com
 +.mummysgold.com
 +.murmur.tw
++.muse.ai
 +.musicade.net
 +.musixmatch.com
 +.muslimvideo.com
@@ -30475,6 +30481,7 @@ login.microsoftonline.com
 +.waiwaier.com
 +.walletconnect.com
 +.walletconnect.org
++.wallhaven.cc
 +.wallmama.com
 +.wallornot.org
 +.wallpapercasa.com
@@ -30586,6 +30593,7 @@ login.microsoftonline.com
 +.wikia.com
 +.wikibooks.org
 +.wikidata.org
++.wikifunctions.org
 +.wikileaks-forum.com
 +.wikileaks.ch
 +.wikileaks.com
@@ -30598,12 +30606,14 @@ login.microsoftonline.com
 +.wikilivres.info
 +.wikimapia.org
 +.wikimedia.org
++.wikimediafoundation.org
 +.wikinews.org
 +.wikipedia.com
 +.wikipedia.org
 +.wikiquote.org
 +.wikis.tw
 +.wikisource.org
++.wikispecies.org
 +.wikiunblocked.org
 +.wikiversity.org
 +.wikivoyage.org
