@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/media-global.list 生成，请勿手改。
-# behavior: classical   条数: 68
+# behavior: classical   条数: 67
 DOMAIN-KEYWORD,anthropic
 DOMAIN-KEYWORD,bbcfmt
 DOMAIN-KEYWORD,claude
@@ -67,4 +67,3 @@ USER-AGENT,com.kktv.ios.kktv*
 USER-AGENT,discovery+*
 USER-AGENT,encoreTVB*
 USER-AGENT,mytv*
-URL-REGEX,^https?:\/\/www\.amazon\.com\/(Amazon-Video|gp\/video)\/

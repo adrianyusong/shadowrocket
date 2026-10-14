@@ -131,6 +131,16 @@ classical      488 条   （DOMAIN-KEYWORD 等只能走这个）
 所有 `ipcidr` 规则集引用都带 `no-resolve` —— 不加的话每个域名请求都会为了
 判断 IP 归属触发一次本地 DNS 查询，既泄漏域名，又让被污染的解析结果影响分流。
 
+**URL-REGEX 只在 Shadowrocket 侧有效。** 那是 QuantumultX / Surge 语法，
+mihomo 与 Stash 的规则引擎不支援，写进 classical provider 只会載入失敗或被
+靜默跳過。`build-stash.py` 在拆分時轉換：純主機型轉 `DOMAIN` /
+`DOMAIN-WILDCARD`（如 `assets\d+\.xboxlive\.(com|cn)`），廣告類放寬成整台主機
+的 `DOMAIN`（僅 `reject-ads` / `reject-privacy` 允許放寬），帶路徑判定的業務規則
+（如 Prime Video 的 Amazon 路徑）無法轉換、直接丟棄並在構建時告警。
+同理，Surge 语法的 `HOST-WILDCARD` 在拆分時轉成 `DOMAIN-WILDCARD`
+（`sync-rules.py` 的歸一化已加入同映射，下次同步後上游不再引入該類型）。
+`check-config.py` 的 `check_classical_types` 會攔住任何漏網的不支援類型。
+
 ### 用 Stash 的步骤
 
 **订阅地址不进仓库** —— 它带着你的机场凭据。Stash 的模型是订阅作为「配置」在 App
@@ -378,7 +388,7 @@ IP 类规则补上 `no-resolve`（见下文「DNS 泄漏」）。
 
 ## 配置说明
 
-`config/default.conf` 包含 55 个策略组、35 个规则集（全部托管于本仓库 `rule/`，
+`config/default.conf` 包含 57 个策略组、35 个规则集（全部托管于本仓库 `rule/`，
 来自 70 个上游），合计 15.8 万条规则。上游为 [blackmatrix7/ios_rule_script](https://github.com/blackmatrix7/ios_rule_script)
 与 [anti-AD](https://anti-ad.net)。
 

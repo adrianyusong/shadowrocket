@@ -4,7 +4,7 @@ USER-AGENT,MicroMessenger*
 USER-AGENT,WeChat*
 IP-ASN,132203,no-resolve
 DOMAIN-KEYWORD,weibo
-HOST-WILDCARD,windows-*.net
+DOMAIN-WILDCARD,windows-*.net
 DOMAIN-KEYWORD,.tmall.com
 DOMAIN-KEYWORD,alicdn
 DOMAIN-KEYWORD,alipay

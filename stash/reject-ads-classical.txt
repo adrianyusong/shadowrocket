@@ -181,5 +181,5 @@ DOMAIN-KEYWORD,xn--2qux23c9ziyrq
 DOMAIN-KEYWORD,xxshuyuan
 DOMAIN-KEYWORD,ynuf.alipay.com
 DOMAIN-KEYWORD,zjtoolbar
-URL-REGEX,^https?:\/\/cdn-1rtb\.caiyunapp\.com/creative/.*$
-URL-REGEX,^https?:\/\/goblin\.hupu\.com/[^/]+/[^/]+\/interfaceAd\/
+DOMAIN,cdn-1rtb.caiyunapp.com
+DOMAIN,goblin.hupu.com
