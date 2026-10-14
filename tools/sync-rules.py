@@ -15,6 +15,7 @@
 
 同时把 QuantumultX 的 HOST / HOST-SUFFIX / HOST-KEYWORD 归一化成
 Shadowrocket 原生的 DOMAIN / DOMAIN-SUFFIX / DOMAIN-KEYWORD，
+以及 Surge 的 HOST-WILDCARD 归一化成 DOMAIN-WILDCARD，
 消除跨 flavor 语法能否被解析的不确定性。
 
 用法：
@@ -74,10 +75,13 @@ SLUG = {
 }
 
 # QuantumultX 语法 -> Shadowrocket 原生语法
+# HOST-WILDCARD 是 Surge 语法，三端（Shadowrocket / Stash / mihomo）都不吃，
+# 归一化成 DOMAIN-WILDCARD 后三端都认。
 NORMALIZE = {
     'HOST': 'DOMAIN',
     'HOST-SUFFIX': 'DOMAIN-SUFFIX',
     'HOST-KEYWORD': 'DOMAIN-KEYWORD',
+    'HOST-WILDCARD': 'DOMAIN-WILDCARD',
 }
 
 # 本仓库自维护的列表不参与收编，它们本来就在仓库里

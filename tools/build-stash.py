@@ -23,6 +23,7 @@ domain 与 ipcidr 是为海量规则优化过的加载器，classical 虽然什�
 """
 import io
 import os
+import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -289,10 +290,86 @@ POLICIES = [
 DOMAIN_TYPES = {'DOMAIN', 'DOMAIN-SUFFIX'}
 IP_TYPES = {'IP-CIDR', 'IP-CIDR6', 'IP6-CIDR'}
 
+# classical provider 裡 mihomo / Stash 吃得下的規則類型。
+# URL-REGEX 不在其中（那是 QuantumultX / Surge 語法），由 convert_url_regex
+# 在拆分時轉換；轉不了的直接丟棄並告警，絕不寫進產物。
+# check-config.py 的 check_classical_types 會複核這份清單。
+MIHOMO_CLASSICAL_TYPES = {
+    'DOMAIN', 'DOMAIN-SUFFIX', 'DOMAIN-KEYWORD', 'DOMAIN-REGEX',
+    'DOMAIN-WILDCARD', 'IP-CIDR', 'IP-CIDR6', 'IP-ASN',
+    'SRC-IP-CIDR', 'SRC-PORT', 'DST-PORT',
+    'PROCESS-NAME', 'PROCESS-PATH', 'USER-AGENT',
+    'GEOIP', 'GEOSITE', 'NETWORK', 'AND', 'OR', 'NOT',
+}
+
+
+def convert_url_regex(value, broaden=False):
+    """把 URL-REGEX 轉成 classical provider 吃得下的域名規則。
+
+    背景：rule/*.list 是 Shadowrocket 原生格式，Shadowrocket 吃 URL-REGEX，
+    但 Stash / mihomo 的規則引擎不支援這個類型（它是 QuantumultX / Surge 語法），
+    寫進 classical provider 只會載入失敗或被靜默跳過。所以在拆分時轉換：
+
+    - 純主機型（正則只描述主機、無路徑判定）→ DOMAIN 或 DOMAIN-WILDCARD。
+      例：assets\\d+\\.xboxlive\\.(com|cn)
+          → DOMAIN-WILDCARD,assets*.xboxlive.com
+          → DOMAIN-WILDCARD,assets*.xboxlive.cn
+    - 主機固定、只帶路徑後綴的廣告規則 → 放寬成整台主機的 DOMAIN。
+      例：^https?:\\/\\/cdn-1rtb\\.caiyunapp\\.com/creative/.*$
+          → DOMAIN,cdn-1rtb.caiyunapp.com
+      放寬只在 broaden=True 時允許（呼叫方只對 reject-ads / reject-privacy
+      開啟）：這類主機本身就是廣告投放用途（廣告 CDN / 廣告接口），
+      放寬方向是安全的。
+    - 帶路徑判定的業務規則 → 回傳 None，由呼叫方丟棄並印出警告。
+      例：^https?:\\/\\/www\\.amazon\\.com\\/(Amazon-Video|gp\\/video)\\/
+      這條在 Stash / Clash 側無對等語義，丟棄後 www.amazon.com 的 Prime Video
+      路徑會落到 proxy.list 走 🚀 節點選擇（Shadowrocket 側不受影響）。
+      不能放寬成 DOMAIN,www.amazon.com——那會把整個亞馬遜商城推進媒體組。
+
+    未來新增的 URL-REGEX 若長得不像以上三種，一律回傳 None 丟棄告警，
+    而不是把引擎吃不下的東西寫進產物。
+    """
+    v = value.replace('\\/', '/')
+    v = re.sub(r'^\^https\?:\/\/', '', v)
+    v = re.sub(r'(\.\*)?\$?$', '', v)
+    host, _, path = v.partition('/')
+    host = host.replace('\\.', '.')
+    host = host.replace('\\d+', '*').replace('\\d*', '*').replace('\\d', '*')
+    hosts = []
+    m = re.search(r'\(([A-Za-z0-9.|]+)\)', host)
+    if m:
+        for alt in m.group(1).split('|'):
+            hosts.append(host[:m.start()] + alt + host[m.end():])
+    else:
+        hosts = [host]
+    out = []
+    for h in hosts:
+        # 主機段只允許字面量與 * 通配；冒號（端口）、殘留正則一律放棄
+        if not h or '.' not in h or re.search(r'[\\\[\]{}^$+?|():]', h):
+            return None
+        out.append(('DOMAIN-WILDCARD' if '*' in h else 'DOMAIN') + ',' + h)
+    if path and path not in ('', '.*'):
+        # 有路徑判定：只在 broaden=True（廣告類）時放寬成整台主機的 DOMAIN；
+        # 業務類無法轉換，回 None 丟棄。
+        if broaden and all(x.startswith('DOMAIN,') for x in out):
+            return out
+        return None
+    return out
+
 
 def split_rules(path):
-    """把一个 .list 拆成 domain / ipcidr / classical 三份。"""
-    dom, ip, cls = [], [], []
+    """把一个 .list 拆成 domain / ipcidr / classical 三份。
+
+    回傳 (dom, ip, cls, dropped)：dropped 是轉換失敗被丟棄的 URL-REGEX，
+    由 main() 印出警告。URL-REGEX 在 Shadowrocket 側正常生效，
+    只在 Stash / Clash 側需要轉換或丟棄。
+
+    broaden 只對 reject-ads / reject-privacy 開啟：廣告主機放寬成整台 DOMAIN
+    是安全方向；業務規則（如 www.amazon.com 的 Prime Video 路徑）絕不能放寬。
+    """
+    dom, ip, cls, dropped = [], [], [], []
+    slug = os.path.basename(path).replace('.list', '')
+    broaden = slug in ('reject-ads', 'reject-privacy')
     for line in io.open(path, encoding='utf-8'):
         line = line.strip()
         if not line or line.startswith('#'):
@@ -308,10 +385,21 @@ def split_rules(path):
             dom.append('+.' + value)
         elif rtype in IP_TYPES:
             ip.append(value)
+        elif rtype == 'URL-REGEX':
+            conv = convert_url_regex(value, broaden=broaden)
+            if conv:
+                cls.extend(conv)
+            else:
+                dropped.append(line)
+        elif rtype == 'HOST-WILDCARD':
+            # Surge 語法，三端都不支援。這裡先轉成 DOMAIN-WILDCARD 應急；
+            # sync-rules.py 的 NORMALIZE 已加入同映射，下次上游同步後
+            # rule/*.list 裡不會再出現這個類型，這行屆時自然無事可做。
+            cls.append('DOMAIN-WILDCARD,' + value)
         else:
             # DOMAIN-KEYWORD / USER-AGENT / PROCESS-NAME 等只能走 classical
             cls.append(','.join(parts))
-    return dom, ip, cls
+    return dom, ip, cls, dropped
 
 
 def write_set(name, lines, kind):
@@ -351,7 +439,12 @@ def main():
         if not os.path.exists(src):
             print('缺少 rule/%s.list，跳过' % slug)
             continue
-        dom, ip, cls = split_rules(src)
+        dom, ip, cls, dropped = split_rules(src)
+        for d in dropped:
+            # 轉不了的 URL-REGEX：Stash / Clash 側無對等語義，丟棄。
+            # Shadowrocket 側仍由 rule/*.list 裡的原文生效，不受影響。
+            print('  警告：rule/%s.list 的 URL-REGEX 無法轉換，'
+                  'Stash / Clash 側丟棄: %s' % (slug, d))
         for kind, data in (('domain', dom), ('ipcidr', ip), ('classical', cls)):
             fname = write_set(slug, data, kind)
             if not fname:

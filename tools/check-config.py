@@ -349,6 +349,32 @@ SKIP_PROXY_ALLOWED_APPLE = {'captive.apple.com'}
 SKIP_PROXY_OK_POLICIES = {'DIRECT', '🎯 全球直连', '🇨🇳 国内服务', '🌏 国内媒体'}
 
 
+def check_classical_types():
+    """stash/*-classical.txt 不得含 mihomo / Stash 吃不下的規則類型。
+
+    URL-REGEX 是 QuantumultX / Surge 語法，mihomo 與 Stash 的規則引擎都不支援，
+    寫進 classical provider 只會載入失敗或被靜默跳過。build-stash.py 的
+    convert_url_regex 已在拆分時轉換或丟棄，這裡是第二道防線：防有人手改產物，
+    或將來新增上游又把不支援的類型帶進來。類型清單以 build-stash.py 的
+    MIHOMO_CLASSICAL_TYPES 為準，不在這裡維護第二份拷貝。
+    """
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        'bs', os.path.join(ROOT, 'tools', 'build-stash.py'))
+    bs = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(bs)
+    allowed = bs.MIHOMO_CLASSICAL_TYPES
+    for path in sorted(glob.glob(os.path.join(STASH_DIR, '*-classical.txt'))):
+        for line in io.open(path, encoding='utf-8'):
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            rtype = line.split(',', 1)[0].strip()
+            if rtype not in allowed:
+                fail('classical 規則集含 mihomo / Stash 不支援的規則類型，會載入'
+                     '失敗或被靜默跳過: %s: %s' % (os.path.basename(path), line))
+
+
 def check_skip_proxy(cfg):
     for sec, i, s in sections(cfg):
         if not s.startswith('skip-proxy'):
@@ -1042,6 +1068,7 @@ def main():
     check_rulesets_exist(cfg)
     check_workflows()
     check_no_resolve()
+    check_classical_types()
     check_skip_proxy(cfg)
     check_hijack_dns(cfg)
     check_rewrite_mitm(cfg)
