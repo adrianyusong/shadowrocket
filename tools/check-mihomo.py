@@ -325,6 +325,7 @@ def _live(exe, home, cfg, doc, ports, secret, expected, timeout):
     """完整启动并经 REST API 核对。返回 (问题列表, 统计)。"""
     ctl = ports[1]
     problems, stats = [], {}
+    text = ''
     logpath = os.path.join(home, 'core.log')
     with io.open(logpath, 'wb') as logf:
         proc = subprocess.Popen([exe, '-d', home, '-f', cfg], stdout=logf,
@@ -366,8 +367,10 @@ def _live(exe, home, cfg, doc, ports, secret, expected, timeout):
                                     % (len(rules), len(doc.get('rules') or [])))
                 stats.update(groups=len(groups), rules=len(rules))
         finally:
+            # 先取日志再发停止信号：Linux 上内核收到 SIGTERM 会自己记一行
+            # "Mihomo shutting down" 的 warning，那不是配置问题。
+            text = io.open(logpath, encoding='utf-8', errors='replace').read()
             _stop(proc)
-    text = io.open(logpath, encoding='utf-8', errors='replace').read()
     problems.extend('内核日志 %s' % p for p in _log_problems(text))
     return problems, stats
 
