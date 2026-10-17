@@ -319,19 +319,30 @@ proxy-providers:
 | `tools/sync-modules.py` | 收编上游模块到 `module/` 自托管 |
 | `tools/build-stash.py` | 生成 Stash 覆写与 `stash/*.txt` |
 | `tools/build-clash.py` | 生成完整 mihomo YAML |
-| `tools/check-config.py` | 静态校验，失败退出码非 0 |
+| `tools/check-config.py` | 静态校验（含凭据扫描），失败退出码非 0 |
+| `tools/check-mihomo.py` | 用真实 mihomo 内核载入 Clash 配置与规则集，内核版本与 SHA-256 钉死 |
+| `tools/fixtures/mihomo-nodes.yaml` | `check-mihomo.py` 用的假订阅节点（RFC 5737 文档地址） |
 | `.github/workflows/sync.yml` | 每周日自动同步，校验通过才提交 |
 | `.github/workflows/validate.yml` | 推送 `main` 与每个 PR 时离线重新生成并校验 |
 
 ```bash
-python tools/sync-rules.py \n  && python tools/sync-modules.py \n  && python tools/build-stash.py \n  && python tools/build-clash.py \n  && python tools/check-config.py
+python tools/sync-rules.py \
+  && python tools/sync-modules.py \
+  && python tools/build-stash.py \
+  && python tools/build-clash.py \
+  && python tools/check-config.py \
+  && python tools/check-mihomo.py
 ```
 
 CI 分两条：`sync.yml` 每周日抓上游、重新生成并校验，通过后提交 `rule/`、`module/`、
 `stash/`、`config/stash.stoverride`、`config/clash.yaml`；`validate.yml` 在推送 `main`
 与每个 PR 时**离线**重新生成并校验，再核对生成结果与已提交内容一致。改了 `default.conf`
 或 `tools/` 之后，要在本地跑 `python tools/build-stash.py && python tools/build-clash.py`
-并把变动一起提交，否则 `validate.yml` 会失败。
+并把变动一起提交，否则 `validate.yml` 会失败。两条都会跑 `check-config.py` 与
+`check-mihomo.py`；`sync.yml` 里它们排在提交之前，失败就不会把坏规则推给设备。
+
+`main` 受仓库规则集保护：必须经 PR 且 `validate` 通过才能合并，禁止强推与删除。
+每周同步的 `github-actions` 机器人可以直接推送；管理员只能在 PR 上绕过，不能直推。
 
 `sources.txt` 必须独立存在：规则集收编后配置里只剩指向本仓库的 URL，
 脚本再也无法从配置反推上游。
@@ -375,6 +386,26 @@ IP 类规则补上 `no-resolve`（见下文「DNS 泄漏」）。
   `akadns.net`（Apple 推送被微软集收走）、`xboxlive.com/.cn`（下载 CDN 被游戏集收走）
 - 游戏集的 `.cn` 后缀（29 条：暴雪国服、腾讯 Switch、英雄联盟、索尼中国等）——
   只在国内提供，却被默认走代理的游戏组抢在 `.cn` 直连之前
+
+### 用真实内核验证 Clash 配置
+
+`check-config.py` 只能用 Python 推测 mihomo 的行为。推测与内核之间有三类实测到的差距，
+`check-mihomo.py` 用钉死版本的真实内核（版本号取自 `sync-modules.py` 的 `MIHOMO_REF`，
+下载后核对 SHA-256，不符就拒绝运行）把它们补上：
+
+- **正则引擎不同**：group filter 走 regexp2，Python 合法的 `(?P<n>…)` 它直接 panic。
+- **配置项被移除却不报错**：`global-client-fingerprint` 在 v1.19 已删，内核只记一行
+  `level=error`，退出码仍是 0。所以日志里除白名单外不许出现任何 warning / error。
+- **规则集静默少载**：`mihomo -t` 不加载规则集，必须完整启动，再经 REST API 核对每个规则集
+  「载入条数 + 内核不认的 `USER-AGENT` 条数」是否等于文件行数。这是「规则静默消失，
+  不报错」那一类故障。地理库（含 ASN 库）预先备好；取不到 ASN 库时含 `IP-ASN` 的规则会被丢掉。
+
+已知取舍：`USER-AGENT` 规则只有 Stash 认，mihomo 会丢弃（目前 165 条）。它们留在两端共用的
+classical 规则集里，测试按条数逐条核对，除它之外的任何丢失都算失败。
+
+订阅用 `tools/fixtures/mihomo-nodes.yaml` 的假节点代替，规则集取本地 `stash/*.txt`（测的是这次
+提交的内容）。`clash-verge/config.yaml` 的规则集在外部站点，只做 `-t` 解析。升级内核时改
+`MIHOMO_REF`，再用 `python tools/check-mihomo.py --print-pins` 取各平台的官方 SHA-256 更新 `PINS`。
 
 ### 广告拦截
 
@@ -647,3 +678,9 @@ stun-response-ipv6 = ::1
 `.gitignore` 中排除，不会被提交。
 
 MITM 的 `ca-passphrase` 与 `ca-p12` 是本机私钥，同样不要入库。
+
+仓库是公开的，凭据一旦提交就已泄漏——删掉文件补救不了，只能轮换。所以有两道防线：
+`check-config.py` 的凭据扫描（代理分享链接、URL 内嵌口令、MITM 私钥、controller `secret`、
+订阅 / 口令参数、UUID；输出已脱敏），扫描范围是「这次提交会带上的文件」，即已跟踪的加上
+未跟踪却没被 `.gitignore` 挡住的，所以**提交前本地跑一遍**就能拦住；以及 GitHub 的
+secret scanning 与 push protection（只认云厂商 / 令牌格式，认不得代理链接，是补充）。

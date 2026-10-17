@@ -1,0 +1,17 @@
+# tools/check-mihomo.py 的测试订阅：让 mihomo 能载入 proxy-providers 并生成策略组。
+# 全是 RFC 5737 文档地址（192.0.2.0/24）与占位口令，不对应任何真实服务器。
+# 名字刻意覆盖各地区、线路标签、信息类伪节点与自建 CF 节点，
+# 让各分组的 filter 都有东西可匹配；协议覆盖 ss / trojan / hysteria2 / vless / anytls。
+proxies:
+  - {name: "🇺🇸美国01|流媒体|0.5x", type: ss, server: 192.0.2.1, port: 8388, cipher: aes-128-gcm, password: test}
+  - {name: "🇺🇸美国02", type: ss, server: 192.0.2.2, port: 8388, cipher: aes-128-gcm, password: test}
+  - {name: "🇯🇵日本01|CTCU", type: ss, server: 192.0.2.3, port: 8388, cipher: aes-128-gcm, password: test}
+  - {name: "🇯🇵日本02", type: trojan, server: 192.0.2.4, port: 443, password: test, sni: example.com}
+  - {name: "🇸🇬新加坡01", type: hysteria2, server: 192.0.2.5, port: 443, password: test, sni: example.com}
+  - {name: "🇸🇬新加坡02", type: vless, server: 192.0.2.6, port: 443, uuid: 00000000-0000-0000-0000-000000000000, network: tcp, tls: true, servername: example.com}
+  - {name: "🇭🇰香港专线01|BGP|住宅IP", type: ss, server: 192.0.2.7, port: 8388, cipher: aes-128-gcm, password: test}
+  - {name: "🇹🇼台湾01", type: anytls, server: 192.0.2.8, port: 443, password: test, sni: example.com}
+  - {name: "🇬🇧英国01", type: ss, server: 192.0.2.9, port: 8388, cipher: aes-128-gcm, password: test}
+  - {name: "🇰🇷韩国01", type: ss, server: 192.0.2.10, port: 8388, cipher: aes-128-gcm, password: test}
+  - {name: "剩余流量：412 GB", type: ss, server: 192.0.2.11, port: 8388, cipher: aes-128-gcm, password: test}
+  - {name: "Cloudflare优选01", type: ss, server: 192.0.2.12, port: 8388, cipher: aes-128-gcm, password: test}

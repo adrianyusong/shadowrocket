@@ -126,7 +126,8 @@ def main():
     A('keep-alive-interval: 30')
     A('# iOS/tvOS 的 NetworkExtension 拿不到进程信息，开了也只是空转。')
     A('find-process-mode: "off"')
-    A('global-client-fingerprint: chrome')
+    # 不要再写 global-client-fingerprint：mihomo v1.19 已移除它，内核只记一行
+    # level=error、配置不生效。要指纹只能在节点上设 client-fingerprint。
     A('')
     A('# ============================================================')
     A('# 外部控制器：让电脑实时读取连接与日志（配合 tools/tail-clash.py）')
