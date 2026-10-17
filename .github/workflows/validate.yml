@@ -1,0 +1,58 @@
+name: 校验配置
+
+# sync.yml 只在每周日跑，而且只校验刚同步下来的内容；直接推 main 或走 PR 的手动提交
+# 此前没有任何 CI，10/14 的两个提交就是这样绕过了校验。
+#
+# 这里在推送 main 与每个 PR 时重新生成全部派生产物，跑 check-config.py，最后核对
+# 生成结果与已提交内容一致：改了 default.conf 或 tools/ 却忘了重新生成 stash/、
+# config/ 下的文件，设备拉到的就是陈旧产物。
+#
+# 全程离线：不抓上游（那是 sync.yml 的事），结果只取决于提交的内容，
+# 不会因为上游抖动让无关的 PR 变红。只读权限，不会提交任何东西。
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:        # 也可手动触发
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+
+      - name: 安装依赖
+        # 缺 PyYAML 时 check-config.py 只降级为警告，等于没校验 YAML，所以显式安装。
+        run: pip install --quiet pyyaml
+
+      - name: 重新生成 Stash 配置
+        run: python tools/build-stash.py
+
+      - name: 重新生成 Clash 配置
+        run: python tools/build-clash.py
+
+      - name: 校验配置与规则
+        run: python tools/check-config.py
+
+      - name: 核对生成产物与已提交内容一致
+        run: |
+          # 用 status --porcelain 而非 diff --quiet：后者看不到新增文件。
+          # build-stash.py 会先清空 stash/*.txt 再生成，多余的旧文件会显示为删除。
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::生成产物与已提交内容不一致，请重新生成并一起提交"
+            echo "本地执行：python tools/build-stash.py && python tools/build-clash.py"
+            git status --short
+            git --no-pager diff --stat
+            exit 1
+          fi
+          echo "生成产物与已提交内容一致"

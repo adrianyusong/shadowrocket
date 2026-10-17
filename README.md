@@ -321,10 +321,17 @@ proxy-providers:
 | `tools/build-clash.py` | 生成完整 mihomo YAML |
 | `tools/check-config.py` | 静态校验，失败退出码非 0 |
 | `.github/workflows/sync.yml` | 每周日自动同步，校验通过才提交 |
+| `.github/workflows/validate.yml` | 推送 `main` 与每个 PR 时离线重新生成并校验 |
 
 ```bash
 python tools/sync-rules.py \n  && python tools/sync-modules.py \n  && python tools/build-stash.py \n  && python tools/build-clash.py \n  && python tools/check-config.py
 ```
+
+CI 分两条：`sync.yml` 每周日抓上游、重新生成并校验，通过后提交 `rule/`、`module/`、
+`stash/`、`config/stash.stoverride`、`config/clash.yaml`；`validate.yml` 在推送 `main`
+与每个 PR 时**离线**重新生成并校验，再核对生成结果与已提交内容一致。改了 `default.conf`
+或 `tools/` 之后，要在本地跑 `python tools/build-stash.py && python tools/build-clash.py`
+并把变动一起提交，否则 `validate.yml` 会失败。
 
 `sources.txt` 必须独立存在：规则集收编后配置里只剩指向本仓库的 URL，
 脚本再也无法从配置反推上游。
