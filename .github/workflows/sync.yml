@@ -47,6 +47,11 @@ jobs:
         # 校验失败就不提交，避免把坏规则推给正在订阅的设备
         run: python tools/check-config.py
 
+      - name: mihomo 内核载入测试
+        # 新同步的规则数据同样要过内核这一关：规则类型内核不认就会被静默丢掉，
+        # 失败就不提交。
+        run: python tools/check-mihomo.py
+
       - name: 有变化才提交
         run: |
           # 本流程各步骤的产物，逐一登记在这里；新增生成步骤时必须同步补上。

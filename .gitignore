@@ -8,6 +8,15 @@
 *.private.stoverride
 secrets/
 subscription*.txt
+# MITM 证书与私钥、环境变量文件。mihomo 的 providers/ 缓存目录里是全部节点的
+# 地址与凭据，把仓库当 mihomo 工作目录时会生成它。
+*.p12
+*.pfx
+*.pem
+*.key
+.env
+.env.*
+providers/
 
 # Playwright 调试产物
 .playwright-cli/

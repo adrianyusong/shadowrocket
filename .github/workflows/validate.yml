@@ -44,6 +44,11 @@ jobs:
       - name: 校验配置与规则
         run: python tools/check-config.py
 
+      - name: mihomo 内核载入测试
+        # 用钉死版本的真实 mihomo 载入生成的 Clash 配置与全部规则集。check-config.py
+        # 只能用 Python 推测内核的行为，看不到被移除的配置项和被静默丢弃的规则。
+        run: python tools/check-mihomo.py
+
       - name: 核对生成产物与已提交内容一致
         run: |
           # 用 status --porcelain 而非 diff --quiet：后者看不到新增文件。
