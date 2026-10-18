@@ -13,6 +13,8 @@
 #      workflow 默认权限保持只读，需要写的 workflow 自己在 permissions 里声明。
 #   4. 套上 .github/rulesets/main.json：main 要求 PR + validate 通过，禁止强推与删除。
 set -euo pipefail
+# Windows 控制台默认 cp1252/cp936，python 打印中文的 ruleset 名会抛 UnicodeEncodeError。
+export PYTHONIOENCODING=utf-8
 
 repo="${1:-adrianyusong/shadowrocket}"
 here="$(cd "$(dirname "$0")/.." && pwd)"
