@@ -322,8 +322,10 @@ proxy-providers:
 | `tools/check-config.py` | 静态校验（含凭据扫描），失败退出码非 0 |
 | `tools/check-mihomo.py` | 用真实 mihomo 内核载入 Clash 配置与规则集，内核版本与 SHA-256 钉死 |
 | `tools/fixtures/mihomo-nodes.yaml` | `check-mihomo.py` 用的假订阅节点（RFC 5737 文档地址） |
-| `.github/workflows/sync.yml` | 每周日自动同步，校验通过才提交 |
+| `.github/workflows/sync.yml` | 每周日自动同步，校验通过后开 PR 并自动合并；失败或告警开 issue |
 | `.github/workflows/validate.yml` | 推送 `main` 与每个 PR 时离线重新生成并校验 |
+| `.github/rulesets/main.json` | `main` 的保护规则（要求 PR + `validate`、禁止强推与删除） |
+| `tools/apply-github-settings.sh` | 一次性套上 ruleset、secret scanning、自动合并等仓库设置 |
 
 ```bash
 python tools/sync-rules.py \
@@ -334,15 +336,40 @@ python tools/sync-rules.py \
   && python tools/check-mihomo.py
 ```
 
-CI 分两条：`sync.yml` 每周日抓上游、重新生成并校验，通过后提交 `rule/`、`module/`、
-`stash/`、`config/stash.stoverride`、`config/clash.yaml`；`validate.yml` 在推送 `main`
+CI 分两条：`sync.yml` 每周日抓上游、重新生成并校验，通过后把 `rule/`、`module/`、
+`stash/`、`config/stash.stoverride`、`config/clash.yaml` 推到 `bot/sync-rules` 分支并开 PR；`validate.yml` 在推送 `main`
 与每个 PR 时**离线**重新生成并校验，再核对生成结果与已提交内容一致。改了 `default.conf`
 或 `tools/` 之后，要在本地跑 `python tools/build-stash.py && python tools/build-clash.py`
 并把变动一起提交，否则 `validate.yml` 会失败。两条都会跑 `check-config.py` 与
 `check-mihomo.py`；`sync.yml` 里它们排在提交之前，失败就不会把坏规则推给设备。
 
-`main` 受仓库规则集保护：必须经 PR 且 `validate` 通过才能合并，禁止强推与删除。
-每周同步的 `github-actions` 机器人可以直接推送；管理员只能在 PR 上绕过，不能直推。
+**`main` 的保护**写在 `.github/rulesets/main.json`：必须经 PR 且 `validate` 通过才能合并，
+禁止强推与删除，没有任何人绕过——包括机器人。规则集与 secret scanning 是 GitHub 设置，
+提交改不了，需要管理员用自己的 `gh` 登录跑一次：
+
+```bash
+bash tools/apply-github-settings.sh
+```
+
+之前 `validate` 只在推送之后才跑，坏提交已经上线，只算事后告警；套上之后它才真正挡在前面。
+
+**机器人怎么过保护**：`sync.yml` 不再直推 `main`，而是推 `bot/sync-rules` 分支、开 PR、
+开启自动合并。`GITHUB_TOKEN` 开的 PR 不会触发别的 workflow，所以它用 `workflow_dispatch`
+显式触发 `validate.yml`（GitHub 唯一允许 `GITHUB_TOKEN` 触发的事件），PR 的 head 提交因此
+拿到必需的 `validate` 检查，通过后自动合并。自动合并与「允许 Actions 创建 PR」两项设置
+也由上面的脚本打开；没开时 PR 会留着等手动合并。
+
+**同步守卫**：
+- 缩水阈值：单个规则文件少于原来的 90% 且至少少 50 条，或总量少于 95%，`sync-rules.py`
+  就中止、不提交。之前只拦「整个策略 0 条」，上游返回截断内容时照样推给设备。近 7 次同步
+  单文件最大删除约 3%。确认是上游有意删减时，手动触发 `sync.yml` 并勾选 `allow_shrink`。
+- `concurrency` 排队（不取消）、`timeout-minutes: 20`。
+- 失败开 issue（标签 `sync-alert`，已有未关闭的就追加评论）。协议漂移告警在**成功**的运行里
+  也会开 issue——之前只写进运行摘要，成功的运行没人会点开看。
+
+**凭据防泄**两层：GitHub 原生的 secret scanning + push protection 拦云厂商令牌一类；
+它认不得代理分享链接、机场订阅 token 与 Shadowrocket 的 `ca-p12`，这些由
+`check-config.py` 的 `check_secrets` 扫，CI 每次都跑，本地提交前跑一遍也能拦住。
 
 `sources.txt` 必须独立存在：规则集收编后配置里只剩指向本仓库的 URL，
 脚本再也无法从配置反推上游。

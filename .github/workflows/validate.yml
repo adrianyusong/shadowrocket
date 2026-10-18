@@ -13,10 +13,15 @@ on:
   push:
     branches: [main]
   pull_request:
-  workflow_dispatch:        # 也可手动触发
+  workflow_dispatch:        # 也可手动触发；sync.yml 也靠它给 bot PR 补上必需的检查
 
 permissions:
   contents: read
+
+# 同一分支 / PR 的新推送取消还在跑的旧校验；main 上的推送不取消，每次都留记录。
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   validate:

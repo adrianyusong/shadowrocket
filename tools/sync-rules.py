@@ -93,6 +93,15 @@ IP_TYPES = {"IP-CIDR", "IP-CIDR6", "IP6-CIDR", "IP-ASN", "GEOIP"}
 
 SELF_HOSTED = 'adrianyusong/shadowrocket'
 
+# 缩水阈值。上游偶尔会返回截断的内容或整段改版，原先只拦「整个策略 0 条」，
+# 少了一大半照样提交、推给设备。近 7 次同步单文件最大删除约 3%，
+# 阈值留出余量：单文件少于原来的 90% 且至少少 50 条，或总量少于 95%，就中止。
+# 确认是上游有意删减时，设环境变量 SYNC_ALLOW_SHRINK=1 放行一次
+# （sync.yml 的手动触发里有对应开关）。
+SHRINK_FILE = 0.90
+SHRINK_FILE_MIN = 50
+SHRINK_TOTAL = 0.95
+
 
 def read_excludes():
     """读黑名单。返回 {(type, value): policy_slug or None}，None 表示所有策略。
@@ -160,6 +169,38 @@ def order_by_rule(sets):
     order = [m.group(1) for m in re.finditer(r'^RULE-SET,\S+/rule/(\S+?)\.list,', cfg, re.M)]
     rank = {slug: i for i, slug in enumerate(order)}
     return sorted(sets, key=lambda s: rank.get(SLUG.get(s[1]), len(order)))
+
+
+def existing_count(path):
+    """磁盘上旧规则文件的条数，没有文件返回 None。"""
+    if not os.path.exists(path):
+        return None
+    n = 0
+    for line in io.open(path, encoding='utf-8'):
+        line = line.strip()
+        if line and not line.startswith('#'):
+            n += 1
+    return n
+
+
+def check_shrink(merged):
+    """返回缩水问题列表（空列表表示通过）。"""
+    problems = []
+    old_total = new_total = 0
+    for policy, rules in merged.items():
+        old = existing_count(os.path.join(OUTDIR, SLUG[policy] + '.list'))
+        if old is None:
+            continue
+        new = len(rules)
+        old_total += old
+        new_total += new
+        if old - new >= SHRINK_FILE_MIN and new < old * SHRINK_FILE:
+            problems.append('rule/%s.list  %d -> %d 条（-%.1f%%）'
+                            % (SLUG[policy], old, new, 100.0 * (old - new) / old))
+    if old_total and new_total < old_total * SHRINK_TOTAL:
+        problems.append('合计 %d -> %d 条（-%.1f%%）'
+                        % (old_total, new_total, 100.0 * (old_total - new_total) / old_total))
+    return problems
 
 
 def fetch(url, attempts=3):
@@ -266,6 +307,16 @@ def main():
         for policy, rules in merged.items():
             print('   %-14s -> rule/%-16s %5d 条' % (policy, SLUG[policy] + '.list', len(rules)))
         return 0
+
+    shrunk = check_shrink(merged)
+    if shrunk:
+        allow = os.environ.get('SYNC_ALLOW_SHRINK') == '1'
+        print('%s规则缩水超过阈值:' % ('（SYNC_ALLOW_SHRINK=1，放行）' if allow else ''))
+        for p in shrunk:
+            print('   ' + p)
+        if not allow:
+            print('多半是上游返回了截断内容。确认是有意删减后，用 SYNC_ALLOW_SHRINK=1 重跑。')
+            return 1
 
     os.makedirs(OUTDIR, exist_ok=True)
     written = []
