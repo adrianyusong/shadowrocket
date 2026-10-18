@@ -67,6 +67,14 @@ def _warn_summary(msg):
     本地则打到 stderr。
     """
     sys.stderr.write('[协议漂移] ' + msg + chr(10))
+    # 成功的运行没人会点开看摘要，所以另写一份告警文件，sync.yml 据此开 issue。
+    alerts = os.environ.get('SYNC_ALERT_FILE')
+    if alerts:
+        try:
+            with io.open(alerts, 'a', encoding='utf-8') as fh:
+                fh.write('- ' + msg + chr(10))
+        except OSError:
+            pass
     summary = os.environ.get('GITHUB_STEP_SUMMARY')
     if summary:
         try:

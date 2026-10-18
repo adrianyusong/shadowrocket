@@ -11,6 +11,7 @@
   * workflow YAML 语法  —— heredoc 内容顶格会冲出 run: | 的块作用域
   * skip-proxy 漏网    —— 该层在规则之前生效，命中即绕过隧道，规则拦不住
   * 丢失 no-resolve    —— 合并时丢掉修饰符，IP 规则会为每个域名请求触发本地 DNS
+  * 凭据入库            —— 仓库是公开的，订阅地址 / 代理链接 / MITM 私钥一旦提交就已泄漏
 
 用法：
     python tools/check-config.py
@@ -21,6 +22,7 @@ import glob
 import io
 import os
 import re
+import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -961,6 +963,158 @@ def check_workflows():
             fail('%s 缺少 jobs 段' % rel)
 
 
+# 仓库是公开的：凭据一进提交就已经泄漏，删文件补救不了，只能轮换。
+# GitHub 原生的 secret scanning 只认云厂商 / 访问令牌的格式，认不得代理分享链接、
+# 机场订阅地址和 Shadowrocket 的 MITM 私钥，这里补这一层。
+# 扫描范围是「这次提交会带上的文件」：已跟踪的，加上未跟踪却没被 .gitignore 挡住的，
+# 所以提交前本地跑一遍就能拦住。*.local.conf 这类被忽略的文件不在内——
+# 它们本来就是给真实凭据留的位置。
+_PROXY_SCHEMES = 'ss|ssr|vmess|vless|trojan|hysteria2?|hy2|tuic|anytls|snell|wireguard'
+_CONF_EXTS = ('.conf', '.yaml', '.yml', '.stoverride', '.sgmodule')
+SECRET_LIST_DIRS = ('rule/', 'stash/')
+SECRET_MAX_BYTES = 8 * 1024 * 1024
+# 占位用的全零 UUID（tools/fixtures 里的测试节点用它）
+SECRET_UUID_OK = {'00000000-0000-0000-0000-000000000000'}
+
+# (标签, 正则, 规则集目录里也扫, 限定扩展名)
+# 规则集里满是域名，UUID 形状的域名标签（xxxxxxxx-xxxx-….example.com）很常见，
+# 只对不会误伤的几类扫。
+SECRET_PATTERNS = [
+    ('代理分享链接',
+     re.compile(r'(?<![A-Za-z0-9+.\-])(?:%s)://[^\s\'"<>)\]]{8,}' % _PROXY_SCHEMES, re.I),
+     True, None),
+    ('URL 内嵌口令',
+     re.compile(r'\b[a-z][a-z0-9+.\-]*://[^/\s:@\'"<>]+:(?![${<%])[^/\s@\'"<>]+@[^/\s\'"<>]+',
+                re.I),
+     True, None),
+    ('MITM 私钥',
+     re.compile(r'^[ \t]*ca-(?:p12|passphrase)[ \t]*=[ \t]*[^\s#]{6,}', re.I | re.M),
+     True, None),
+    ('私钥块',
+     re.compile(r'-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY-----'),
+     True, None),
+    ('控制器 secret',
+     re.compile(r'^[ \t]*secret[ \t]*[:=][ \t]*["\']?(?!CHANGE-ME|<|\$)[^\s"\'#]{8,}',
+                re.I | re.M),
+     False, _CONF_EXTS),
+    ('订阅 / 口令参数',
+     re.compile(r'[?&](?:token|key|secret|password|passwd|auth|sub)=[A-Za-z0-9_\-+/=.]{12,}',
+                re.I),
+     False, None),
+    ('UUID',
+     re.compile(r'\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b', re.I),
+     False, None),
+]
+
+
+def _mask(frag):
+    """CI 日志在公开仓库里是公开的，命中的内容不能原样打出来。"""
+    if '://' in frag:
+        return frag.split('://', 1)[0] + '://…'
+    return frag[:4] + '…'
+
+
+def scan_secrets(text, rel):
+    """返回 [(标签, 行号, 脱敏片段)]。rel 是以 / 分隔的仓库相对路径。"""
+    in_list = rel.startswith(SECRET_LIST_DIRS)
+    ext = os.path.splitext(rel)[1].lower()
+    hits = []
+    for label, rx, lists_ok, exts in SECRET_PATTERNS:
+        if (in_list and not lists_ok) or (exts and ext not in exts):
+            continue
+        for m in rx.finditer(text):
+            frag = m.group(0)
+            if label == 'UUID' and frag.lower() in SECRET_UUID_OK:
+                continue
+            hits.append((label, text.count('\n', 0, m.start()) + 1, _mask(frag)))
+    return hits
+
+
+def _secret_selftest():
+    """扫描器自己坏了会静默放行一切，所以每次先用样本验一遍。
+
+    样本一律拆开拼接：整串写在源码里，这个文件自己就会被扫出来。
+    """
+    j = ''.join
+    positives = [
+        ('代理分享链接', 'a.conf', j(['vm', 'ess://', 'QUJDREVGR0g', 'x' * 8])),
+        ('代理分享链接', 'a.md', j(['ss', '://', 'YWVzLTEyOC1nY206dGVzdA', '@h.example:8388'])),
+        ('URL 内嵌口令', 'a.md', j(['https://', 'user:Passw0rdX', '@example.org/x'])),
+        ('MITM 私钥', 'a.conf', j(['ca-', 'p12 = ', 'MIIJ' * 6])),
+        ('MITM 私钥', 'a.conf', j(['ca-', 'passphrase = ', 'abc123'])),
+        ('私钥块', 'a.txt', j(['-----BEGIN ', 'RSA PRIVATE KEY-----'])),
+        ('控制器 secret', 'a.yaml', j(['secret: ', '"a1b2c3d4e5f6"'])),
+        ('订阅 / 口令参数', 'a.md', j(['https://h.example/sub?token=', 'A1b2C3d4E5f6G7'])),
+        ('UUID', 'a.yaml', j(['uuid: ', '3f2c9a7e-5b1d-', '4e8a-9c6f-1a2b3c4d5e6f'])),
+        ('代理分享链接', 'rule/a.list', j(['trojan', '://', 'pw@h.example:443'])),
+    ]
+    negatives = [
+        ('a.md', 'https://github.com/adrianyusong/shadowrocket/blob/main/README.md'),
+        ('a.yaml', 'secret: "CHANGE-ME-generate-a-random-secret"'),
+        ('a.yaml', 'uuid: 00000000-0000-0000-0000-000000000000'),
+        ('a.md', 'https://请替换.example/subscribe?flag=clash'),
+        ('a.md', 'https://user:${TOKEN}@example.org/x'),
+        ('rule/a.list', j(['DOMAIN,3f2c9a7e-5b1d-', '4e8a-9c6f-1a2b3c4d5e6f.t.example.net'])),
+        ('a.py', 'secret = secrets.token_urlsafe(32)'),
+        ('a.md', 'class://abcdefghijkl'),
+        ('a.conf', '# ca-p12 与 ca-passphrase 是本机私钥，别入库'),
+    ]
+    problems = []
+    for label, rel, text in positives:
+        if label not in {h[0] for h in scan_secrets(text, rel)}:
+            problems.append('该命中却没命中 [%s]（样本 %s）' % (label, rel))
+    for rel, text in negatives:
+        got = scan_secrets(text, rel)
+        if got:
+            problems.append('不该命中却命中了 %s（样本 %s）' % (got[0][0], rel))
+    return problems
+
+
+def _secret_candidates():
+    """这次提交会带上的文件：已跟踪 + 未跟踪但未被 .gitignore 排除。"""
+    try:
+        out = subprocess.run(
+            ['git', 'ls-files', '-z', '--cached', '--others', '--exclude-standard'],
+            cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=True).stdout
+        names = [n for n in out.decode('utf-8', 'replace').split('\0') if n]
+    except (OSError, subprocess.CalledProcessError):
+        # 没有 git（例如下载的源码压缩包）：遍历目录，跳过 .gitignore 里的本机文件名
+        names = []
+        for base, dirs, files in os.walk(ROOT):
+            dirs[:] = [d for d in dirs if d not in ('.git', '__pycache__', 'secrets')]
+            for f in files:
+                if '.local.' in f or '.private.' in f or f.startswith('subscription'):
+                    continue
+                names.append(os.path.relpath(os.path.join(base, f), ROOT).replace(os.sep, '/'))
+    return sorted(set(names))
+
+
+def check_secrets():
+    problems = _secret_selftest()
+    for p in problems:
+        fail('凭据扫描器自检失败: %s' % p)
+    if problems:
+        return 0
+    scanned = 0
+    leaked = False
+    for rel in _secret_candidates():
+        path = os.path.join(ROOT, rel)
+        if not os.path.isfile(path) or os.path.getsize(path) > SECRET_MAX_BYTES:
+            continue
+        with io.open(path, 'rb') as fh:
+            data = fh.read()
+        if b'\0' in data[:4096]:
+            continue
+        scanned += 1
+        for label, line, frag in scan_secrets(data.decode('utf-8', 'replace'), rel):
+            leaked = True
+            fail('疑似凭据 [%s] %s:%d  %s' % (label, rel, line, frag))
+    if leaked:
+        fail('上面的内容若已推送过，一律视为已泄漏：先轮换机场订阅 / MITM 证书 / '
+             'controller secret，再清理仓库——只删文件没有用')
+    return scanned
+
+
 STASH_OVERRIDE = os.path.join(ROOT, 'config', 'stash.stoverride')
 STASH_DIR = os.path.join(ROOT, 'stash')
 CLASH_BUILTIN = {'DIRECT', 'REJECT', 'REJECT-DROP', 'PASS', 'COMPATIBLE'}
@@ -1067,6 +1221,7 @@ def main():
     check_order(cfg)
     check_rulesets_exist(cfg)
     check_workflows()
+    nsecret = check_secrets()
     check_no_resolve()
     check_classical_types()
     check_skip_proxy(cfg)
@@ -1094,6 +1249,7 @@ def main():
         print('Clash:        分组 %d' % nclash)
     if sgroups:
         print('Stash:        分组 %d，规则 %d 条' % (sgroups, srules))
+    print('凭据扫描:     %d 个文件' % nsecret)
     for w in WARNS:
         print('  WARN  %s' % w)
     for f in FAILS:

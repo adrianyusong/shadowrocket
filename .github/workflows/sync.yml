@@ -1,21 +1,52 @@
 name: 同步上游规则
 
 # 规则集收编进仓库后不会自己更新，广告类上游变动尤其频繁。
-# 每周日拉一次并跑校验，有变化才提交。
-# 手动提交与 PR 不走这里，由 validate.yml 校验。
+# 每周日拉一次并跑校验，有变化就开（或更新）一个 PR，由 validate.yml 把关后自动合并。
+#
+# 为什么不再直接推 main：main 受 ruleset 保护（要求 PR + validate 通过、禁止强推，
+# 见 .github/rulesets/main.json）。GITHUB_TOKEN 推的提交 / 开的 PR 不会触发别的
+# workflow，所以这里用 workflow_dispatch 显式触发 validate.yml——那是 GitHub 唯一
+# 允许 GITHUB_TOKEN 触发的事件——让 PR 的 head 提交拿到必需的 validate 检查。
+#
+# 失败或出现协议漂移告警时开 issue：成功的运行没人会点开看。
 on:
   schedule:
     - cron: '0 20 * * 0'   # UTC 20:00 周日 = 北京时间周一 04:00
   workflow_dispatch:        # 也可手动触发
+    inputs:
+      allow_shrink:
+        description: '放行规则缩水（确认上游是有意删减时才勾）'
+        type: boolean
+        default: false
+
+# 两次同步同时跑会争同一个 bot 分支；排队而不是取消，免得丢掉一次同步。
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: write         # 推 bot 分支
+  pull-requests: write    # 开 / 更新 PR、开启自动合并
+  actions: write          # workflow_dispatch 触发 validate.yml
+  issues: write           # 失败与告警开 issue
+
+env:
+  BOT_BRANCH: bot/sync-rules
+  ALERT_LABEL: sync-alert
 
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SYNC_ALLOW_SHRINK: ${{ inputs.allow_shrink && '1' || '0' }}
     steps:
       - uses: actions/checkout@v7
+
+      - name: 告警文件路径
+        # runner 上下文在 job 级 env 里不可用，只能在步骤里写进 GITHUB_ENV。
+        run: echo "SYNC_ALERT_FILE=$RUNNER_TEMP/sync-alerts.md" >> "$GITHUB_ENV"
 
       - uses: actions/setup-python@v7
         with:
@@ -27,6 +58,7 @@ jobs:
         run: pip install --quiet pyyaml
 
       - name: 拉取上游并合并
+        # 缩水超过阈值会返回 1（见 sync-rules.py 的 SHRINK_*），不提交。
         run: python tools/sync-rules.py
 
       - name: 收编自托管模块
@@ -47,7 +79,13 @@ jobs:
         # 校验失败就不提交，避免把坏规则推给正在订阅的设备
         run: python tools/check-config.py
 
-      - name: 有变化才提交
+      - name: mihomo 内核载入测试
+        # 新同步的规则数据同样要过内核这一关：规则类型内核不认就会被静默丢掉，
+        # 失败就不提交。
+        run: python tools/check-mihomo.py
+
+      - name: 有变化才开 PR
+        id: pr
         run: |
           # 本流程各步骤的产物，逐一登记在这里；新增生成步骤时必须同步补上。
           #   rule/                            拉取上游并合并
@@ -60,13 +98,42 @@ jobs:
           # 用 status --porcelain 而非 diff --quiet：后者看不到新增文件，
           # 往 sources.txt 加新策略时生成的新 .list 会被静默丢弃。
           if [ -z "$(git status --porcelain -- "${paths[@]}")" ]; then
-            echo "上游无变化，跳过提交"
+            echo "上游无变化，跳过"
             exit 0
           fi
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BOT_BRANCH"
           git add -- "${paths[@]}"
           # 不用 heredoc：它的内容必须顶格，会冲出 YAML 块作用域导致语法错误。
-          # 多个 -m 会被拼成段落，效果相同且不受缩进影响。
-          git commit             -m "chore: 同步上游规则集"             -m "由 .github/workflows/sync.yml 自动执行，校验通过后才提交。"             -m "上游清单见 tools/sources.txt，缺陷豁免见 tools/exclude.txt。"
-          git push
+          git commit -m "chore: 同步上游规则集" -m "由 .github/workflows/sync.yml 自动执行，校验与 mihomo 载入测试通过后才提交。" -m "上游清单见 tools/sources.txt，缺陷豁免见 tools/exclude.txt。"
+          # bot 分支每次从 main 重建，旧的未合并同步直接被新的一次取代。
+          # ruleset 只保护 main，这个分支可以强推。
+          git push --force origin "HEAD:$BOT_BRANCH"
+          num=$(gh pr list --head "$BOT_BRANCH" --base main --state open --json number --jq '.[0].number')
+          if [ -z "$num" ]; then
+            gh pr create --head "$BOT_BRANCH" --base main --title "chore: 同步上游规则集" --body "由 sync.yml 自动创建。validate 通过后自动合并；规则数变化见各 rule/*.list 的 diff。"
+            num=$(gh pr list --head "$BOT_BRANCH" --base main --state open --json number --jq '.[0].number')
+          fi
+          echo "number=$num" >> "$GITHUB_OUTPUT"
+          # GITHUB_TOKEN 开的 PR 不会自动触发 validate.yml，必须显式触发。
+          gh workflow run validate.yml --ref "$BOT_BRANCH"
+          # 自动合并要在仓库设置里打开 Allow auto-merge；没开就留着 PR 等人手动合并。
+          gh pr merge "$num" --auto --squash || echo "::warning::自动合并未开启，PR #$num 需要手动合并"
+
+      - name: 协议漂移等告警开 issue
+        if: success()
+        run: |
+          [ -s "$SYNC_ALERT_FILE" ] || exit 0
+          gh label create "$ALERT_LABEL" --color D93F0B --description "同步流程的失败与告警" --force
+          body="$(printf '同步成功，但有需要处理的告警（运行：%s/%s/actions/runs/%s）：\n\n%s' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$(cat "$SYNC_ALERT_FILE")")"
+          num=$(gh issue list --label "$ALERT_LABEL" --state open --search "同步告警 in:title" --json number --jq '.[0].number')
+          if [ -n "$num" ]; then gh issue comment "$num" --body "$body"; else gh issue create --title "同步告警：需要人工处理" --label "$ALERT_LABEL" --body "$body"; fi
+
+      - name: 失败时开 issue
+        if: failure()
+        run: |
+          gh label create "$ALERT_LABEL" --color D93F0B --description "同步流程的失败与告警" --force
+          body="$(printf '每周同步失败，未提交任何内容。\n\n运行日志：%s/%s/actions/runs/%s\n\n常见原因：上游抓取失败或缩水超过阈值（确认是有意删减后手动触发并勾选 allow_shrink）、check-config / mihomo 载入测试未通过。' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")"
+          num=$(gh issue list --label "$ALERT_LABEL" --state open --search "同步失败 in:title" --json number --jq '.[0].number')
+          if [ -n "$num" ]; then gh issue comment "$num" --body "$body"; else gh issue create --title "同步失败：每周规则同步未完成" --label "$ALERT_LABEL" --body "$body"; fi

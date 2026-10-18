@@ -38,7 +38,6 @@ tcp-concurrent: true
 keep-alive-interval: 30
 # iOS/tvOS 的 NetworkExtension 拿不到进程信息，开了也只是空转。
 find-process-mode: "off"
-global-client-fingerprint: chrome
 
 # ============================================================
 # 外部控制器：让电脑实时读取连接与日志（配合 tools/tail-clash.py）
