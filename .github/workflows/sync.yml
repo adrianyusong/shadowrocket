@@ -4,9 +4,13 @@ name: 同步上游规则
 # 每周日拉一次并跑校验，有变化就开（或更新）一个 PR，由 validate.yml 把关后自动合并。
 #
 # 为什么不再直接推 main：main 受 ruleset 保护（要求 PR + validate 通过、禁止强推，
-# 见 .github/rulesets/main.json）。GITHUB_TOKEN 推的提交 / 开的 PR 不会触发别的
-# workflow，所以这里用 workflow_dispatch 显式触发 validate.yml——那是 GitHub 唯一
-# 允许 GITHUB_TOKEN 触发的事件——让 PR 的 head 提交拿到必需的 validate 检查。
+# 见 .github/rulesets/main.json）。
+#
+# 2026-10-18 实测：GITHUB_TOKEN 开的 PR 会触发 validate.yml 的 pull_request 运行，
+# 但 github-actions[bot] 被当成首次贡献者，运行停在 action_required 等人批准，
+# PR 因此一直 BLOCKED。用 workflow_dispatch 另跑一次 validate 也没用——那次检查
+# 虽然挂在同一个提交上，却不算进 PR 的必需检查。所以这里开完 PR 直接批准那次
+# pull_request 运行；批准失败就开 issue，不会悄悄卡住。
 #
 # 失败或出现协议漂移告警时开 issue：成功的运行没人会点开看。
 on:
@@ -27,7 +31,7 @@ concurrency:
 permissions:
   contents: write         # 推 bot 分支
   pull-requests: write    # 开 / 更新 PR、开启自动合并
-  actions: write          # workflow_dispatch 触发 validate.yml
+  actions: write          # 批准 bot PR 上等待批准的 validate 运行
   issues: write           # 失败与告警开 issue
 
 env:
@@ -116,14 +120,37 @@ jobs:
             num=$(gh pr list --head "$BOT_BRANCH" --base main --state open --json number --jq '.[0].number')
           fi
           echo "number=$num" >> "$GITHUB_OUTPUT"
-          # GITHUB_TOKEN 开的 PR 不会自动触发 validate.yml，必须显式触发。
-          gh workflow run validate.yml --ref "$BOT_BRANCH"
           # 自动合并要在仓库设置里打开 Allow auto-merge；没开就留着 PR 等人手动合并。
           gh pr merge "$num" --auto --squash || echo "::warning::自动合并未开启，PR #$num 需要手动合并"
+          # 批准 bot PR 上停在 action_required 的 validate 运行（见文件头）。运行是异步
+          # 创建的，最多等 2 分钟。已经在跑或跑完（bot 不再算首次贡献者时）就不用批准。
+          sha=$(git rev-parse HEAD)
+          for i in $(seq 1 24); do
+            runs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$sha&event=pull_request" --jq '[.workflow_runs[] | select(.path == ".github/workflows/validate.yml")]')
+            [ "$(echo "$runs" | jq length)" -gt 0 ] && break
+            sleep 5
+          done
+          pending=$(echo "$runs" | jq -r '.[] | select(.conclusion == "action_required" or .status == "waiting") | .id')
+          for id in $pending; do
+            if gh api -X POST "repos/$GITHUB_REPOSITORY/actions/runs/$id/approve" >/dev/null; then
+              echo "已批准 validate 运行 $id"
+            else
+              echo "approve_failed=$id" >> "$GITHUB_OUTPUT"
+              echo "::warning::无法批准 validate 运行 $id，PR #$num 会卡在 BLOCKED"
+            fi
+          done
+          if [ "$(echo "$runs" | jq length)" -eq 0 ]; then
+            echo "approve_failed=none" >> "$GITHUB_OUTPUT"
+            echo "::warning::2 分钟内没等到 PR #$num 的 validate 运行"
+          fi
 
       - name: 协议漂移等告警开 issue
         if: success()
         run: |
+          failed="${{ steps.pr.outputs.approve_failed }}"
+          if [ -n "$failed" ]; then
+            printf -- '- PR #%s 的 validate 运行没能自动批准（%s），PR 会卡在 BLOCKED：到 Actions 页手动 Approve and run\n' "${{ steps.pr.outputs.number }}" "$failed" >> "$SYNC_ALERT_FILE"
+          fi
           [ -s "$SYNC_ALERT_FILE" ] || exit 0
           gh label create "$ALERT_LABEL" --color D93F0B --description "同步流程的失败与告警" --force
           body="$(printf '同步成功，但有需要处理的告警（运行：%s/%s/actions/runs/%s）：\n\n%s' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$(cat "$SYNC_ALERT_FILE")")"

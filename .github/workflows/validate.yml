@@ -13,7 +13,7 @@ on:
   push:
     branches: [main]
   pull_request:
-  workflow_dispatch:        # 也可手动触发；sync.yml 也靠它给 bot PR 补上必需的检查
+  workflow_dispatch:        # 也可手动触发（注意：这样跑出的检查不算进 PR 的必需检查）
 
 permissions:
   contents: read
