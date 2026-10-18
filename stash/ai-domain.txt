@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/ai.list 生成，请勿手改。
-# behavior: domain   条数: 86
+# behavior: domain   条数: 104
 +.chat.com
 +.chatgpt.com
 +.livekit.cloud
@@ -17,12 +17,27 @@ apple-relay.fastly-edge.com
 cp4.cloudflare.com
 gspe1-ssl.ls.apple.com
 guzzoni.apple.com
-+.claude.ai
 +.anthropic.com
++.claude.ai
++.claude.com
++.clau.de
++.claudemcpclient.com
++.claudemcpcontent.com
++.claudeusercontent.com
+anthropic.auth0.com
+anthropic.com.cdn.cloudflare.net
+anthropic-com.ghost.io
+servd-anthropic-website.b-cdn.net
++.cursor.sh
++.cursorapi.com
++.cursor.com
++.cursor-cdn.com
++.cursorvm.com
 copilot.microsoft.com
 sydney.bing.com
 www.bing.com
 +.githubcopilot.com
++.googleapis.com
 +.generativeai.google
 +.makersuite.google.com
 aistudio.google.com
@@ -32,18 +47,20 @@ antigravity.google
 antigravity-unleash.goog
 +.deepmind.com
 +.deepmind.google
-+.proactivebackend-pa.googleapis.com
-+.geller-pa.googleapis.com
-+.generativelanguage.googleapis.com
++.gemini.google
 ai.google.dev
 bard.google.com
 gemini.google.com
+gemini.gstatic.com
+jules.google.com
 +.grok.com
 +.x.ai
 +.openrouter.ai
 +.perplexity.ai
++.perplexity.com
 +.pplx.ai
 pplx-res.cloudinary.com
++.zed.dev
 browser-intake-datadoghq.com
 chat.openai.com.cdn.cloudflare.net
 openai-api.arkoselabs.com
@@ -71,6 +88,7 @@ cdn.usefathom.com
 makersuite.google.com
 +.bard.google.com
 +.gemini.google.com
++.proactivebackend-pa.googleapis.com
 +.apis.google.com
 api.msn.com
 assets.msn.com

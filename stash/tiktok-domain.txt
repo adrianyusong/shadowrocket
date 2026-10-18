@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/tiktok.list 生成，请勿手改。
-# behavior: domain   条数: 28
+# behavior: domain   条数: 31
 lf16-effectcdn.byteeffecttos-g.com
 lf16-pkgcdn.pitaya-clientai.com
 p16-tiktokcdn-com.akamaized.net
@@ -9,6 +9,9 @@ trae-api-sg.mchost.guru
 +.byteintlapi.com
 +.byteoversea.com
 +.capcut.com
++.capcutapi.com
++.capcutapi.us
++.capcutstatic.com
 +.ibytedtos.com
 +.ibyteimg.com
 +.ipstatp.com

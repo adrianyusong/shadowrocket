@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/google.list 生成，请勿手改。
-# behavior: domain   条数: 656
+# behavior: domain   条数: 655
 alt1-mtalk.google.com
 alt2-mtalk.google.com
 alt3-mtalk.google.com
@@ -439,7 +439,6 @@ voice.telephony.goog
 +.googleacquisitionmigration.com
 +.googleapis-cn.com
 +.googleapis.cn
-+.googleapis.com
 +.googleapps-cn.com
 +.googleapps.com
 +.googlearth.com
