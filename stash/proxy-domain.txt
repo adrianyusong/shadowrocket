@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/proxy.list 生成，请勿手改。
-# behavior: domain   条数: 31135
+# behavior: domain   条数: 31131
 +.a2z.com
 +.aboutamazon.cn
 +.aboutamazon.co.uk
@@ -661,7 +661,6 @@ scholar.googleusercontent.com
 scholar.l.google.com
 search.yahoo.co.jp
 sentry.ppy.sh
-servd-anthropic-website.b-cdn.net
 sni1dcb6gl.wpc.edgecastcdn.net
 spectator.ppy.sh
 ssl-lvlt.cdn.ea.com
@@ -1365,6 +1364,7 @@ login.microsoftonline.com
 +.91sesex.xyz
 +.91sew.xyz
 +.91sew40.buzz
++.91short.com
 +.91vhome.com
 +.920share.com
 +.921bb.com
@@ -4605,6 +4605,7 @@ login.microsoftonline.com
 +.bsappapi.com
 +.bsaw.ac.uk
 +.bsbec.ac.uk
++.bscdnweb.com
 +.bsdc.ac.uk
 +.bsersd.xyz
 +.bsfc.ac.uk
@@ -5592,11 +5593,7 @@ login.microsoftonline.com
 +.classicnike.com
 +.classics.ac.uk
 +.classymomsex.com
-+.clau.de
 +.claude.dev
-+.claudemcpclient.com
-+.claudemcpcontent.com
-+.claudeusercontent.com
 +.clawhub.ai
 +.clc-london.ac.uk
 +.clck.ru
@@ -6219,10 +6216,6 @@ login.microsoftonline.com
 +.currenttime.tv
 +.cursecdn.com
 +.curseforge.com
-+.cursor-cdn.com
-+.cursor.com
-+.cursor.sh
-+.cursorapi.com
 +.curve.fi
 +.curvybbwwives.com
 +.curvyerotic.com
@@ -13972,8 +13965,6 @@ login.microsoftonline.com
 +.messybrainz.org
 +.messytube.com
 +.met-nude.com
-+.meta.ai
-+.metaaivm.com
 +.metabolomics.ac.uk
 +.metabora.io
 +.metabrainz.org
@@ -16783,7 +16774,6 @@ login.microsoftonline.com
 +.perfecttitspics.com
 +.performancescience.ac.uk
 +.perl.org
-+.perplexity.com
 +.persagg.com
 +.pershore.ac.uk
 +.persianepochtimes.com
@@ -18800,6 +18790,7 @@ login.microsoftonline.com
 +.sccjr.ac.uk
 +.scct.ac.uk
 +.scde.ac.uk
++.scea.com
 +.scene7.com
 +.scenesource.me
 +.scentro.ac.uk
@@ -19790,7 +19781,10 @@ login.microsoftonline.com
 +.sonorousporn.com
 +.sony-semicon.com
 +.sony.biz
++.sony.com.py
 +.sonybank.jp
++.sonyinteractive.com
++.sonymusic.com.hk
 +.sonynetwork.co.jp
 +.soolakhi.com
 +.soooyinfor.lol
@@ -24628,6 +24622,7 @@ login.microsoftonline.com
 +.7capture.com
 +.7cow.com
 +.7mmtv.tv
++.7x24hrs.com
 +.8-d.com
 +.85cc.net
 +.85cc.us
@@ -25590,7 +25585,6 @@ login.microsoftonline.com
 +.clarionproject.org
 +.clashyun.com
 +.classicalguitarblog.net
-+.claude.com
 +.clb.org.hk
 +.cleansite.biz
 +.cleansite.info
@@ -28007,6 +28001,8 @@ login.microsoftonline.com
 +.merlinblog.xyz
 +.meshrep.com
 +.mesotw.com
++.meta.ai
++.metaaivm.com
 +.metacafe.com
 +.metacubex.one
 +.metafilter.com
