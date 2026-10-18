@@ -354,10 +354,12 @@ bash tools/apply-github-settings.sh
 之前 `validate` 只在推送之后才跑，坏提交已经上线，只算事后告警；套上之后它才真正挡在前面。
 
 **机器人怎么过保护**：`sync.yml` 不再直推 `main`，而是推 `bot/sync-rules` 分支、开 PR、
-开启自动合并。`GITHUB_TOKEN` 开的 PR 不会触发别的 workflow，所以它用 `workflow_dispatch`
-显式触发 `validate.yml`（GitHub 唯一允许 `GITHUB_TOKEN` 触发的事件），PR 的 head 提交因此
-拿到必需的 `validate` 检查，通过后自动合并。自动合并与「允许 Actions 创建 PR」两项设置
-也由上面的脚本打开；没开时 PR 会留着等手动合并。
+开启自动合并。`GITHUB_TOKEN` 开的 PR 会触发 `validate` 的 `pull_request` 运行，但
+`github-actions[bot]` 被当成首次贡献者，运行停在「等待批准」，PR 一直 BLOCKED
+（2026-10-18 第一次同步 PR #8 就卡在这里）。另用 `workflow_dispatch` 跑一次也没用——
+那次检查不算进 PR 的必需检查。所以 `sync.yml` 开完 PR 会自己批准那次运行，通过后自动
+合并；批准失败会开 `sync-alert` issue，到 Actions 页点 Approve and run 即可。
+自动合并与「允许 Actions 创建 PR」两项设置也由上面的脚本打开；没开时 PR 会留着等手动合并。
 
 **同步守卫**：
 - 缩水阈值：单个规则文件少于原来的 90% 且至少少 50 条，或总量少于 95%，`sync-rules.py`
