@@ -112,6 +112,9 @@ dns: #!replace
   nameserver:
     - https://dns.alidns.com/dns-query
     - https://doh.pub/dns-query
+  # AdGuard DNS 对广告 / 追踪域名答空，补充规则集之外的拦截；与上面并行，
+  # 国内 DoH 通常先返回，拦截是尽力而为。国内域名仍由下面的 geosite:cn 专走国内 DoH。
+    - https://dns.adguard-dns.com/dns-query
   # 解析节点域名时用的 DNS。走这里可避免「解析节点地址」这一步本身被污染。
   proxy-server-nameserver:
     - https://dns.alidns.com/dns-query
