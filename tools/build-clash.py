@@ -224,6 +224,7 @@ def main():
     A('  nameserver:')
     A('    - https://dns.alidns.com/dns-query')
     A('    - https://doh.pub/dns-query')
+    A('    - https://dns.adguard-dns.com/dns-query')
     A('  proxy-server-nameserver:')
     A('    - https://dns.alidns.com/dns-query')
     A('  nameserver-policy:')

@@ -193,6 +193,7 @@ dns:
   nameserver:
     - https://dns.alidns.com/dns-query
     - https://doh.pub/dns-query
+    - https://dns.adguard-dns.com/dns-query
   proxy-server-nameserver:
     - https://dns.alidns.com/dns-query
   nameserver-policy:
