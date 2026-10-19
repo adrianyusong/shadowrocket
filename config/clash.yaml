@@ -1538,6 +1538,10 @@ rules:
   - DOMAIN,gspe19-2-cn-ssl.ls.apple.com,🎯 全球直连
   - DOMAIN,gspe79-cn-ssl.ls.apple.com,🎯 全球直连
   - DOMAIN-SUFFIX,is.autonavi.com,🎯 全球直连
+  # 定位国家代码接口，iRingo LocationService 的 MITM 目标，模块原文要求直连。
+  # 它也在 apple.com 之下，不在这里拦下会随 🍎 苹果服务 走代理。
+  # 另一个目标 dispatcher.is.autonavi.com 已被上一条 is.autonavi.com 覆盖。
+  - DOMAIN,gspe1-ssl.ls.apple.com,🎯 全球直连
   # DigiCert 是通用 CA，不只 Apple 在用。上游 AppleProxy 收录了 digicert.com，
   # proxy 集又收录了 digicert-validation.com——大量网站的 OCSP / CRL 校验会
   # 跟着走代理，给每次 TLS 握手多加一跳。改直连。
