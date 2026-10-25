@@ -1,8 +1,10 @@
 # 由 tools/build-stash.py 从 rule/direct.list 生成，请勿手改。
-# behavior: domain   条数: 122
+# behavior: domain   条数: 124
 asusrouter.com
 instant.arubanetworks.com
 local.adguard.org
+localhost.weixin.qq.com
+localhost.work.weixin.qq.com
 oasisauth.h3c.com
 router.asus.com
 setmeup.arubanetworks.com
