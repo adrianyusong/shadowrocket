@@ -2,13 +2,14 @@
 # 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
 # 需要增补规则请写进 config/default.conf 的内联规则段。
 # 上游: blackmatrix7/ios_rule_script
-# 规则数: 674
+# 规则数: 689
 
 DOMAIN-SUFFIX,cdn-ali.content.steamchina.com
 DOMAIN-SUFFIX,cdn-qc.content.steamchina.com
 DOMAIN-SUFFIX,cdn-ws.content.steamchina.com
 DOMAIN-SUFFIX,dl.steam.clngaa.com
 DOMAIN-SUFFIX,dl.steam.ksyna.com
+DOMAIN-SUFFIX,dota2.com
 DOMAIN-SUFFIX,edge.steam-dns.top.comcast.net
 DOMAIN-SUFFIX,f3b7q2p3.ssl.hwcdn.net
 DOMAIN-SUFFIX,fanatical.com
@@ -33,6 +34,7 @@ DOMAIN-SUFFIX,steambroadcast.akamaized.net
 DOMAIN-SUFFIX,steamcdn-a.akamaihd.net
 DOMAIN-SUFFIX,steamcommunity-a.akamaihd.net
 DOMAIN-SUFFIX,steamcommunity.com
+DOMAIN-SUFFIX,steamconnecttest.com
 DOMAIN-SUFFIX,steamcontent.tnkjmec.com
 DOMAIN-SUFFIX,steamdeck.com
 DOMAIN-SUFFIX,steamgames.com
@@ -51,11 +53,24 @@ DOMAIN-SUFFIX,steamusercontent-a.akamaihd.net
 DOMAIN-SUFFIX,steamuserimages-a.akamaihd.net
 DOMAIN-SUFFIX,steamvideo-a.akamaihd.net
 DOMAIN-SUFFIX,underlords.com
+DOMAIN-SUFFIX,valve.net
 DOMAIN-SUFFIX,valvesoftware.com
 DOMAIN-SUFFIX,wmsjsteam.com
 DOMAIN-KEYWORD,steambroadcast
 DOMAIN-KEYWORD,steamstore
 DOMAIN-KEYWORD,steamuserimages
+IP-CIDR,103.10.124.0/23,no-resolve
+IP-CIDR,103.28.54.0/24,no-resolve
+IP-CIDR,146.66.152.0/24,no-resolve
+IP-CIDR,146.66.155.0/24,no-resolve
+IP-CIDR,155.133.224.0/19,no-resolve
+IP-CIDR,162.254.192.0/21,no-resolve
+IP-CIDR,185.25.180.0/22,no-resolve
+IP-CIDR,192.69.96.0/22,no-resolve
+IP-CIDR,205.196.6.0/24,no-resolve
+IP-CIDR,208.64.200.0/22,no-resolve
+IP-CIDR,208.78.164.0/22,no-resolve
+IP-CIDR,45.121.184.0/24,no-resolve
 DOMAIN-SUFFIX,battlebreakers.com
 DOMAIN-SUFFIX,eac-cdn.com
 DOMAIN-SUFFIX,easy.ac
@@ -368,29 +383,29 @@ DOMAIN-SUFFIX,starcraft2.com
 DOMAIN-SUFFIX,worldofwarcraft.com
 DOMAIN-SUFFIX,wow.nosdn.127.net
 DOMAIN-SUFFIX,wowchina.com
+IP-CIDR,103.4.115.248/32,no-resolve
 IP-CIDR,182.162.135.1/32,no-resolve
+IP-CIDR,185.60.112.157/32,no-resolve
+IP-CIDR,185.60.112.158/32,no-resolve
 IP-CIDR,210.242.235.6/32,no-resolve
 IP-CIDR,24.105.30.129/32,no-resolve
 IP-CIDR,54.94.196.47/32,no-resolve
 IP-CIDR,182.162.132.1/32,no-resolve
+IP-CIDR,103.4.114.233/32,no-resolve
 IP-CIDR,182.162.116.1/32,no-resolve
 IP-CIDR,202.9.67.59/32,no-resolve
 IP-CIDR,203.69.111.4/32,no-resolve
 IP-CIDR,54.207.104.145/32,no-resolve
+IP-CIDR,185.60.114.159/32,no-resolve
 IP-CIDR,203.66.81.98/32,no-resolve
 IP-CIDR,211.234.110.1/32,no-resolve
+IP-CIDR,24.105.62.129/32,no-resolve
 IP-CIDR,54.207.107.12/32,no-resolve
-IP-CIDR,103.4.114.233/32,no-resolve
 IP-CIDR,202.9.67.254/32,no-resolve
 IP-CIDR,222.231.22.1/32,no-resolve
-IP-CIDR,103.4.115.248/32,no-resolve
 IP-CIDR,137.221.105.2/32,no-resolve
-IP-CIDR,185.60.112.157/32,no-resolve
-IP-CIDR,185.60.112.158/32,no-resolve
-IP-CIDR,185.60.114.159/32,no-resolve
 IP-CIDR,210.71.148.11/32,no-resolve
 IP-CIDR,211.115.104.1/32,no-resolve
-IP-CIDR,24.105.62.129/32,no-resolve
 DOMAIN,eaasserts-a.akamaihd.net
 DOMAIN,originasserts.akamaized.net
 DOMAIN,gog.salesmanago.com
@@ -621,13 +636,16 @@ DOMAIN-SUFFIX,lolstatic.com
 DOMAIN-SUFFIX,lolusercontent.com
 DOMAIN-SUFFIX,molesports.com
 DOMAIN-SUFFIX,playvalorant.com
+DOMAIN-SUFFIX,pvp.net
 DOMAIN-SUFFIX,pvp.tv
 DOMAIN-SUFFIX,rgpub.io
 DOMAIN-SUFFIX,riot-games.com
 DOMAIN-SUFFIX,riot.com
 DOMAIN-SUFFIX,riot.net
+DOMAIN-SUFFIX,riotcdn.net
 DOMAIN-SUFFIX,riotforgegames.com
 DOMAIN-SUFFIX,riotgames.co.kr
+DOMAIN-SUFFIX,riotgames.com
 DOMAIN-SUFFIX,riotgames.info
 DOMAIN-SUFFIX,riotgames.jp
 DOMAIN-SUFFIX,riotgames.net
@@ -652,9 +670,6 @@ DOMAIN-SUFFIX,ubisoft-orbit-savegames.s3.amazonaws.com
 DOMAIN-SUFFIX,ubisoft-uplay-savegames.s3.amazonaws.com
 DOMAIN-SUFFIX,ubisoft.com
 DOMAIN-SUFFIX,uplay.com
-DOMAIN-SUFFIX,pvp.net
-DOMAIN-SUFFIX,riotcdn.net
-DOMAIN-SUFFIX,riotgames.com
 DOMAIN-KEYWORD,epicgames
 IP-CIDR,13.210.25.233/32,no-resolve
 IP-CIDR,13.212.170.102/32,no-resolve
