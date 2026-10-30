@@ -15,11 +15,13 @@ check-config.py 用 Python 的 re / PyYAML 去「推测」mihomo 会怎么理解
   * 内核版本钉死（与 sync-modules.py 的 MIHOMO_REF 同一处），下载后核对 SHA-256，
     不符就拒绝运行。
   * 订阅用 tools/fixtures/mihomo-nodes.yaml 的假节点代替。
-  * 规则集取本地 stash/*.txt（测的是这次提交的内容，不是 main 上的），地理库预先备好，
-    测试不依赖 CDN。
+  * 规则集取本地文件（测的是这次提交的内容，不是 main 上的）：classical 取 stash/*.txt，
+    domain / ipcidr 取 mrs/*.mrs。地理库预先备好，测试不依赖 CDN。
   * 完整启动 config/clash.yaml，经 REST API 核对：每个规则集「载入条数 + 内核不认的
-    USER-AGENT 条数」必须等于文件行数；策略组与规则条数与配置一致；日志里除已知的
+    USER-AGENT 条数」必须等于 stash/ 源文件的行数——MRS 也按它的 .txt 源核对，
+    转换丢了条目或 mrs/ 过期都会在这里露出来；策略组与规则条数与配置一致；日志里除已知的
     USER-AGENT 告警外，不许出现任何 warning / error。
+  * 配置里不带控制器（公开模板不该开任何监听），测试时临时注入一个只绑 127.0.0.1 的。
   * clash-verge/config.yaml 的规则集在外部站点，这里只做 -t（解析）这一层。
 
 升级内核：改 sync-modules.py 的 MIHOMO_REF，再用 --print-pins 取新版本各平台的
@@ -68,12 +70,12 @@ PLATFORMS = ('darwin-amd64', 'darwin-arm64', 'linux-amd64', 'linux-arm64', 'wind
 
 # 官方发布页为每个资产列出的 SHA-256。
 PINS = {
-    'v1.19.30': {
-        'darwin-amd64': '99dfcfe454ed58fb95ee4ba222c39defd051b687ad3e5deabb1b9d6be3103e2f',
-        'darwin-arm64': '2c7f3a7904fa1cee291e124123e630e7b1ebd13765dd9bf26c0a28432004d9f4',
-        'linux-amd64': 'cf06ce2c7d1421bdbda14ee4a5b6046672dc35ebf8eecd8e77504ec3c0ed9a84',
-        'linux-arm64': '58896873736d28628f66de3677c8654fa0f180662523148e136cff4f6e890069',
-        'windows-amd64': '22c09fd67673895ef7cd6b1820563918275c3d316f2462b306208675118db3c0',
+    'v1.19.33': {
+        'darwin-amd64': '551ae54ef8d77a5e21f7a8185a59b441fb13a0fb0514fcdef5ca2816f6f50015',
+        'darwin-arm64': '060b64b0f2c9a310831db0fe4adb2878de67bfa606c311813c1f13966aa504b6',
+        'linux-amd64': '132f6f3edf9a65e62f04853aed3358472e0b2b7666daa8419edfa2ddf5bb6323',
+        'linux-arm64': 'ba408b317080ee265c46cb923a50018c1b82cbd708551cdd46a1e3e307396187',
+        'windows-amd64': '6ab2180875f9f6fff8b19386d760daec257f66b45f72b3afc650634272fa837a',
     },
 }
 
@@ -94,6 +96,7 @@ GEODATA_TTL = 7 * 86400
 DEFAULT_LIVE = os.path.join(ROOT, 'config', 'clash.yaml')
 DEFAULT_PARSE_ONLY = [os.path.join(ROOT, 'clash-verge', 'config.yaml')]
 STASH_DIR = os.path.join(ROOT, 'stash')
+MRS_DIR = os.path.join(ROOT, 'mrs')
 FIXTURE = os.path.join(ROOT, 'tools', 'fixtures', 'mihomo-nodes.yaml')
 
 # 内核认不得 USER-AGENT 规则（Stash 认，所以它们留在共用的 classical 规则集里）。
@@ -142,6 +145,12 @@ def _download(url, dest, tries=3):
             last = exc
             time.sleep(3 * (i + 1))
     raise Failure('下载失败 %s：%s' % (url, last))
+
+
+def default_cache():
+    """内核与地理库的缓存目录。build-mrs.py 与本脚本共用，CI 里同一个 runner 只下载一次。"""
+    return os.environ.get('CHECK_MIHOMO_CACHE') or os.path.join(
+        tempfile.gettempdir(), 'shadowrocket-check-mihomo')
 
 
 def _platform():
@@ -222,7 +231,8 @@ def patch_config(text, ports=None, secret=None):
 
     geox-url 换成 GitHub 发布页：地理库本来就预先备好了，这里只是让「名字对不上
     而改走下载」时也落在可靠的源上。ports / secret 给了才改监听：避免占用本机
-    已有 Clash 的端口，也避免 0.0.0.0 上开 DNS。
+    已有 Clash 的端口，也避免 0.0.0.0 上开 DNS。配置里没有控制器时在文件头注入一个
+    只绑 127.0.0.1 的，测试要靠它读 REST API。
     """
     out, n, section = [], collections.Counter(), None
     for ln in text.split('\n'):
@@ -245,6 +255,9 @@ def patch_config(text, ports=None, secret=None):
                 ln = '  %s: %s%s' % (g.group(1), GEODATA_BASE, GEOX_ASSET[g.group(1)])
                 n['geox-url'] += 1
         out.append(ln)
+    if ports and not n['external-controller'] and not n['secret']:
+        out[:0] = ['external-controller: 127.0.0.1:%d' % ports[1], 'secret: "%s"' % secret]
+        n['external-controller'] = n['secret'] = 1
     return '\n'.join(out), n
 
 
@@ -306,8 +319,10 @@ def _compare(api_providers, expected):
         n = got.get('ruleCount') or 0
         total += n
         if n + ua != lines:
-            probs.append('规则集 %s 载入 %d 条，文件有 %d 行（其中 USER-AGENT %d 条内核不认），'
-                         '少了 %d 条' % (name, n, lines, ua, lines - ua - n))
+            short = lines - ua - n
+            probs.append('规则集 %s 载入 %d 条，文件有 %d 行（其中 USER-AGENT %d 条内核不认），%s'
+                         % (name, n, lines, ua, '少了 %d 条' % short if short > 0 else
+                            '多了 %d 条——mrs/ 没跟着 stash/ 重新生成？' % -short))
     return probs, total
 
 
@@ -375,7 +390,7 @@ def _live(exe, home, cfg, doc, ports, secret, expected, timeout):
     return problems, stats
 
 
-def run_target(exe, cache, path, live, stash_dir, timeout):
+def run_target(exe, cache, path, live, stash_dir, timeout, mrs_dir=MRS_DIR):
     """校验一份配置。返回 (问题列表, 说明行列表)。"""
     label = _rel(path)
     text = io.open(path, encoding='utf-8').read().replace('\r\n', '\n')
@@ -416,14 +431,21 @@ def run_target(exe, cache, path, live, stash_dir, timeout):
         if live:
             for name, prov in (doc.get('rule-providers') or {}).items():
                 rel = os.path.normpath(prov.get('path') or '')
-                src = os.path.join(stash_dir, os.path.basename(rel))
+                base = os.path.basename(rel)
+                # MRS 是二进制，数不了行：按它的 stash/ 源文件核对条数。
+                mrs = prov.get('format') == 'mrs'
+                src = os.path.join(mrs_dir if mrs else stash_dir, base)
+                txt = os.path.join(stash_dir, os.path.splitext(base)[0] + '.txt') if mrs else src
                 if os.path.isabs(rel) or rel.startswith('..') or not os.path.isfile(src):
                     problems.append('规则集 %s 对应的文件不存在：%s' % (name, _rel(src)))
+                    continue
+                if not os.path.isfile(txt):
+                    problems.append('规则集 %s 的 MRS 没有对应的源文件：%s' % (name, _rel(txt)))
                     continue
                 dst = os.path.join(home, rel)
                 os.makedirs(os.path.dirname(dst), exist_ok=True)
                 shutil.copyfile(src, dst)
-                expected[name] = _count_rules(src)
+                expected[name] = _count_rules(txt)
 
         cfg = os.path.join(home, 'config.yaml')
         with io.open(cfg, 'w', encoding='utf-8', newline='\n') as fh:
@@ -482,6 +504,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description='用真实 mihomo 内核载入 Clash 配置与规则集')
     ap.add_argument('--config', help='只对这份配置做完整启动（测试用）')
     ap.add_argument('--stash-dir', default=STASH_DIR)
+    ap.add_argument('--mrs-dir', default=MRS_DIR)
     ap.add_argument('--timeout', type=int, default=120, help='等待规则集载入的秒数')
     ap.add_argument('--print-pins', action='store_true', help='打印 MIHOMO_REF 各平台的官方 SHA-256')
     args = ap.parse_args(argv)
@@ -494,8 +517,7 @@ def main(argv=None):
         print_pins()
         return 0
 
-    cache = os.environ.get('CHECK_MIHOMO_CACHE') or os.path.join(
-        tempfile.gettempdir(), 'shadowrocket-check-mihomo')
+    cache = default_cache()
     targets = [(os.path.abspath(args.config), True)] if args.config else \
         [(DEFAULT_LIVE, True)] + [(p, False) for p in DEFAULT_PARSE_ONLY]
     failed = 0
@@ -503,7 +525,8 @@ def main(argv=None):
         exe, key = ensure_binary(cache)
         say('mihomo %s（%s），SHA-256 已核对' % (MIHOMO_REF, key))
         for path, live in targets:
-            problems, notes = run_target(exe, cache, path, live, args.stash_dir, args.timeout)
+            problems, notes = run_target(exe, cache, path, live, args.stash_dir, args.timeout,
+                                         args.mrs_dir)
             say('')
             say(_rel(path))
             for n in notes:

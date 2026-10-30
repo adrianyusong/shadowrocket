@@ -738,6 +738,7 @@ def check_clash():
         return 0
 
     check_controller(d)
+    check_listeners(d)
 
     groups = d.get('proxy-groups') or []
     names = [g.get('name') for g in groups]
@@ -752,13 +753,30 @@ def check_clash():
             if pr not in nameset and pr not in builtin:
                 fail('clash.yaml 分组 %s 引用了不存在的策略 %s' % (g.get('name'), pr))
 
-    providers = set(d.get('rule-providers') or {})
-    for pname in providers:
-        fn = os.path.join(os.path.dirname(os.path.dirname(CONFIG)), 'stash',
-                          pname + '.txt')
-        if not os.path.exists(fn):
+    rp = d.get('rule-providers') or {}
+    providers = set(rp)
+    root = os.path.dirname(os.path.dirname(CONFIG))
+    for pname, prov in sorted(rp.items()):
+        if not os.path.exists(os.path.join(root, 'stash', pname + '.txt')):
             fail('clash.yaml 的 rule-provider %s 没有对应的 stash/%s.txt'
                  % (pname, pname))
+        # iOS 的 Network Extension 只有约 50 MiB 可用（clash.md 的配置最佳实践），大型
+        # text 规则集在设备上解析建表可能把它挤爆。domain / ipcidr 一律走 MRS；
+        # MRS 不支持 classical，改了后缀也不行。
+        behavior, fmt = prov.get('behavior'), prov.get('format')
+        if behavior in ('domain', 'ipcidr') and fmt != 'mrs':
+            fail('clash.yaml 的 rule-provider %s 是 %s 却用 format: %s，'
+                 '应改用 MRS（tools/build-mrs.py）' % (pname, behavior, fmt))
+        elif fmt == 'mrs':
+            if behavior not in ('domain', 'ipcidr'):
+                fail('clash.yaml 的 rule-provider %s 用 MRS，但 behavior 是 %s——'
+                     'MRS 只支持 domain / ipcidr' % (pname, behavior))
+            if not os.path.exists(os.path.join(root, 'mrs', pname + '.mrs')):
+                fail('clash.yaml 的 rule-provider %s 没有对应的 mrs/%s.mrs'
+                     '（先跑 tools/build-mrs.py）' % (pname, pname))
+            if not str(prov.get('url') or '').endswith('/mrs/%s.mrs' % pname):
+                fail('clash.yaml 的 rule-provider %s 的 url 没有指向 mrs/%s.mrs'
+                     % (pname, pname))
 
     for r in d.get('rules') or []:
         parts = [x.strip() for x in str(r).split(',')]
@@ -834,6 +852,21 @@ def check_controller(d):
         warn('clash.yaml 的 external-controller 绑在 %s（局域网可达）。'
              'mihomo 没有针对控制器的来源 IP 白名单，'
              '只在可信网络下使用' % ec)
+
+
+def check_listeners(d):
+    """公开模板不许替用户开任何对局域网的监听。
+
+    clash.md「配置与访问保护」：正常连接不需要本地监听；dns.listen 是独立的 DNS 服务，
+    代理认证、allow-lan、控制器 secret 都不保护它。照抄模板的人不会去改这些，
+    绑在 0.0.0.0 上就等于替他们对同一个 Wi-Fi 开了一个没有鉴权的解析器。
+    """
+    listen = str((d.get('dns') or {}).get('listen') or '')
+    if listen and not re.match(r'(127\.|\[::1\]|localhost)', listen):
+        fail('clash.yaml 的 dns.listen 绑在 %s（局域网可达），这个 DNS 服务没有任何鉴权'
+             % listen)
+    if d.get('allow-lan') is True:
+        fail('clash.yaml 开了 allow-lan，公开模板不应替用户开放局域网代理')
 
 
 # 直连组必须带的中转排除子句，以及绝不能出现的正向写法。

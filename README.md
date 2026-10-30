@@ -43,16 +43,50 @@ https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/config/stash-pr
 https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/config/clash.yaml
 ```
 
-**Clash for Apple（iOS）**：Profile 导入后**不能在 App 内编辑**（详情页只有
-update / rename / export / remove），所以必须先改好再导入：
+字段按 [clash.md](https://clash.md/guide/config/) 的说明取舍（Clash Core v1.19.33-clash.4，
+基于 mihomo 1.19.33）：在 Clash for Apple 上不生效、或会替用户对局域网开服务的字段都不写——
+本地代理端口、`dns.listen`、外部控制器、`find-process-mode`。`check-config.py` 会拦
+`dns.listen` 绑非回环地址与 `allow-lan: true`。
 
-1. 在电脑上下载 `clash.yaml`，把 `proxy-providers.airport.url` 换成你自己的
-   Clash 格式订阅地址；两家机场都用时，再取消 `airport-b` 的注释填第二个地址
-2. 存成 `*.local.yaml`，放进 iCloud Drive 或 AirDrop 传到手机
-3. Clash → Add Profile → **配置文件**（不是 Subscription link）
+**Clash for Apple（iPhone / iPad / Mac）**：
 
-想保留自动更新就把改好的文件放进**私有**仓库再订阅那个 raw 地址 ——
-文件里带着你的订阅地址，绝不能放公开仓库。
+1. 下载 `clash.yaml`，在配置库的「添加配置」里选「导入文件」
+2. 点这份配置的 ⓘ，拉到最下面「编辑源码」，把 `proxy-providers.airport.url` 换成你自己的
+   Clash 格式订阅地址（保留引号）；两家机场都用时，再取消 `airport-b` 的注释填第二个地址。
+   配置大到不能编辑时那里会变成「查看源码」，这时先在电脑上改好再导入
+3. 选中这份配置，回首页连接
+
+导入的文件不会跟着仓库更新。想保留自动更新就把改好的文件放进**私有**仓库再订阅那个
+raw 地址 —— 文件里带着你的订阅地址，绝不能放公开仓库。
+
+**为什么规则集用 MRS**：clash.md 写明，iOS 上 Clash Core 跑在 Network Extension 里，
+可用内存约 50 MiB（社区反馈与官方真机测试的估计，不是 Apple 公布的数字），大型 text
+规则集在设备上解析建表可能把它挤爆——表现是启动失败、断线、代理被系统结束。
+`tools/build-mrs.py` 用钉死版本的 mihomo 把 `stash/` 的 domain / ipcidr 规则集
+（53 个，14.4 万条域名 + 1.5 万条 IP 段）转成 `mrs/*.mrs`。classical 没有 MRS 格式，仍用
+text；Stash 不认 MRS，继续用 `stash/*.txt`。
+
+**模块（URL 重写去广告、iRingo）**：Clash for Apple 能直接导入 Shadowrocket / Surge 模块，
+重写、脚本、MITM 都生效。在配置库 ›「模块」粘贴链接，再按提示安装并信任「Clash 模块证书」：
+
+```
+https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/module/adblock-rewrite.sgmodule
+https://github.com/NSRingo/News/releases/latest/download/iRingo.News.sgmodule
+```
+
+iRingo 其余模块取同一 release 下的 `.sgmodule`（见下方 iRingo 一节的表）。模块对全部配置
+生效，Apple TV 不支持。`adblock-rewrite` 会解密 902 个域名，出问题时先关掉它再排查。
+
+**从电脑看连接与日志**：模板里不带外部控制器——照抄的人不改就等于把控制 API 开到局域网。
+用 App 自带的：更多 › 客户端设置 › 外部控制器 →「局域网」，全程 HTTPS，地址、密钥和
+证书指纹都在那一页。然后：
+
+```bash
+python tools/tail-clash.py "wss://<地址:端口>/logs?level=info" --token <密钥> --fingerprint <证书指纹>
+```
+
+`--fingerprint` 钉住 App 自签的证书，对不上就拒绝连接，密钥不会发出去。用完把外部控制器
+改回「使用配置」。
 
 **Clash Verge**：直接改本地文件，或用下面的扩展脚本从节点属性动态重建分组。
 注意 `clash-verge/` 下的脚本与配置是按旧机场调的，**还没有适配落云**：套在落云上时
@@ -84,9 +118,9 @@ https://cdn.jsdelivr.net/gh/adrianyusong/shadowrocket@main/config/default.conf
 |---|---|---|---|
 | 配置 | `config/default.conf` | `config/stash.stoverride` | `config/clash.yaml` |
 | 形态 | 完整配置 | 覆写（打补丁） | 完整配置 |
-| 规则 | `rule/*.list` | `stash/*.txt` | `stash/*.txt` |
+| 规则 | `rule/*.list` | `stash/*.txt` | `mrs/*.mrs` + `stash/*-classical.txt` |
 | 生成 | 手写（唯一来源） | 从 `default.conf` 推导 | 从 `default.conf` 推导 |
-| MITM / 重写 | ✅ | ✅ | ❌ mihomo 不支持 |
+| MITM / 重写 | ✅ | ✅ | ✅ Clash for Apple 的「模块」（Apple TV 除外） |
 | 协议分组 | ❌ | ❌ | ✅ `exclude-type` |
 
 规则数据同源：`tools/sources.txt` → `tools/sync-rules.py` → `rule/*.list`。
@@ -176,7 +210,9 @@ Stash 覆写只保留 `g.cn` 系列重写，因为 **iRingo 官方直接发布 `
 自带 `rules` + `http.mitm` + `http.script` + `script-providers`，在 Stash 里作为
 独立覆写叠加即可，不需要我们手抄一遍。
 
-`config/clash.yaml` 里这些全都没有 —— mihomo 不支持 MITM。
+`config/clash.yaml` 本身不带这些。Clash for Apple 用「模块」直接导入 iRingo 的
+`.sgmodule`，重写、脚本、MITM 都生效（见上方「Clash for Apple / Clash Verge」）；
+Apple TV 不支持模块。
 
 MITM 本身有代价：要装并信任 CA、解密 HTTPS、耗电。域名列表越小越好，
 `tools/check-config.py` 会核对 `[URL Rewrite]` 与 `[Script]` 涉及的每个域名
@@ -195,7 +231,7 @@ MITM 本身有代价：要装并信任 CA、解密 HTTPS、耗电。域名列表
 | News | `https://github.com/NSRingo/News/releases/latest/download/iRingo.News.stoverride` |
 | TV | `https://github.com/NSRingo/TV/releases/latest/download/iRingo.TV.stoverride` |
 
-Shadowrocket 用户取同一 release 下的 `.sgmodule`，例如
+Shadowrocket 与 Clash for Apple 用户取同一 release 下的 `.sgmodule`，例如
 `https://github.com/NSRingo/News/releases/latest/download/iRingo.News.sgmodule`。
 本仓库已把 MapKit 的重写与 News 的脚本内联进 `config/default.conf`，
 装了模块就不必再启用那两项，否则会重复解密同一批域名。
@@ -297,7 +333,8 @@ proxy-providers:
 | `config/` | 三份主配置（`.conf` / `.stoverride` / `.yaml`） |
 | `rule/` | 分流规则集（`.list`），已收编上游 |
 | `module/` | 模块（`.module` / `.sgmodule`） |
-| `stash/` | Stash / Clash 共用的规则集（`.txt`） |
+| `stash/` | Stash 的规则集（`.txt`）；Clash 的 classical 规则集与 `mrs/` 都取自这里 |
+| `mrs/` | Clash 用的 MRS 规则集（由 `stash/` 的 domain / ipcidr 转换，二进制） |
 | `clash-verge/` | Clash Verge Rev 扩展脚本与独立配置 |
 | `script/` | 重写脚本（`.js`） |
 | `tools/` | 维护脚本 |
@@ -307,7 +344,8 @@ proxy-providers:
 原先配置直接引用 54 个 blackmatrix7 的远程规则集。每次配置更新就是 54 次网络请求，
 任何一个失败该类规则会**静默消失**，不报错。上游改动也会在你不知情时改变分流。
 
-现在全部收编进 `rule/`，共 35 个文件、15.8 万条规则，再派生出 `stash/` 下 83 个按 behavior 拆分的规则集。
+现在全部收编进 `rule/`，共 35 个文件、15.8 万条规则，再派生出 `stash/` 下 83 个按 behavior 拆分的规则集，
+其中 domain / ipcidr 的 53 个再转成 `mrs/` 下的 MRS 给 Clash 用。
 
 ### 维护
 
@@ -318,6 +356,7 @@ proxy-providers:
 | `tools/sync-rules.py` | 拉取、去重、按策略合并 |
 | `tools/sync-modules.py` | 收编上游模块到 `module/` 自托管 |
 | `tools/build-stash.py` | 生成 Stash 覆写与 `stash/*.txt` |
+| `tools/build-mrs.py` | 用钉死版本的 mihomo 把 `stash/` 的 domain / ipcidr 规则集转成 `mrs/*.mrs`（逐字节确定） |
 | `tools/build-clash.py` | 生成完整 mihomo YAML |
 | `tools/check-config.py` | 静态校验（含凭据扫描），失败退出码非 0 |
 | `tools/check-mihomo.py` | 用真实 mihomo 内核载入 Clash 配置与规则集，内核版本与 SHA-256 钉死 |
@@ -331,15 +370,16 @@ proxy-providers:
 python tools/sync-rules.py \
   && python tools/sync-modules.py \
   && python tools/build-stash.py \
+  && python tools/build-mrs.py \
   && python tools/build-clash.py \
   && python tools/check-config.py \
   && python tools/check-mihomo.py
 ```
 
 CI 分两条：`sync.yml` 每周日抓上游、重新生成并校验，通过后把 `rule/`、`module/`、
-`stash/`、`config/stash.stoverride`、`config/clash.yaml` 推到 `bot/sync-rules` 分支并开 PR；`validate.yml` 在推送 `main`
+`stash/`、`mrs/`、`config/stash.stoverride`、`config/clash.yaml` 推到 `bot/sync-rules` 分支并开 PR；`validate.yml` 在推送 `main`
 与每个 PR 时**离线**重新生成并校验，再核对生成结果与已提交内容一致。改了 `default.conf`
-或 `tools/` 之后，要在本地跑 `python tools/build-stash.py && python tools/build-clash.py`
+或 `tools/` 之后，要在本地跑 `python tools/build-stash.py && python tools/build-mrs.py && python tools/build-clash.py`
 并把变动一起提交，否则 `validate.yml` 会失败。两条都会跑 `check-config.py` 与
 `check-mihomo.py`；`sync.yml` 里它们排在提交之前，失败就不会把坏规则推给设备。
 
@@ -432,8 +472,10 @@ IP 类规则补上 `no-resolve`（见下文「DNS 泄漏」）。
 已知取舍：`USER-AGENT` 规则只有 Stash 认，mihomo 会丢弃（目前 165 条）。它们留在两端共用的
 classical 规则集里，测试按条数逐条核对，除它之外的任何丢失都算失败。
 
-订阅用 `tools/fixtures/mihomo-nodes.yaml` 的假节点代替，规则集取本地 `stash/*.txt`（测的是这次
-提交的内容）。`clash-verge/config.yaml` 的规则集在外部站点，只做 `-t` 解析。升级内核时改
+订阅用 `tools/fixtures/mihomo-nodes.yaml` 的假节点代替，规则集取本地文件（classical 取
+`stash/*.txt`，domain / ipcidr 取 `mrs/*.mrs`，测的是这次提交的内容）。MRS 是二进制，按它的
+`stash/` 源文件核对条数——转换丢了条目或 `mrs/` 没跟着重新生成，都会在这里失败。配置里不带
+控制器，测试时临时注入一个只绑 `127.0.0.1` 的。`clash-verge/config.yaml` 的规则集在外部站点，只做 `-t` 解析。升级内核时改
 `MIHOMO_REF`，再用 `python tools/check-mihomo.py --print-pins` 取各平台的官方 SHA-256 更新 `PINS`。
 
 ### 广告拦截
@@ -675,6 +717,7 @@ stun-response-ipv6 = ::1
 
 引入 anti-AD 后规则总量从 2.3 万涨到 12.3 万，iOS 网络扩展的加载表现未在设备上
 验证。若出现启动慢或内存告警，从 `tools/sources.txt` 移除 anti-AD 一行后重跑同步即可。
+Clash 那份的 domain / ipcidr 规则集已改用 MRS，正是为了这一点（见「Clash for Apple / Clash Verge」）。
 
 ### MITM
 

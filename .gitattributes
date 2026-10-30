@@ -6,3 +6,5 @@
 *.sgmodule text eol=lf
 *.js     text eol=lf
 *.png    binary
+# mihomo 的预编译规则集（tools/build-mrs.py），换行转换会把它弄坏
+*.mrs    binary

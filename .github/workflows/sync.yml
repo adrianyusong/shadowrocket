@@ -74,6 +74,10 @@ jobs:
         # 与 Shadowrocket 共用 rule/*.list，但产物完全分开
         run: python tools/build-stash.py
 
+      - name: 生成 MRS 规则集
+        # Clash 用的 domain / ipcidr 规则集，由钉死版本的 mihomo 从 stash/ 转换。
+        run: python tools/build-mrs.py
+
       - name: 生成 Clash 配置
         # 完整 mihomo YAML，给 Clash for Apple / Clash Verge 用。
         # 策略组与规则集从 build-stash.py 导入，不会与 Stash 那份漂移。
@@ -95,10 +99,11 @@ jobs:
           #   rule/                            拉取上游并合并
           #   module/                          收编自托管模块
           #   stash/  config/stash.stoverride  生成 Stash 配置
+          #   mrs/                             生成 MRS 规则集
           #   config/clash.yaml                生成 Clash 配置
           # 漏登记不会报错，产物只会随 runner 一起被丢弃——module/ 与 clash.yaml
           # 之前就是这样从没被机器人提交过。
-          paths=(rule/ module/ stash/ config/stash.stoverride config/clash.yaml)
+          paths=(rule/ module/ stash/ mrs/ config/stash.stoverride config/clash.yaml)
           # 用 status --porcelain 而非 diff --quiet：后者看不到新增文件，
           # 往 sources.txt 加新策略时生成的新 .list 会被静默丢弃。
           if [ -z "$(git status --porcelain -- "${paths[@]}")" ]; then

@@ -8,6 +8,8 @@
   （"consolidate override files into a clear mihomo YAML configuration"）。
 
 策略组、地区正则、规则集全部从 build-stash.py 导入，避免两份配置漂移。
+domain / ipcidr 规则集引用 mrs/ 下的 MRS（tools/build-mrs.py 从 stash/ 转换），
+所以顺序是 build-stash.py → build-mrs.py → 本脚本。
 
 协议分组在这里是可行的（Stash 上不行）——见 PROTOCOLS 处的注释。
 """
@@ -26,6 +28,7 @@ bs = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(bs)
 
 BASE = bs.BASE
+MRS_BASE = BASE.rsplit('stash/', 1)[0] + 'mrs/'
 TEST_URL = bs.TEST_URL
 
 # mihomo 的全部节点协议（constant/adapters.go 的 AdapterType.String()）。
@@ -37,20 +40,15 @@ TEST_URL = bs.TEST_URL
 # 「排除其余所有类型」实现的，而且同样不报错。
 # 首次写这份清单时一口气漏了 8 个（Sudoku / Masque / TrustTunnel /
 # ShadowQuic / OpenVPN / Tailscale / ZeroTier / GostRelay），是 Shadowrocket
-# 2.2.92 加入 Sudoku 才暴露出来的。tools/sync-modules.py 会拉 Hako 锁定的
-# mihomo 版本（v1.19.30）比对，漏了在 CI 摘要里告警（不阻断同步）。
-# EasyTier 只在 mihomo 的 Alpha 分支有、v1.19.30 没有：留着无害（名字对不上
-# 就不起作用），等 Hako 升级内核时也不用再补。
+# 2.2.92 加入 Sudoku 才暴露出来的。tools/sync-modules.py 会拉 Clash Core 所基于的
+# mihomo 版本（v1.19.33）比对，漏了在 CI 摘要里告警（不阻断同步）。
+# EasyTier 从 mihomo v1.19.31 起进了稳定版。Clash for Apple 只在 Mac 上实现它，
+# iPhone / iPad / Apple TV 保留节点但拒绝连接。
 ALL_TYPES = ['Shadowsocks', 'ShadowsocksR', 'Snell', 'Socks5', 'Http',
              'Vmess', 'Vless', 'Trojan', 'Hysteria', 'Hysteria2',
              'WireGuard', 'Tuic', 'Ssh', 'Mieru', 'AnyTLS', 'Sudoku',
              'Masque', 'TrustTunnel', 'ShadowQuic', 'OpenVPN',
              'Tailscale', 'ZeroTier', 'EasyTier', 'GostRelay']
-
-# 控制器密钥占位符。生成器不能写入真实密钥——仓库是 Public。
-# 不含引号：带引号的占位符会破坏生成的 YAML（已实测踩到）。
-# check-config.py 会在它仍是占位符时告警。
-SECRET_PLACEHOLDER = 'CHANGE-ME-generate-a-random-secret'
 
 # 协议分组。Stash 上做不到（exclude-type 被静默忽略，Hy2 会混进 VLESS 组），
 # mihomo 的 adapter/outboundgroup/groupbase.go:211 实现了它，所以这里能做。
@@ -87,6 +85,7 @@ def main():
     A('# Clash for Apple / Clash Verge 完整配置')
     A('# 由 tools/build-clash.py 生成，请勿手改——下次同步会覆盖。')
     A('# https://github.com/adrianyusong/shadowrocket')
+    A('# 字段按 clash.md（Clash Core v1.19.33-clash.4，基于 mihomo 1.19.33）的说明取舍。')
     A('#')
     A('# ============================================================')
     A('# 这是模板，不是可直接订阅的地址。')
@@ -94,74 +93,47 @@ def main():
     A('# 下面 proxy-providers 的 url 是占位符，直接订阅本文件会得到')
     A('# 「DNS lookup failed / Provider airport」——占位域名本就解析不了。')
     A('#')
-    A('# Clash for Apple 的 Profile 导入后不能在 App 内编辑（详情页只有')
-    A('# update / rename / export / remove），所以必须先改好再导入：')
-    A('#   1. 在电脑上下载本文件，改两处：')
-    A('#      a) proxy-providers.airport.url  -> 你的订阅地址')
-    A('#         两家机场都用时，再取消 airport-b 的注释填第二个地址')
-    A('#      b) secret                       -> 你自己生成的随机串')
-    A('#         生成：python -c "import secrets;print(secrets.token_urlsafe(32))"')
-    A('#   2. 存成 *.local.yaml，放进 iCloud Drive 或用 AirDrop 传到手机')
-    A('#   3. Clash → Add Profile → 选「配置文件」导入')
+    A('# Clash for Apple：')
+    A('#   1. 下载本文件，在配置库的「添加配置」里选「导入文件」')
+    A('#   2. 点这份配置的 ⓘ，拉到最下面「编辑源码」，把 proxy-providers.airport.url')
+    A('#      换成你的订阅地址（保留引号）；两家机场都用时，再取消 airport-b 的注释')
+    A('#      配置大到不能编辑时那里会变成「查看源码」，就先在电脑上改好再导入')
     A('# Clash Verge 直接改本地文件即可。')
     A('#')
-    A('# 订阅地址等同凭据，*.local.yaml 已在 .gitignore 排除，别提交。')
+    A('# 订阅地址等同凭据：本地改过的文件存成 *.local.yaml（已在 .gitignore 排除），别提交。')
     A('# ============================================================')
     A('#')
-    A('# 与 Shadowrocket 配置的差异：mihomo 没有 MITM，所以这份配置里')
-    A('# 没有 iRingo MapKit/News、没有 URL 重写去广告、没有 g.cn 跳转。')
-    A('# 域名级广告拦截（10 万条 reject 规则）照常生效，URL 级重写去广告没有。')
+    A('# 这份配置只管节点、分组、DNS 与规则。URL 重写去广告、iRingo 这类要解密 HTTPS')
+    A('# 的功能，在 Clash for Apple 里用「模块」：配置库 ›「模块」粘贴')
+    A('# module/adblock-rewrite.sgmodule 或 iRingo 的 .sgmodule 链接，再按提示安装并')
+    A('# 信任「Clash 模块证书」。Apple TV 不支持模块。')
     A('')
 
     # ---- 基础 ----
-    A('mixed-port: 7890')
-    A('allow-lan: false')
+    # 不写 mixed-port / allow-lan / find-process-mode：
+    #   - 本地代理端口在 clash.md 的字段表里是 Advanced：Packet Tunnel 收全部流量，
+    #     正常使用用不到它；Clash Verge 的端口与局域网共享归 GUI 管，写了也会被盖掉。
+    #   - find-process-mode 在 iOS / tvOS 固定关闭；macOS 默认 strict，只在有进程规则时才查。
+    #     写 off 只会让 Mac 上日后加的进程规则静默失效。
+    # 不要再写 global-client-fingerprint：mihomo v1.19 已移除它，内核只记一行
+    # level=error、配置不生效。要指纹只能在节点上设 client-fingerprint。
     A('mode: rule')
     A('log-level: info')
     A('ipv6: false')
     A('# 统一延迟基准：扣掉握手耗时再比较，否则 Hy2 会因为握手快而虚高。')
-    A('# clash.md 的配置参考里明确列为 Supported（Stash 文档无此项，故未启用）。')
+    A('# Clash for Apple 不写也默认开启；写明是给默认关闭的其他 mihomo 客户端。')
     A('unified-delay: true')
     A('tcp-concurrent: true')
     A('keep-alive-interval: 30')
-    A('# iOS/tvOS 的 NetworkExtension 拿不到进程信息，开了也只是空转。')
-    A('find-process-mode: "off"')
-    # 不要再写 global-client-fingerprint：mihomo v1.19 已移除它，内核只记一行
-    # level=error、配置不生效。要指纹只能在节点上设 client-fingerprint。
     A('')
-    A('# ============================================================')
-    A('# 外部控制器：让电脑实时读取连接与日志（配合 tools/tail-clash.py）')
-    A('#')
-    A('# clash.md 的字段表把 external-controller / secret / bind-address')
-    A('# 标为 Advanced —— 支持，但官方 best-practice 明确不建议暴露到局域网。')
-    A('# 这里是明知代价而为之，以下三条必须看懂再用：')
-    A('#')
-    A('# 1) secret 为空 = 整个 API 无鉴权。mihomo 的鉴权中间件写作')
-    A('#    if secret != "" { r.Use(authentication(secret)) } —— 空值直接不挂载。')
-    A('#    下面的占位符必须换掉，换成占位符本身也等于用了一个公开的密码。')
-    A('#')
-    A('# 2) PUT /configs 一个请求就能替换整份配置（代理、规则、DNS）。')
-    A('#    也就是说拿到 API 的人可以把你手机的全部流量导向他自己的服务器，')
-    A('#    不需要任何代码执行。这是最坏情况，比读日志严重得多。')
-    A('#')
-    A('# 3) mihomo 没有针对控制器的来源 IP 白名单 —— lan-allowed-ips 管的是')
-    A('#    代理入站，不是控制 API。绑到局域网时唯一的保护就是这个 secret。')
-    A('#    绝不要在咖啡厅 / 酒店 / 公司 / 合租的网络上开。')
-    A('#')
-    A('# 只想本机用（Clash Verge 桌面版）就把地址改回 127.0.0.1:9090。')
-    A('# ============================================================')
-    A('external-controller: 0.0.0.0:9090')
-    A('secret: %s' % q(SECRET_PLACEHOLDER))
-    A('external-controller-cors:')
-    A('  # 默认不给任何网页来源。tools/tail-clash.py 是 Python 客户端，')
-    A('  # 不受 CORS 限制，所以留空即可。')
-    A('  allow-origins: []')
-    A('  # mihomo 的默认值是 true —— 那会让你访问的任何网站都能用 JS')
-    A('  # 在后台驱动这个控制器。这才是现实中的攻击路径。')
-    A('  # 要用浏览器面板（metacubexd 等）指向手机 IP 才需要改成 true，')
-    A('  # 同时把上面的 allow-origins 填成面板的具体地址，不要用 *。')
-    A('  allow-private-network: false')
+    A('# 外部控制器不写在这里：这是公开模板，照抄的人不改就等于把控制 API 开到局域网。')
+    A('# 要从电脑看连接与日志，用 App 自带的：更多 › 客户端设置 › 外部控制器 →「局域网」')
+    A('# （全程 HTTPS，密钥与证书由 App 生成），再用 tools/tail-clash.py 连，')
+    A('# 页面上显示的证书指纹填进 --fingerprint。')
     A('')
+    A('# 以下地理库设置只对 Clash Verge 等桌面 mihomo 客户端生效。Clash for Apple 的')
+    A('# 地理库由 App 统一准备（iOS / tvOS 用预编译资源），这几项在那里不起作用。')
+    A('#')
     A('# GeoIP 数据库默认从 GitHub raw 拉，17 MB 直连几乎必定超时，')
     A('# 表现是 [GEO] can.t download GeoIP database file: context deadline exceeded，')
     A('# 而且不影响启动——规则静默按旧库匹配。改用 jsDelivr 镜像。')
@@ -181,30 +153,41 @@ def main():
     A('')
 
     # ---- sniffer ----
-    A('# 域名嗅探：fake-ip 之外的兜底。走 IP 直连的连接靠它还原域名，')
-    A('# 否则那些连接只能落到 GEOIP 判定，分流精度掉一大截。')
+    # 端口与 skip-domain 照 clash.md 的示例。HTTP 原先是 8080-8880：嗅探先等客户端
+    # 发第一个字节（最多 1 秒），那一段里服务端先说话的协议每条连接都白等，
+    # 同一目标失败 6 次后才被跳过（component/sniffer/dispatcher.go）。
+    A('# 域名嗅探：只补「没有域名」的连接。走 fake-ip 的连接自带 DNS 查询时的域名，')
+    A('# 嗅探不会碰它们；用得上的是自带 DoH 的浏览器、用 HTTPDNS 的国内 App、')
+    A('# 写死 IP 的连接——没有它，这些连接只能落到 GEOIP 判定。')
     A('sniffer:')
     A('  enable: true')
-    A('  # 用嗅探到的域名覆盖目的地址，规则才能按域名匹配。')
+    A('  # mihomo 默认就是 true，写明是与 clash.md 的示例对齐。')
+    A('  parse-pure-ip: true')
+    A('  # 嗅探到的域名只用于规则匹配，不改写连接目标。域名规则读的是嗅探结果')
+    A('  # （Metadata.RuleHost），与这个开关无关；改写目标反而会丢掉 App 自己')
+    A('  # 选好的 IP（HTTPDNS），Host 头与 IP 对不上时还会连错地方。')
     A('  override-destination: false')
     A('  sniff:')
     A('    HTTP:')
-    A('      ports: [80, 8080-8880]')
-    A('      override-destination: true')
+    A('      ports: [80, 8080]')
     A('    TLS:')
     A('      ports: [443, 8443]')
     A('    QUIC:')
-    A('      ports: [443, 8443]')
+    A('      ports: [443]')
     A('  skip-domain:')
+    A('    - "+.lan"')
+    A('    - "+.local"')
     A('    - "Mijia Cloud"')
     A('    - "+.push.apple.com"')
     A('')
 
     # ---- DNS ----
+    # 不写 dns.listen：它另开一个 TCP/UDP DNS 服务，代理认证、allow-lan、控制器 secret
+    # 都不保护它（clash.md「配置与访问保护」）；Packet Tunnel 与 TUN 的 dns-hijack 也
+    # 用不到它。原先的 0.0.0.0:1053 等于对局域网开放解析，check-config.py 现在会拦。
     A('dns:')
     A('  enable: true')
     A('  ipv6: false')
-    A('  listen: 0.0.0.0:1053')
     A('  enhanced-mode: fake-ip')
     A('  fake-ip-range: 198.18.0.1/16')
     A('  fake-ip-filter:')
@@ -321,22 +304,34 @@ def main():
     A('')
 
     # ---- rule-providers ----
+    A('# domain / ipcidr 用 MRS（mihomo 的预编译格式，tools/build-mrs.py 从 stash/ 转换）：')
+    A('# iOS 的 Network Extension 只有约 50 MiB 可用，大型 text 规则集在设备上解析建表')
+    A('# 可能把它挤爆。classical 没有 MRS 格式，仍用 text。')
     A('rule-providers:')
     kinds = {}
-    nprov = 0
+    nprov = nmrs = 0
     for policy, slug in bs.POLICIES:
         for kind in ('domain', 'ipcidr', 'classical'):
             fname = '%s-%s.txt' % (slug, kind)
             if not os.path.exists(os.path.join(ROOT, 'stash', fname)):
                 continue
+            name = '%s-%s' % (slug, kind)
+            if kind == 'classical':
+                fmt, url, cached = 'text', BASE + fname, fname
+            else:
+                mrs = name + '.mrs'
+                if not os.path.exists(os.path.join(ROOT, 'mrs', mrs)):
+                    raise SystemExit('缺少 mrs/%s，先运行 tools/build-mrs.py' % mrs)
+                fmt, url, cached = 'mrs', MRS_BASE + mrs, mrs
+                nmrs += 1
             kinds.setdefault(slug, []).append(kind)
             nprov += 1
-            A('  %s-%s:' % (slug, kind))
+            A('  %s:' % name)
             A('    type: http')
             A('    behavior: %s' % kind)
-            A('    format: text')
-            A('    url: %s%s' % (BASE, fname))
-            A('    path: ./ruleset/%s' % fname)
+            A('    format: %s' % fmt)
+            A('    url: %s' % url)
+            A('    path: ./ruleset/%s' % cached)
             A('    interval: 86400')
             # 直连抓取时 raw.githubusercontent.com 一被污染，RULE-SET 会静默失效，
             # 流量整批掉到兜底规则且不报错。走代理抓更可靠。
@@ -352,10 +347,10 @@ def main():
 
     with io.open(OUT, 'w', encoding='utf-8', newline=chr(10)) as fh:
         fh.write(chr(10).join(out))
-    print('config/clash.yaml  %d 行 / 分组 %d / 规则集 %d / 规则 %d / fake-ip-filter %d 条'
+    print('config/clash.yaml  %d 行 / 分组 %d / 规则集 %d（MRS %d）/ 规则 %d / fake-ip-filter %d 条'
           % (len(out),
              sum(1 for x in out if x.startswith('  - name:')),
-             nprov, nrules, n))
+             nprov, nmrs, nrules, n))
     return 0
 
 
