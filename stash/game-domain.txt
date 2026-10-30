@@ -1,10 +1,11 @@
 # 由 tools/build-stash.py 从 rule/game.list 生成，请勿手改。
-# behavior: domain   条数: 624
+# behavior: domain   条数: 627
 +.cdn-ali.content.steamchina.com
 +.cdn-qc.content.steamchina.com
 +.cdn-ws.content.steamchina.com
 +.dl.steam.clngaa.com
 +.dl.steam.ksyna.com
++.dota2.com
 +.edge.steam-dns.top.comcast.net
 +.f3b7q2p3.ssl.hwcdn.net
 +.fanatical.com
@@ -29,6 +30,7 @@
 +.steamcdn-a.akamaihd.net
 +.steamcommunity-a.akamaihd.net
 +.steamcommunity.com
++.steamconnecttest.com
 +.steamcontent.tnkjmec.com
 +.steamdeck.com
 +.steamgames.com
@@ -47,6 +49,7 @@
 +.steamuserimages-a.akamaihd.net
 +.steamvideo-a.akamaihd.net
 +.underlords.com
++.valve.net
 +.valvesoftware.com
 +.wmsjsteam.com
 +.battlebreakers.com
@@ -590,13 +593,16 @@ gog.salesmanago.com
 +.lolusercontent.com
 +.molesports.com
 +.playvalorant.com
++.pvp.net
 +.pvp.tv
 +.rgpub.io
 +.riot-games.com
 +.riot.com
 +.riot.net
++.riotcdn.net
 +.riotforgegames.com
 +.riotgames.co.kr
++.riotgames.com
 +.riotgames.info
 +.riotgames.jp
 +.riotgames.net
@@ -621,6 +627,3 @@ gog.salesmanago.com
 +.ubisoft-uplay-savegames.s3.amazonaws.com
 +.ubisoft.com
 +.uplay.com
-+.pvp.net
-+.riotcdn.net
-+.riotgames.com
