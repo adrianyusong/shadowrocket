@@ -66,6 +66,7 @@ jobs:
           if [ -n "$(git status --porcelain)" ]; then
             echo "::error::生成产物与已提交内容不一致，请重新生成并一起提交"
             echo "本地执行：python tools/build-stash.py && python tools/build-mrs.py && python tools/build-clash.py"
+            echo "PR 校验的是与 main 合并后的结果：本地重新生成没有差异时，多半是 main 有新的规则同步，先合并 main 再重新生成"
             git status --short
             git --no-pager diff --stat
             exit 1
