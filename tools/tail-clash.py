@@ -1,13 +1,28 @@
 #!/usr/bin/env python3
 """Tail a mihomo/Clash external-controller WebSocket stream to stdout as NDJSON.
 Stdlib only. Usage:
-  python clashtail.py ws://192.168.1.50:9090/connections?interval=1000 --token SECRET
-  python clashtail.py ws://192.168.1.50:9090/logs?level=info          --token SECRET
+  python tail-clash.py wss://192.168.1.50:9443/logs?level=info          --token SECRET --fingerprint SHA256
+  python tail-clash.py wss://192.168.1.50:9443/connections?interval=1000 --token SECRET --fingerprint SHA256
+  python tail-clash.py ws://127.0.0.1:9090/logs?level=info              --token SECRET   (desktop mihomo)
+
+Clash for Apple: More > Client Settings > External Controller > Local Network shows the
+address, secret and certificate fingerprint. That controller is HTTPS with a certificate
+the app generates, so system CAs cannot verify it: pass the fingerprint shown in the app
+and the certificate is pinned instead. The secret is sent only after the pin matches.
 """
-import argparse, base64, json, os, socket, ssl, struct, sys, time
+import argparse, base64, hashlib, json, os, re, socket, ssl, struct, sys, time
 from urllib.parse import urlsplit, urlencode, parse_qsl, urlunsplit
 
-def connect(url, token, timeout=10):
+class PinMismatch(Exception):
+    """Wrong certificate: never retried, the peer may be an impostor."""
+
+def normalize_pin(text):
+    pin = re.sub(r"[^0-9a-f]", "", (text or "").lower())
+    if text and len(pin) != 64:
+        sys.exit("--fingerprint must be a SHA-256 hex digest (64 hex digits, colons allowed)")
+    return pin
+
+def connect(url, token, pin="", timeout=10):
     u = urlsplit(url)
     q = dict(parse_qsl(u.query))
     if token:
@@ -16,7 +31,18 @@ def connect(url, token, timeout=10):
     port = u.port or (443 if u.scheme == "wss" else 80)
     s = socket.create_connection((u.hostname, port), timeout)
     if u.scheme == "wss":
-        s = ssl.create_default_context().wrap_socket(s, server_hostname=u.hostname)
+        ctx = ssl.create_default_context()
+        if pin:
+            ctx.check_hostname = False   # the pin below replaces CA and hostname checks
+            ctx.verify_mode = ssl.CERT_NONE
+        s = ctx.wrap_socket(s, server_hostname=u.hostname)
+        if pin:
+            got = hashlib.sha256(s.getpeercert(binary_form=True)).hexdigest()
+            if got != pin:
+                s.close()
+                raise PinMismatch(f"certificate fingerprint is {got}, expected {pin}")
+    elif pin:
+        sys.exit("--fingerprint only applies to wss:// URLs")
     key = base64.b64encode(os.urandom(16)).decode()
     req = (f"GET {path} HTTP/1.1\r\nHost: {u.hostname}:{port}\r\n"
            "Upgrade: websocket\r\nConnection: Upgrade\r\n"
@@ -65,13 +91,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("url")
     ap.add_argument("--token", default=os.environ.get("CLASH_SECRET", ""))
+    ap.add_argument("--fingerprint", default=os.environ.get("CLASH_FINGERPRINT", ""),
+                    help="SHA-256 of the controller certificate, as shown in the app")
     ap.add_argument("--out", help="append NDJSON here as well as stdout")
     ap.add_argument("--once", action="store_true", help="exit after first frame (self-test)")
     a = ap.parse_args()
+    pin = normalize_pin(a.fingerprint)
     fh = open(a.out, "a", encoding="utf-8", buffering=1) if a.out else None
     while True:
         try:
-            sock, rest = connect(a.url, a.token)
+            sock, rest = connect(a.url, a.token, pin)
             print(f"# connected {a.url}", file=sys.stderr, flush=True)
             for payload in frames(sock, rest):
                 line = json.dumps({"ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
@@ -81,6 +110,8 @@ def main():
                     fh.write(line + "\n")
                 if a.once:
                     return
+        except PinMismatch as e:
+            sys.exit(f"# refusing to connect: {e}")
         except Exception as e:
             print(f"# reconnect in 3s: {e}", file=sys.stderr, flush=True)
             if a.once:

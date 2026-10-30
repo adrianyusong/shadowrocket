@@ -1,6 +1,7 @@
 # Clash for Apple / Clash Verge 完整配置
 # 由 tools/build-clash.py 生成，请勿手改——下次同步会覆盖。
 # https://github.com/adrianyusong/shadowrocket
+# 字段按 clash.md（Clash Core v1.19.33-clash.4，基于 mihomo 1.19.33）的说明取舍。
 #
 # ============================================================
 # 这是模板，不是可直接订阅的地址。
@@ -8,70 +9,38 @@
 # 下面 proxy-providers 的 url 是占位符，直接订阅本文件会得到
 # 「DNS lookup failed / Provider airport」——占位域名本就解析不了。
 #
-# Clash for Apple 的 Profile 导入后不能在 App 内编辑（详情页只有
-# update / rename / export / remove），所以必须先改好再导入：
-#   1. 在电脑上下载本文件，改两处：
-#      a) proxy-providers.airport.url  -> 你的订阅地址
-#         两家机场都用时，再取消 airport-b 的注释填第二个地址
-#      b) secret                       -> 你自己生成的随机串
-#         生成：python -c "import secrets;print(secrets.token_urlsafe(32))"
-#   2. 存成 *.local.yaml，放进 iCloud Drive 或用 AirDrop 传到手机
-#   3. Clash → Add Profile → 选「配置文件」导入
+# Clash for Apple：
+#   1. 下载本文件，在配置库的「添加配置」里选「导入文件」
+#   2. 点这份配置的 ⓘ，拉到最下面「编辑源码」，把 proxy-providers.airport.url
+#      换成你的订阅地址（保留引号）；两家机场都用时，再取消 airport-b 的注释
+#      配置大到不能编辑时那里会变成「查看源码」，就先在电脑上改好再导入
 # Clash Verge 直接改本地文件即可。
 #
-# 订阅地址等同凭据，*.local.yaml 已在 .gitignore 排除，别提交。
+# 订阅地址等同凭据：本地改过的文件存成 *.local.yaml（已在 .gitignore 排除），别提交。
 # ============================================================
 #
-# 与 Shadowrocket 配置的差异：mihomo 没有 MITM，所以这份配置里
-# 没有 iRingo MapKit/News、没有 URL 重写去广告、没有 g.cn 跳转。
-# 域名级广告拦截（10 万条 reject 规则）照常生效，URL 级重写去广告没有。
+# 这份配置只管节点、分组、DNS 与规则。URL 重写去广告、iRingo 这类要解密 HTTPS
+# 的功能，在 Clash for Apple 里用「模块」：配置库 ›「模块」粘贴
+# module/adblock-rewrite.sgmodule 或 iRingo 的 .sgmodule 链接，再按提示安装并
+# 信任「Clash 模块证书」。Apple TV 不支持模块。
 
-mixed-port: 7890
-allow-lan: false
 mode: rule
 log-level: info
 ipv6: false
 # 统一延迟基准：扣掉握手耗时再比较，否则 Hy2 会因为握手快而虚高。
-# clash.md 的配置参考里明确列为 Supported（Stash 文档无此项，故未启用）。
+# Clash for Apple 不写也默认开启；写明是给默认关闭的其他 mihomo 客户端。
 unified-delay: true
 tcp-concurrent: true
 keep-alive-interval: 30
-# iOS/tvOS 的 NetworkExtension 拿不到进程信息，开了也只是空转。
-find-process-mode: "off"
 
-# ============================================================
-# 外部控制器：让电脑实时读取连接与日志（配合 tools/tail-clash.py）
-#
-# clash.md 的字段表把 external-controller / secret / bind-address
-# 标为 Advanced —— 支持，但官方 best-practice 明确不建议暴露到局域网。
-# 这里是明知代价而为之，以下三条必须看懂再用：
-#
-# 1) secret 为空 = 整个 API 无鉴权。mihomo 的鉴权中间件写作
-#    if secret != "" { r.Use(authentication(secret)) } —— 空值直接不挂载。
-#    下面的占位符必须换掉，换成占位符本身也等于用了一个公开的密码。
-#
-# 2) PUT /configs 一个请求就能替换整份配置（代理、规则、DNS）。
-#    也就是说拿到 API 的人可以把你手机的全部流量导向他自己的服务器，
-#    不需要任何代码执行。这是最坏情况，比读日志严重得多。
-#
-# 3) mihomo 没有针对控制器的来源 IP 白名单 —— lan-allowed-ips 管的是
-#    代理入站，不是控制 API。绑到局域网时唯一的保护就是这个 secret。
-#    绝不要在咖啡厅 / 酒店 / 公司 / 合租的网络上开。
-#
-# 只想本机用（Clash Verge 桌面版）就把地址改回 127.0.0.1:9090。
-# ============================================================
-external-controller: 0.0.0.0:9090
-secret: "CHANGE-ME-generate-a-random-secret"
-external-controller-cors:
-  # 默认不给任何网页来源。tools/tail-clash.py 是 Python 客户端，
-  # 不受 CORS 限制，所以留空即可。
-  allow-origins: []
-  # mihomo 的默认值是 true —— 那会让你访问的任何网站都能用 JS
-  # 在后台驱动这个控制器。这才是现实中的攻击路径。
-  # 要用浏览器面板（metacubexd 等）指向手机 IP 才需要改成 true，
-  # 同时把上面的 allow-origins 填成面板的具体地址，不要用 *。
-  allow-private-network: false
+# 外部控制器不写在这里：这是公开模板，照抄的人不改就等于把控制 API 开到局域网。
+# 要从电脑看连接与日志，用 App 自带的：更多 › 客户端设置 › 外部控制器 →「局域网」
+# （全程 HTTPS，密钥与证书由 App 生成），再用 tools/tail-clash.py 连，
+# 页面上显示的证书指纹填进 --fingerprint。
 
+# 以下地理库设置只对 Clash Verge 等桌面 mihomo 客户端生效。Clash for Apple 的
+# 地理库由 App 统一准备（iOS / tvOS 用预编译资源），这几项在那里不起作用。
+#
 # GeoIP 数据库默认从 GitHub raw 拉，17 MB 直连几乎必定超时，
 # 表现是 [GEO] can.t download GeoIP database file: context deadline exceeded，
 # 而且不影响启动——规则静默按旧库匹配。改用 jsDelivr 镜像。
@@ -89,28 +58,33 @@ profile:
   store-selected: true
   store-fake-ip: true
 
-# 域名嗅探：fake-ip 之外的兜底。走 IP 直连的连接靠它还原域名，
-# 否则那些连接只能落到 GEOIP 判定，分流精度掉一大截。
+# 域名嗅探：只补「没有域名」的连接。走 fake-ip 的连接自带 DNS 查询时的域名，
+# 嗅探不会碰它们；用得上的是自带 DoH 的浏览器、用 HTTPDNS 的国内 App、
+# 写死 IP 的连接——没有它，这些连接只能落到 GEOIP 判定。
 sniffer:
   enable: true
-  # 用嗅探到的域名覆盖目的地址，规则才能按域名匹配。
+  # mihomo 默认就是 true，写明是与 clash.md 的示例对齐。
+  parse-pure-ip: true
+  # 嗅探到的域名只用于规则匹配，不改写连接目标。域名规则读的是嗅探结果
+  # （Metadata.RuleHost），与这个开关无关；改写目标反而会丢掉 App 自己
+  # 选好的 IP（HTTPDNS），Host 头与 IP 对不上时还会连错地方。
   override-destination: false
   sniff:
     HTTP:
-      ports: [80, 8080-8880]
-      override-destination: true
+      ports: [80, 8080]
     TLS:
       ports: [443, 8443]
     QUIC:
-      ports: [443, 8443]
+      ports: [443]
   skip-domain:
+    - "+.lan"
+    - "+.local"
     - "Mijia Cloud"
     - "+.push.apple.com"
 
 dns:
   enable: true
   ipv6: false
-  listen: 0.0.0.0:1053
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   fake-ip-filter:
@@ -673,37 +647,40 @@ proxy-groups:
       - "DIRECT"
       - "♻️ 自动选择"
 
+# domain / ipcidr 用 MRS（mihomo 的预编译格式，tools/build-mrs.py 从 stash/ 转换）：
+# iOS 的 Network Extension 只有约 50 MiB 可用，大型 text 规则集在设备上解析建表
+# 可能把它挤爆。classical 没有 MRS 格式，仍用 text。
 rule-providers:
   direct-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/direct-domain.txt
-    path: ./ruleset/direct-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/direct-domain.mrs
+    path: ./ruleset/direct-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   direct-ipcidr:
     type: http
     behavior: ipcidr
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/direct-ipcidr.txt
-    path: ./ruleset/direct-ipcidr.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/direct-ipcidr.mrs
+    path: ./ruleset/direct-ipcidr.mrs
     interval: 86400
     proxy: 🚀 节点选择
   reject-ads-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/reject-ads-domain.txt
-    path: ./ruleset/reject-ads-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/reject-ads-domain.mrs
+    path: ./ruleset/reject-ads-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   reject-ads-ipcidr:
     type: http
     behavior: ipcidr
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/reject-ads-ipcidr.txt
-    path: ./ruleset/reject-ads-ipcidr.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/reject-ads-ipcidr.mrs
+    path: ./ruleset/reject-ads-ipcidr.mrs
     interval: 86400
     proxy: 🚀 节点选择
   reject-ads-classical:
@@ -717,9 +694,9 @@ rule-providers:
   reject-privacy-ipcidr:
     type: http
     behavior: ipcidr
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/reject-privacy-ipcidr.txt
-    path: ./ruleset/reject-privacy-ipcidr.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/reject-privacy-ipcidr.mrs
+    path: ./ruleset/reject-privacy-ipcidr.mrs
     interval: 86400
     proxy: 🚀 节点选择
   reject-privacy-classical:
@@ -733,17 +710,17 @@ rule-providers:
   apple-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/apple-domain.txt
-    path: ./ruleset/apple-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/apple-domain.mrs
+    path: ./ruleset/apple-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   apple-ipcidr:
     type: http
     behavior: ipcidr
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/apple-ipcidr.txt
-    path: ./ruleset/apple-ipcidr.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/apple-ipcidr.mrs
+    path: ./ruleset/apple-ipcidr.mrs
     interval: 86400
     proxy: 🚀 节点选择
   apple-classical:
@@ -757,9 +734,9 @@ rule-providers:
   apple-media-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/apple-media-domain.txt
-    path: ./ruleset/apple-media-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/apple-media-domain.mrs
+    path: ./ruleset/apple-media-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   apple-media-classical:
@@ -773,17 +750,17 @@ rule-providers:
   media-cn-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/media-cn-domain.txt
-    path: ./ruleset/media-cn-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/media-cn-domain.mrs
+    path: ./ruleset/media-cn-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   media-cn-ipcidr:
     type: http
     behavior: ipcidr
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/media-cn-ipcidr.txt
-    path: ./ruleset/media-cn-ipcidr.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/media-cn-ipcidr.mrs
+    path: ./ruleset/media-cn-ipcidr.mrs
     interval: 86400
     proxy: 🚀 节点选择
   media-cn-classical:
@@ -797,17 +774,17 @@ rule-providers:
   youtube-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/youtube-domain.txt
-    path: ./ruleset/youtube-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/youtube-domain.mrs
+    path: ./ruleset/youtube-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   youtube-ipcidr:
     type: http
     behavior: ipcidr
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/youtube-ipcidr.txt
-    path: ./ruleset/youtube-ipcidr.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/youtube-ipcidr.mrs
+    path: ./ruleset/youtube-ipcidr.mrs
     interval: 86400
     proxy: 🚀 节点选择
   youtube-classical:
@@ -821,17 +798,17 @@ rule-providers:
   netflix-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/netflix-domain.txt
-    path: ./ruleset/netflix-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/netflix-domain.mrs
+    path: ./ruleset/netflix-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   netflix-ipcidr:
     type: http
     behavior: ipcidr
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/netflix-ipcidr.txt
-    path: ./ruleset/netflix-ipcidr.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/netflix-ipcidr.mrs
+    path: ./ruleset/netflix-ipcidr.mrs
     interval: 86400
     proxy: 🚀 节点选择
   netflix-classical:
@@ -845,9 +822,9 @@ rule-providers:
   disney-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/disney-domain.txt
-    path: ./ruleset/disney-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/disney-domain.mrs
+    path: ./ruleset/disney-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   disney-classical:
@@ -861,9 +838,9 @@ rule-providers:
   hbo-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/hbo-domain.txt
-    path: ./ruleset/hbo-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/hbo-domain.mrs
+    path: ./ruleset/hbo-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   hbo-classical:
@@ -877,9 +854,9 @@ rule-providers:
   primevideo-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/primevideo-domain.txt
-    path: ./ruleset/primevideo-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/primevideo-domain.mrs
+    path: ./ruleset/primevideo-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   primevideo-classical:
@@ -893,17 +870,17 @@ rule-providers:
   spotify-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/spotify-domain.txt
-    path: ./ruleset/spotify-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/spotify-domain.mrs
+    path: ./ruleset/spotify-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   spotify-ipcidr:
     type: http
     behavior: ipcidr
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/spotify-ipcidr.txt
-    path: ./ruleset/spotify-ipcidr.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/spotify-ipcidr.mrs
+    path: ./ruleset/spotify-ipcidr.mrs
     interval: 86400
     proxy: 🚀 节点选择
   spotify-classical:
@@ -917,9 +894,9 @@ rule-providers:
   bahamut-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/bahamut-domain.txt
-    path: ./ruleset/bahamut-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/bahamut-domain.mrs
+    path: ./ruleset/bahamut-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   bahamut-classical:
@@ -933,9 +910,9 @@ rule-providers:
   abematv-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/abematv-domain.txt
-    path: ./ruleset/abematv-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/abematv-domain.mrs
+    path: ./ruleset/abematv-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   abematv-classical:
@@ -949,17 +926,17 @@ rule-providers:
   twitch-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/twitch-domain.txt
-    path: ./ruleset/twitch-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/twitch-domain.mrs
+    path: ./ruleset/twitch-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   twitch-ipcidr:
     type: http
     behavior: ipcidr
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/twitch-ipcidr.txt
-    path: ./ruleset/twitch-ipcidr.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/twitch-ipcidr.mrs
+    path: ./ruleset/twitch-ipcidr.mrs
     interval: 86400
     proxy: 🚀 节点选择
   twitch-classical:
@@ -973,9 +950,9 @@ rule-providers:
   emby-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/emby-domain.txt
-    path: ./ruleset/emby-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/emby-domain.mrs
+    path: ./ruleset/emby-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   emby-classical:
@@ -989,9 +966,9 @@ rule-providers:
   pikpak-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/pikpak-domain.txt
-    path: ./ruleset/pikpak-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/pikpak-domain.mrs
+    path: ./ruleset/pikpak-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   pikpak-classical:
@@ -1005,17 +982,17 @@ rule-providers:
   media-global-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/media-global-domain.txt
-    path: ./ruleset/media-global-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/media-global-domain.mrs
+    path: ./ruleset/media-global-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   media-global-ipcidr:
     type: http
     behavior: ipcidr
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/media-global-ipcidr.txt
-    path: ./ruleset/media-global-ipcidr.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/media-global-ipcidr.mrs
+    path: ./ruleset/media-global-ipcidr.mrs
     interval: 86400
     proxy: 🚀 节点选择
   media-global-classical:
@@ -1029,17 +1006,17 @@ rule-providers:
   ai-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/ai-domain.txt
-    path: ./ruleset/ai-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/ai-domain.mrs
+    path: ./ruleset/ai-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   ai-ipcidr:
     type: http
     behavior: ipcidr
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/ai-ipcidr.txt
-    path: ./ruleset/ai-ipcidr.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/ai-ipcidr.mrs
+    path: ./ruleset/ai-ipcidr.mrs
     interval: 86400
     proxy: 🚀 节点选择
   ai-classical:
@@ -1053,17 +1030,17 @@ rule-providers:
   telegram-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/telegram-domain.txt
-    path: ./ruleset/telegram-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/telegram-domain.mrs
+    path: ./ruleset/telegram-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   telegram-ipcidr:
     type: http
     behavior: ipcidr
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/telegram-ipcidr.txt
-    path: ./ruleset/telegram-ipcidr.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/telegram-ipcidr.mrs
+    path: ./ruleset/telegram-ipcidr.mrs
     interval: 86400
     proxy: 🚀 节点选择
   telegram-classical:
@@ -1077,17 +1054,17 @@ rule-providers:
   twitter-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/twitter-domain.txt
-    path: ./ruleset/twitter-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/twitter-domain.mrs
+    path: ./ruleset/twitter-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   twitter-ipcidr:
     type: http
     behavior: ipcidr
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/twitter-ipcidr.txt
-    path: ./ruleset/twitter-ipcidr.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/twitter-ipcidr.mrs
+    path: ./ruleset/twitter-ipcidr.mrs
     interval: 86400
     proxy: 🚀 节点选择
   twitter-classical:
@@ -1101,17 +1078,17 @@ rule-providers:
   meta-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/meta-domain.txt
-    path: ./ruleset/meta-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/meta-domain.mrs
+    path: ./ruleset/meta-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   meta-ipcidr:
     type: http
     behavior: ipcidr
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/meta-ipcidr.txt
-    path: ./ruleset/meta-ipcidr.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/meta-ipcidr.mrs
+    path: ./ruleset/meta-ipcidr.mrs
     interval: 86400
     proxy: 🚀 节点选择
   meta-classical:
@@ -1125,33 +1102,33 @@ rule-providers:
   discord-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/discord-domain.txt
-    path: ./ruleset/discord-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/discord-domain.mrs
+    path: ./ruleset/discord-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   line-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/line-domain.txt
-    path: ./ruleset/line-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/line-domain.mrs
+    path: ./ruleset/line-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   line-ipcidr:
     type: http
     behavior: ipcidr
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/line-ipcidr.txt
-    path: ./ruleset/line-ipcidr.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/line-ipcidr.mrs
+    path: ./ruleset/line-ipcidr.mrs
     interval: 86400
     proxy: 🚀 节点选择
   payment-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/payment-domain.txt
-    path: ./ruleset/payment-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/payment-domain.mrs
+    path: ./ruleset/payment-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   payment-classical:
@@ -1165,9 +1142,9 @@ rule-providers:
   github-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/github-domain.txt
-    path: ./ruleset/github-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/github-domain.mrs
+    path: ./ruleset/github-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   github-classical:
@@ -1181,17 +1158,17 @@ rule-providers:
   bing-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/bing-domain.txt
-    path: ./ruleset/bing-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/bing-domain.mrs
+    path: ./ruleset/bing-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   microsoft-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/microsoft-domain.txt
-    path: ./ruleset/microsoft-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/microsoft-domain.mrs
+    path: ./ruleset/microsoft-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   microsoft-classical:
@@ -1205,17 +1182,17 @@ rule-providers:
   google-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/google-domain.txt
-    path: ./ruleset/google-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/google-domain.mrs
+    path: ./ruleset/google-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   google-ipcidr:
     type: http
     behavior: ipcidr
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/google-ipcidr.txt
-    path: ./ruleset/google-ipcidr.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/google-ipcidr.mrs
+    path: ./ruleset/google-ipcidr.mrs
     interval: 86400
     proxy: 🚀 节点选择
   google-classical:
@@ -1229,9 +1206,9 @@ rule-providers:
   tiktok-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/tiktok-domain.txt
-    path: ./ruleset/tiktok-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/tiktok-domain.mrs
+    path: ./ruleset/tiktok-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   tiktok-classical:
@@ -1245,9 +1222,9 @@ rule-providers:
   direct-global-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/direct-global-domain.txt
-    path: ./ruleset/direct-global-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/direct-global-domain.mrs
+    path: ./ruleset/direct-global-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   direct-global-classical:
@@ -1261,17 +1238,17 @@ rule-providers:
   game-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/game-domain.txt
-    path: ./ruleset/game-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/game-domain.mrs
+    path: ./ruleset/game-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   game-ipcidr:
     type: http
     behavior: ipcidr
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/game-ipcidr.txt
-    path: ./ruleset/game-ipcidr.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/game-ipcidr.mrs
+    path: ./ruleset/game-ipcidr.mrs
     interval: 86400
     proxy: 🚀 节点选择
   game-classical:
@@ -1285,17 +1262,17 @@ rule-providers:
   china-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/china-domain.txt
-    path: ./ruleset/china-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/china-domain.mrs
+    path: ./ruleset/china-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   china-ipcidr:
     type: http
     behavior: ipcidr
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/china-ipcidr.txt
-    path: ./ruleset/china-ipcidr.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/china-ipcidr.mrs
+    path: ./ruleset/china-ipcidr.mrs
     interval: 86400
     proxy: 🚀 节点选择
   china-classical:
@@ -1309,25 +1286,25 @@ rule-providers:
   ChinaDomains-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/ChinaDomains-domain.txt
-    path: ./ruleset/ChinaDomains-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/ChinaDomains-domain.mrs
+    path: ./ruleset/ChinaDomains-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   proxy-domain:
     type: http
     behavior: domain
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/proxy-domain.txt
-    path: ./ruleset/proxy-domain.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/proxy-domain.mrs
+    path: ./ruleset/proxy-domain.mrs
     interval: 86400
     proxy: 🚀 节点选择
   proxy-ipcidr:
     type: http
     behavior: ipcidr
-    format: text
-    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/proxy-ipcidr.txt
-    path: ./ruleset/proxy-ipcidr.txt
+    format: mrs
+    url: https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/mrs/proxy-ipcidr.mrs
+    path: ./ruleset/proxy-ipcidr.mrs
     interval: 86400
     proxy: 🚀 节点选择
   proxy-classical:

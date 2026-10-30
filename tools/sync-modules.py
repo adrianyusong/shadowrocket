@@ -45,10 +45,11 @@ def fetch(url):
 # ALL_TYPES 少一个，那个协议就会漏进全部四个分组——与最初
 # 「VLESS 组里混着 Hy2」是同一种失效，且同样不报错。
 #
-# 锁定到 Clash for Apple（Hako 核心）实际用的 mihomo 版本，不是 Alpha。
+# 锁定到 Clash for Apple 的 Clash Core 所基于的 mihomo 版本（v1.19.33-clash.4 →
+# mihomo 1.19.33，见 https://clash.md/core），不是 Alpha。
 # Alpha 是开发主线，新协议不断进（例如 EasyTier），拿它做基准会让每周同步
 # 因为一个用户客户端还不支持的协议而反复失败。基准必须与用户设备一致。
-MIHOMO_REF = 'v1.19.30'
+MIHOMO_REF = 'v1.19.33'
 ADAPTERS_URL = ('https://raw.githubusercontent.com/MetaCubeX/mihomo'
                 '/%s/constant/adapters.go' % MIHOMO_REF)
 
@@ -132,7 +133,7 @@ def check_type_drift():
                       % (MIHOMO_REF, '、'.join(missing)))
     if extra:
         # 只提示不告警：多列的类型名对不上就不起作用，无害；它们多半是 Alpha 分支
-        # 已有、Hako 尚未跟进的新协议（EasyTier），提前列上省得升级时再补。
+        # 已有、Clash Core 尚未跟进的新协议，提前列上省得升级时再补。
         print('ALL_TYPES 比 mihomo %s 多列了: %s（无害，为内核升级预留）'
               % (MIHOMO_REF, '、'.join(extra)))
     if not missing and not extra:

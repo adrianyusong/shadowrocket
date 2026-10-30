@@ -43,6 +43,11 @@ jobs:
       - name: 重新生成 Stash 配置
         run: python tools/build-stash.py
 
+      - name: 重新生成 MRS 规则集
+        # 用钉死版本的 mihomo 把 stash/ 的 domain / ipcidr 转成 mrs/。转换逐字节确定，
+        # 下面的「产物一致」核对因此也能发现 mrs/ 没跟着 stash/ 重新生成。
+        run: python tools/build-mrs.py
+
       - name: 重新生成 Clash 配置
         run: python tools/build-clash.py
 
@@ -60,7 +65,7 @@ jobs:
           # build-stash.py 会先清空 stash/*.txt 再生成，多余的旧文件会显示为删除。
           if [ -n "$(git status --porcelain)" ]; then
             echo "::error::生成产物与已提交内容不一致，请重新生成并一起提交"
-            echo "本地执行：python tools/build-stash.py && python tools/build-clash.py"
+            echo "本地执行：python tools/build-stash.py && python tools/build-mrs.py && python tools/build-clash.py"
             git status --short
             git --no-pager diff --stat
             exit 1
