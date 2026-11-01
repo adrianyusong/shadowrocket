@@ -2,7 +2,7 @@
 # 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
 # 需要增补规则请写进 config/default.conf 的内联规则段。
 # 上游: blackmatrix7/ios_rule_script
-# 规则数: 31301
+# 规则数: 31314
 
 DOMAIN-SUFFIX,a2z.com
 DOMAIN-SUFFIX,aboutamazon.cn
@@ -238,6 +238,9 @@ DOMAIN,api.viu.now.com
 DOMAIN,apkmirror.disqus.com
 DOMAIN,apl-hamivideo.cdn.hinet.net
 DOMAIN,apple-tv-plus-press.apple.com
+DOMAIN,appsgenaiserver-pa.clients.google.com
+DOMAIN,appsgenaiserver-pa.clients6.google.com
+DOMAIN,appsgenaiserver-pa.googleapis.com
 DOMAIN,as-dash-uk-live.akamaized.net
 DOMAIN,as-hls-uk-live.akamaized.net
 DOMAIN,asahishimbun.sc.omtrdc.net
@@ -345,6 +348,8 @@ DOMAIN,daily-cloudcode-pa.googleapis.com
 DOMAIN,databank.worldbank.org
 DOMAIN,database.asahi.com
 DOMAIN,datarouter.apps.netherrealm.com
+DOMAIN,dc.applicationinsights.azure.com
+DOMAIN,dc.services.visualstudio.com
 DOMAIN,dcb0z5ovq92mz.cloudfront.net
 DOMAIN,ddacn6pr5v0tl.cloudfront.net
 DOMAIN,ddpjwstwtpszg.cloudfront.net
@@ -367,6 +372,7 @@ DOMAIN,docker-pinata-support.s3.amazonaws.com
 DOMAIN,doy2mn9upadnk.cloudfront.net
 DOMAIN,dqd0jw5gvbchn.cloudfront.net
 DOMAIN,dqrpb9wgowsf5.cloudfront.net
+DOMAIN,dropbox.zendesk.com
 DOMAIN,ds-linear-abematv.akamaized.net
 DOMAIN,ds-vod-abematv.akamaized.net
 DOMAIN,ds0h3roq6wcgc.cloudfront.net
@@ -468,6 +474,7 @@ DOMAIN,linear-abematv.akamaized.net
 DOMAIN,link.theplatform.com
 DOMAIN,linkedin.sc.omtrdc.net
 DOMAIN,live-patreon-marketing.pantheonsite.io
+DOMAIN,live.applicationinsights.azure.com
 DOMAIN,lm.licenses.adobe.com
 DOMAIN,lmlicenses.wip4.adobe.com
 DOMAIN,lolstatic-a.akamaihd.net
@@ -603,6 +610,7 @@ DOMAIN,rsshub.rssforever.com
 DOMAIN,rsshub.umzzz.com
 DOMAIN,rsshub.woodland.cafe
 DOMAIN,rsshub2.asailor.org
+DOMAIN,rt.services.visualstudio.com
 DOMAIN,rtm.tnt-ea.com
 DOMAIN,s3-ap-northeast-1.amazonaws.com
 DOMAIN,s3-ap-southeast-2.amazonaws.com
@@ -6387,6 +6395,7 @@ DOMAIN-SUFFIX,darwinproject.ac.uk
 DOMAIN-SUFFIX,dasaob.online
 DOMAIN-SUFFIX,dasg.ac.uk
 DOMAIN-SUFFIX,dash-1.ac.uk
+DOMAIN-SUFFIX,dash.ai
 DOMAIN-SUFFIX,dashly.app
 DOMAIN-SUFFIX,dashly.help
 DOMAIN-SUFFIX,dashly.io
@@ -7031,6 +7040,7 @@ DOMAIN-SUFFIX,docleradn.com
 DOMAIN-SUFFIX,doclercdn.com
 DOMAIN-SUFFIX,docs.rs
 DOMAIN-SUFFIX,docs.rw
+DOMAIN-SUFFIX,docsend.com
 DOMAIN-SUFFIX,doctor-videos.com
 DOMAIN-SUFFIX,documentforce.com
 DOMAIN-SUFFIX,docusend.ac.uk
@@ -10217,8 +10227,10 @@ DOMAIN-SUFFIX,heinonline.org
 DOMAIN-SUFFIX,heise360181.buzz
 DOMAIN-SUFFIX,heise360182.buzz
 DOMAIN-SUFFIX,helf.ac.uk
+DOMAIN-SUFFIX,hellofax.com
 DOMAIN-SUFFIX,hellofuture.ac.uk
 DOMAIN-SUFFIX,hellomoto.com
+DOMAIN-SUFFIX,hellosign.com
 DOMAIN-SUFFIX,hellosmartbook.com
 DOMAIN-SUFFIX,hellporno.com
 DOMAIN-SUFFIX,hellven.net
@@ -13055,6 +13067,7 @@ DOMAIN-SUFFIX,liboggirls.net
 DOMAIN-SUFFIX,library.lol
 DOMAIN-SUFFIX,librarylovefest.com
 DOMAIN-SUFFIX,libraryofthumbs.com
+DOMAIN-SUFFIX,librewolf.dev
 DOMAIN-SUFFIX,librewolf.net
 DOMAIN-SUFFIX,libsolutions.app
 DOMAIN-SUFFIX,libsolutions.domains
