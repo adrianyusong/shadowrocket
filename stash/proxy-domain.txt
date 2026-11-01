@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/proxy.list 生成，请勿手改。
-# behavior: domain   条数: 31210
+# behavior: domain   条数: 31223
 +.a2z.com
 +.aboutamazon.cn
 +.aboutamazon.co.uk
@@ -219,6 +219,9 @@ api.viu.now.com
 apkmirror.disqus.com
 apl-hamivideo.cdn.hinet.net
 apple-tv-plus-press.apple.com
+appsgenaiserver-pa.clients.google.com
+appsgenaiserver-pa.clients6.google.com
+appsgenaiserver-pa.googleapis.com
 as-dash-uk-live.akamaized.net
 as-hls-uk-live.akamaized.net
 asahishimbun.sc.omtrdc.net
@@ -326,6 +329,8 @@ daily-cloudcode-pa.googleapis.com
 databank.worldbank.org
 database.asahi.com
 datarouter.apps.netherrealm.com
+dc.applicationinsights.azure.com
+dc.services.visualstudio.com
 dcb0z5ovq92mz.cloudfront.net
 ddacn6pr5v0tl.cloudfront.net
 ddpjwstwtpszg.cloudfront.net
@@ -348,6 +353,7 @@ docker-pinata-support.s3.amazonaws.com
 doy2mn9upadnk.cloudfront.net
 dqd0jw5gvbchn.cloudfront.net
 dqrpb9wgowsf5.cloudfront.net
+dropbox.zendesk.com
 ds-linear-abematv.akamaized.net
 ds-vod-abematv.akamaized.net
 ds0h3roq6wcgc.cloudfront.net
@@ -449,6 +455,7 @@ linear-abematv.akamaized.net
 link.theplatform.com
 linkedin.sc.omtrdc.net
 live-patreon-marketing.pantheonsite.io
+live.applicationinsights.azure.com
 lm.licenses.adobe.com
 lmlicenses.wip4.adobe.com
 lolstatic-a.akamaihd.net
@@ -584,6 +591,7 @@ rsshub.rssforever.com
 rsshub.umzzz.com
 rsshub.woodland.cafe
 rsshub2.asailor.org
+rt.services.visualstudio.com
 rtm.tnt-ea.com
 s3-ap-northeast-1.amazonaws.com
 s3-ap-southeast-2.amazonaws.com
@@ -6368,6 +6376,7 @@ login.microsoftonline.com
 +.dasaob.online
 +.dasg.ac.uk
 +.dash-1.ac.uk
++.dash.ai
 +.dashly.app
 +.dashly.help
 +.dashly.io
@@ -7012,6 +7021,7 @@ login.microsoftonline.com
 +.doclercdn.com
 +.docs.rs
 +.docs.rw
++.docsend.com
 +.doctor-videos.com
 +.documentforce.com
 +.docusend.ac.uk
@@ -10198,8 +10208,10 @@ login.microsoftonline.com
 +.heise360181.buzz
 +.heise360182.buzz
 +.helf.ac.uk
++.hellofax.com
 +.hellofuture.ac.uk
 +.hellomoto.com
++.hellosign.com
 +.hellosmartbook.com
 +.hellporno.com
 +.hellven.net
@@ -13036,6 +13048,7 @@ login.microsoftonline.com
 +.library.lol
 +.librarylovefest.com
 +.libraryofthumbs.com
++.librewolf.dev
 +.librewolf.net
 +.libsolutions.app
 +.libsolutions.domains

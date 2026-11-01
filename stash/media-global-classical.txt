@@ -1,8 +1,6 @@
 # 由 tools/build-stash.py 从 rule/media-global.list 生成，请勿手改。
-# behavior: classical   条数: 67
-DOMAIN-KEYWORD,anthropic
+# behavior: classical   条数: 65
 DOMAIN-KEYWORD,bbcfmt
-DOMAIN-KEYWORD,claude
 DOMAIN-KEYWORD,discovery.uplynk.com
 DOMAIN-KEYWORD,hamivideo.cdn.hinet.net
 DOMAIN-KEYWORD,hbogoasia

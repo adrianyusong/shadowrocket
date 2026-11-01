@@ -1,10 +1,12 @@
 # 由 tools/build-stash.py 从 rule/ai.list 生成，请勿手改。
-# behavior: classical   条数: 14
+# behavior: classical   条数: 16
 DOMAIN-KEYWORD,openaiapi
 DOMAIN-KEYWORD,openaicom
 DOMAIN-WILDCARD,*mask*.apple-dns.net
 DOMAIN-WILDCARD,*mask*.icloud.com
 DOMAIN-WILDCARD,*siri*.apple.com
+DOMAIN-KEYWORD,anthropic
+DOMAIN-KEYWORD,claude
 DOMAIN-KEYWORD,notebooklm.google
 DOMAIN-KEYWORD,labs.google
 DOMAIN-KEYWORD,openai
