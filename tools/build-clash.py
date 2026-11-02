@@ -79,6 +79,12 @@ def q(s):
 
 
 def main():
+    # 同 build-stash.py：Windows 主控台默认 cp1252，印中文会抛 UnicodeEncodeError。
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding='utf-8', errors='replace')
+        except AttributeError:
+            pass
     out = []
     A = out.append
 
