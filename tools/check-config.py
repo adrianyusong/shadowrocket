@@ -342,6 +342,8 @@ def check_rulesets_exist(cfg):
 # skip-proxy 命中即绕过隧道，[Rule] 里写什么都无效。
 # 目标是「所有 Apple 走代理」，故这里不允许出现 Apple 域名，
 # 唯一例外是 WiFi 门户检测——走代理会连不上酒店与机场热点。
+# 它照样要过下面的策略核对：Stash / Clash 没有 skip-proxy，那两端全靠 [Rule]
+# 把它判直连；以前这里直接放行，于是 Stash / Clash 一直把它随 🍎 苹果服务 送去代理。
 SKIP_PROXY_ALLOWED_APPLE = {'captive.apple.com'}
 
 # skip-proxy 命中即绕过规则层。除上面的门户检测外，只允许规则本来就判直连的域名：
@@ -384,9 +386,8 @@ def check_skip_proxy(cfg):
         items = [x.strip() for x in s.split('=', 1)[1].split(',')]
         for item in items:
             low = item.lower().lstrip('*.')
-            if 'apple' in low or 'icloud' in low:
-                if item not in SKIP_PROXY_ALLOWED_APPLE:
-                    fail('skip-proxy 含 Apple 域名，会绕过隧道使代理规则失效: %s' % item)
+            if ('apple' in low or 'icloud' in low) and item not in SKIP_PROXY_ALLOWED_APPLE:
+                fail('skip-proxy 含 Apple 域名，会绕过隧道使代理规则失效: %s' % item)
                 continue
             if re.match(r'^[0-9a-f:.]+(/[0-9]+)?$', low) or low in ('localhost', 'local'):
                 continue
@@ -670,10 +671,21 @@ def check_realip_parity(cfg):
         return
     blk = body.split('fake-ip-filter:', 1)[1].split('default-nameserver:', 1)[0]
     stash = set()
+    roots = set()           # +.x 顺带收进的根域 x；Shadowrocket 侧只写 *.x 也算一致
     for line in blk.split(chr(10)):
         line = line.strip()
-        if line.startswith('- '):
-            stash |= _canon_realip(line[2:], True)
+        if not line.startswith('- '):
+            continue
+        entry = line[2:].strip().strip('"')
+        if entry.startswith('*.'):
+            # Clash / mihomo 的 *. 只匹配一级子域，而 Shadowrocket 的 *. 是任意深度。
+            # 逐字比对时两边写法相同、看不出差异：*.126.net 曾在 Stash 侧漏掉
+            # m701.music.126.net，在 Shadowrocket 侧却没问题。
+            fail('Stash fake-ip-filter 的 %s 用了 *.，只匹配一级子域，'
+                 '与 Shadowrocket 的任意深度不一致；改写成 +.%s' % (entry, entry[2:]))
+        if entry.startswith('+.'):
+            roots.add(entry[2:])
+        stash |= _canon_realip(entry, True)
 
     m = re.search(r'^always-real-ip\s*=\s*(.+)$', cfg, re.M)
     if not m:
@@ -685,7 +697,7 @@ def check_realip_parity(cfg):
         if x.strip():
             sr |= _canon_realip(x, False)
 
-    for x in sorted(stash - sr):
+    for x in sorted(stash - sr - roots):
         fail('always-real-ip 缺少 Stash fake-ip-filter 里的 %s' % x)
     for x in sorted(sr - stash):
         fail('always-real-ip 多出 Stash fake-ip-filter 没有的 %s' % x)
@@ -1247,6 +1259,12 @@ def check_stash():
 
 
 def main():
+    # 同 build-stash.py：Windows 主控台默认 cp1252，印中文会抛 UnicodeEncodeError。
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding='utf-8', errors='replace')
+        except AttributeError:
+            pass
     cfg = io.open(CONFIG, encoding='utf-8').read()
     ngroups, nrefs = check_policy_refs(cfg)
     check_case(cfg)

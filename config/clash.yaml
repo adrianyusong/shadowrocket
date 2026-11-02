@@ -89,23 +89,24 @@ dns:
   fake-ip-range: 198.18.0.1/16
   fake-ip-filter:
   # 保留域与局域网
-    - "*.lan"
-    - "*.local"
-    - "*.localdomain"
-    - "*.home.arpa"
-    - "*.invalid"
-    - "*.localhost"
-    - "*.test"
-    - "*.example"
+    - "+.lan"
+    - "+.local"
+    - "+.localdomain"
+    - "+.home.arpa"
+    - "+.invalid"
+    - "+.localhost"
+    - "+.test"
+    - "+.example"
   # 路由器 / 智能家居管理页，域名指向局域网网关地址
-    - "*.router.asus.com"
-    - "*.linksys.com"
-    - "*.linksyssmartwifi.com"
+    - "+.router.asus.com"
+    - "+.linksys.com"
+    - "+.linksyssmartwifi.com"
     - "heartbeat.belkin.com"
   # 系统联网检测：拿到假 IP 会被判成「网络受限」，反复弹强制门户
     - "+.msftconnecttest.com"
     - "+.msftncsi.com"
     - "+.ipv6.microsoft.com"
+    - "captive.apple.com"
     - "localhost.ptlogin2.qq.com"
     - "localhost.sec.qq.com"
   # NTP 校时走 UDP 123。假 IP 对不上时间，会连锁导致 TLS 证书校验失败。
@@ -137,17 +138,15 @@ dns:
     - "time3.cloud.tencent.com"
     - "time4.cloud.tencent.com"
     - "time5.cloud.tencent.com"
-    - "*.time.edu.cn"
-    - "*.ntp.org.cn"
+    - "+.time.edu.cn"
+    - "+.ntp.org.cn"
     - "+.pool.ntp.org"
   # STUN 泛通配（stun.* 等）已去掉：stun.l.google.com 这类走代理，与收录原则
   # 冲突；而 P2P 打洞在 Shadowrocket 侧本就被 stun-response-ip 伪造响应挡掉了。
   # 国内音乐：版权区域按出口 IP 判定，假 IP 会被判成海外 -> 大量歌曲变灰
-    - "music.163.com"
-    - "*.music.163.com"
-    - "*.126.net"
-    - "y.qq.com"
-    - "*.y.qq.com"
+    - "+.music.163.com"
+    - "+.126.net"
+    - "+.y.qq.com"
     - "aqqmusic.tc.qq.com"
     - "amobile.music.tc.qq.com"
     - "streamoc.music.tc.qq.com"
@@ -156,13 +155,12 @@ dns:
     - "dl.stream.qqmusic.qq.com"
     - "songsearch.kugou.com"
     - "trackercdn.kugou.com"
-    - "*.kuwo.cn"
-    - "music.migu.cn"
-    - "*.music.migu.cn"
+    - "+.kuwo.cn"
+    - "+.music.migu.cn"
     - "music.taihe.com"
     - "musicapi.taihe.com"
   # B 站 PCDN 要真实 IP 做点对点回源
-    - "*.mcdn.bilivideo.cn"
+    - "+.mcdn.bilivideo.cn"
   default-nameserver: [223.5.5.5, 119.29.29.29]
   nameserver:
     - https://dns.alidns.com/dns-query
@@ -1528,12 +1526,17 @@ rules:
   - DOMAIN-SUFFIX,digicert-validation.com,🎯 全球直连
   # 联网检测、局域网设备管理页、NTP 校时必须直连。
   # 上游规则集把它们归进了微软 / 代理集：走代理会导致系统联网检测误判（Windows
-  # NCSI 显示「无 Internet」；iOS 的 captive.apple.com 在 skip-proxy 里另行处理）、
-  # 校时失败（时间错了会连锁触发 TLS 证书校验失败）。
+  # NCSI 显示「无 Internet」）、校时失败（时间错了会连锁触发 TLS 证书校验失败）。
   # 路由器后台只解决了「走哪条路」，解析仍经公共 DoH：router.asus.com 在公网
   # 返回 NXDOMAIN，linksyssmartwifi.com 在公网有 AWS 记录、会连到云端。
   # 进路由器后台请直接用路由器 IP（通常是 192.168.x.1）。
   # 这几条同时也是 Stash 侧 fake-ip-filter 的前提——只有直连的域名才该进那张表。
+  #
+  # iOS 的 WiFi 门户检测。Shadowrocket 靠 skip-proxy 绕过，但 Stash / Clash 没有
+  # skip-proxy，原先会被 apple.list 的 apple.com 全域后缀接住、随 🍎 苹果服务 走代理，
+  # 酒店与机场热点的登录页弹不出来。写死 DIRECT 而非 🎯 全球直连：门户检测必须
+  # 打到本地网络，不该能被切成代理。必须排在 apple.list 之前。
+  - DOMAIN,captive.apple.com,DIRECT
   - DOMAIN-SUFFIX,msftconnecttest.com,🎯 全球直连
   - DOMAIN-SUFFIX,msftncsi.com,🎯 全球直连
   - DOMAIN-SUFFIX,ipv6.microsoft.com,🎯 全球直连
@@ -1545,8 +1548,8 @@ rules:
   - DOMAIN-SUFFIX,ntp.org.cn,🎯 全球直连
   - DOMAIN-SUFFIX,time.edu.cn,🎯 全球直连
   # iOS 默认校时服务器。apple.list 有 DOMAIN-SUFFIX,apple.com，不在这里拦下
-  # 就会随「所有 Apple 走代理」一起走代理——校时是网络基础设施，与 captive.apple.com
-  # 同属例外。本段在 apple.list 之前，所以能先命中。
+  # 就会随「所有 Apple 走代理」一起走代理——校时是网络基础设施，与上面的
+  # captive.apple.com 同属例外。本段在 apple.list 之前，所以能先命中。
   - DOMAIN-SUFFIX,time.apple.com,🎯 全球直连
   - DOMAIN-SUFFIX,time-ios.apple.com,🎯 全球直连
   - DOMAIN-SUFFIX,time-macos.apple.com,🎯 全球直连

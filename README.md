@@ -596,7 +596,7 @@ App 自己硬编码的明文 DNS：发往 `114.114.114.114:53`、`223.5.5.5:53`�
 命中即绕过，解析也脱离本配置的 DNS 设置。Surge 模板遗留的 `*.crashlytics.com`
 在规则里归 `🛑 广告拦截`，放在这里等于让拦截失效，已移除。以前的检查只看 Apple
 域名才一直没发现；现在 `check_skip_proxy` 对每个域名按规则求值，判拦截或判代理的
-都报错（`captive.apple.com` 除外，见下文 Apple 一节）。
+都报错。`captive.apple.com` 免于「不许 Apple 域名」那一条，但同样要过策略核对（见下文 Apple 一节）。
 
 **自测用 ipleak.net 或 dnsleaktest.com。** 结果里只出现机场出口所在地的 DNS 为正常；
 出现阿里、腾讯或本地运营商才是泄漏。`browserleaks.com` 被上游国内规则误收、会走直连，
@@ -683,6 +683,9 @@ TCP，属于纯损失。而阻断 QUIC 的两个理由——绕过 TCP 侧规则
 
 **唯一例外**：`captive.apple.com` 保留在 `skip-proxy`。那是 WiFi 门户检测，
 `skip-proxy` 在规则之前生效、直接绕过隧道；走代理会导致连不上酒店与机场热点。
+Stash / Clash 没有 `skip-proxy`，所以 `[Rule]` 在 `apple.list` 之前另有一条
+`DOMAIN,captive.apple.com,DIRECT`，它也在 `always-real-ip` / `fake-ip-filter` 里。
+以前缺这一条，Stash / Clash 一直把它随 `🍎 苹果服务` 送去代理。
 
 **代价**：
 
