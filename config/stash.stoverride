@@ -10,7 +10,7 @@
 # 然后在订阅配置上启用该覆写。
 
 name: Shadowrocket 全量配置 (Stash)
-desc: 规则与分组候选由 default.conf 推导，与 Shadowrocket 一致。含地区、直连线路、线路属性分组。
+desc: 规则与分组候选由 default.conf 推导，与 Shadowrocket 一致。含地区直连线路分组。
 author: adrianyusong
 homepage: https://github.com/adrianyusong/shadowrocket
 category: rules
@@ -174,95 +174,7 @@ proxy-groups: #!replace
     type: select
     include-all: true
     filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|群组|群組|直连|直連|Expire|Traffic|Reset|Website|(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
-  # 线路属性、地区、直连线路（地区 × 无中转，判据见文件头 DIRECTS）、自建 CF。
-  - name: "🏠 住宅IP"
-    type: url-test
-    include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(住宅|家宽|家寬|Residential)).*$"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 600
-    tolerance: 200
-    lazy: true
-  - name: "🛣️ 专线"
-    type: url-test
-    include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(专线|專線|IPLC|IEPL)).*$"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 600
-    tolerance: 200
-    lazy: true
-  - name: "🎞️ 流媒体节点"
-    type: url-test
-    include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?!.*(俄罗斯|俄羅斯|Russia|越南|Vietnam|马来西亚|馬來西亞|Malaysia|印度|(?<![A-Za-z])India(?![A-Za-z])|印尼|Indonesia|泰国|泰國|Thailand|菲律宾|菲律賓|Philippines))(?=.*(流媒体|流媒體|原生|解锁|解鎖)).*$"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 600
-    tolerance: 200
-    lazy: true
-  - name: "💴 低倍率"
-    type: url-test
-    include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(?<![0-9.])0\\.[0-9]+ ?x).*$"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 600
-    tolerance: 200
-    lazy: true
-  - name: "🇭🇰 香港"
-    type: url-test
-    include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(香港|港岛|深港|沪港|Hong ?Kong|(?<![A-Za-z])(HK|HKG)(?![A-Za-z]))).*$"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 600
-    tolerance: 200
-    lazy: true
-  - name: "🇹🇼 台湾"
-    type: url-test
-    include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(台湾|台灣|台北|臺灣|Taiwan|(?<![A-Za-z])(TW|TPE)(?![A-Za-z]))).*$"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 600
-    tolerance: 200
-    lazy: true
-  - name: "🇯🇵 日本"
-    type: url-test
-    include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(日本|東京|东京|大阪|名古屋|埼玉|Japan|(?<![A-Za-z])(JP|JPN|NRT|KIX)(?![A-Za-z]))).*$"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 600
-    tolerance: 200
-    lazy: true
-  - name: "🇸🇬 狮城"
-    type: url-test
-    include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(新加坡|狮城|獅城|Singapore|(?<![A-Za-z])(SG|SIN)(?![A-Za-z]))).*$"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 600
-    tolerance: 200
-    lazy: true
-  - name: "🇺🇲 美国"
-    type: url-test
-    include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(美国|美國|美西|美东|美東|洛杉矶|圣何塞|西雅图|达拉斯|凤凰城|United ?States|(?<![A-Za-z])(US|USA|LAX|SJC)(?![A-Za-z]))).*$"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 600
-    tolerance: 200
-    lazy: true
-  - name: "🇰🇷 韩国"
-    type: url-test
-    include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(韩国|韓國|首尔|首爾|Korea|(?<![A-Za-z])(KR|ICN)(?![A-Za-z]))).*$"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 600
-    tolerance: 200
-    lazy: true
-  - name: "🇬🇧 英国"
-    type: url-test
-    include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(英国|英國|伦敦|倫敦|London|(?<![A-Za-z])(UK|GB|LHR)(?![A-Za-z]))).*$"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 600
-    tolerance: 200
-    lazy: true
+  # 地区直连线路（地区 × 无中转，判据见文件头 DIRECTS）、自建 CF。
   - name: "🇺🇲 美国直连"
     type: url-test
     include-all: true
@@ -337,22 +249,12 @@ proxy-groups: #!replace
       - "🔯 故障转移"
       - "🔮 负载均衡"
       - "🔧 手动选择"
-      - "🛣️ 专线"
       - "🇯🇵 日本直连"
       - "🇸🇬 狮城直连"
       - "🇭🇰 香港直连"
       - "🇹🇼 台湾直连"
       - "🇬🇧 英国直连"
       - "🇰🇷 韩国直连"
-      - "🏠 住宅IP"
-      - "💴 低倍率"
-      - "🇭🇰 香港"
-      - "🇹🇼 台湾"
-      - "🇯🇵 日本"
-      - "🇸🇬 狮城"
-      - "🇺🇲 美国"
-      - "🇰🇷 韩国"
-      - "🇬🇧 英国"
       - "☁️ CF优选"
       - "DIRECT"
   - name: "🤖 AI 服务"
@@ -362,58 +264,47 @@ proxy-groups: #!replace
       - "🇯🇵 日本直连"
       - "🇸🇬 狮城直连"
       - "🇬🇧 英国直连"
-      - "🛣️ 专线"
-      - "🇺🇲 美国"
-      - "🇯🇵 日本"
-      - "🇸🇬 狮城"
-      - "🇬🇧 英国"
       - "🔧 手动选择"
       - "DIRECT"
   - name: "📹 YOUTUBE"
     type: select
     proxies:
-      - "🎞️ 流媒体节点"
+      - "🇺🇲 美国直连"
       - "🚀 节点选择"
       - "♻️ 自动选择"
-      - "🇭🇰 香港"
-      - "🇹🇼 台湾"
-      - "🇸🇬 狮城"
+      - "🇭🇰 香港直连"
+      - "🇹🇼 台湾直连"
+      - "🇸🇬 狮城直连"
       - "DIRECT"
   - name: "🎥 NETFLIX"
     type: select
     proxies:
-      - "🎞️ 流媒体节点"
-      - "🏠 住宅IP"
-      - "🇸🇬 狮城"
-      - "🇭🇰 香港"
-      - "🇯🇵 日本"
+      - "🇺🇲 美国直连"
+      - "🇸🇬 狮城直连"
+      - "🇭🇰 香港直连"
+      - "🇯🇵 日本直连"
       - "🚀 节点选择"
       - "DIRECT"
   - name: "🎬 DISNEY+"
     type: select
     proxies:
-      - "🎞️ 流媒体节点"
-      - "🇸🇬 狮城"
-      - "🇯🇵 日本"
-      - "🇺🇲 美国"
+      - "🇺🇲 美国直连"
+      - "🇸🇬 狮城直连"
+      - "🇯🇵 日本直连"
       - "🚀 节点选择"
       - "DIRECT"
   - name: "🎦 HBO"
     type: select
     proxies:
       - "🇺🇲 美国直连"
-      - "🎞️ 流媒体节点"
-      - "🇺🇲 美国"
-      - "🇸🇬 狮城"
+      - "🇸🇬 狮城直连"
       - "🚀 节点选择"
       - "DIRECT"
   - name: "📦 PRIMEVIDEO"
     type: select
     proxies:
       - "🇺🇲 美国直连"
-      - "🎞️ 流媒体节点"
-      - "🇺🇲 美国"
-      - "🇯🇵 日本"
+      - "🇯🇵 日本直连"
       - "🚀 节点选择"
       - "DIRECT"
   - name: "🎧 SPOTIFY"
@@ -425,26 +316,26 @@ proxy-groups: #!replace
     type: select
     proxies:
       - "🚀 节点选择"
-      - "🇯🇵 日本"
-      - "🇺🇲 美国"
+      - "🇯🇵 日本直连"
+      - "🇺🇲 美国直连"
       - "DIRECT"
   - name: "🕹️ 巴哈姆特"
     type: select
     proxies:
-      - "🇹🇼 台湾"
+      - "🇹🇼 台湾直连"
       - "🚀 节点选择"
       - "DIRECT"
   - name: "📺 ABEMATV"
     type: select
     proxies:
-      - "🇯🇵 日本"
+      - "🇯🇵 日本直连"
       - "🚀 节点选择"
       - "DIRECT"
   - name: "🎙️ TWITCH"
     type: select
     proxies:
       - "🚀 节点选择"
-      - "🇺🇲 美国"
+      - "🇺🇲 美国直连"
       - "DIRECT"
   - name: "🌍 国外媒体"
     type: select
@@ -472,7 +363,7 @@ proxy-groups: #!replace
     proxies:
       - "🚀 节点选择"
       - "♻️ 自动选择"
-      - "🇸🇬 狮城"
+      - "🇸🇬 狮城直连"
       - "DIRECT"
   - name: "🐦 TWITTER"
     type: select
@@ -494,7 +385,7 @@ proxy-groups: #!replace
   - name: "💚 LINE"
     type: select
     proxies:
-      - "🇯🇵 日本"
+      - "🇯🇵 日本直连"
       - "🚀 节点选择"
       - "DIRECT"
   - name: "Ⓜ️ 微软服务"
@@ -512,14 +403,14 @@ proxy-groups: #!replace
     type: select
     proxies:
       - "🚀 节点选择"
-      - "🇺🇲 美国"
+      - "🇺🇲 美国直连"
       - "DIRECT"
   - name: "🎵 苹果媒体"
     type: select
     proxies:
       - "🚀 节点选择"
-      - "🇺🇲 美国"
-      - "🇯🇵 日本"
+      - "🇺🇲 美国直连"
+      - "🇯🇵 日本直连"
       - "DIRECT"
   - name: "🐱 GITHUB"
     type: select
@@ -546,7 +437,6 @@ proxy-groups: #!replace
     type: select
     proxies:
       - "DIRECT"
-      - "💴 低倍率"
       - "🚀 节点选择"
   - name: "🇨🇳 国内服务"
     type: select

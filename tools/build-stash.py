@@ -57,7 +57,10 @@ CF_GROUP = ('☁️ CF优选', '(?i)(' + CF_NODE + ')')
 AUTO_FILTER = '(?i)^(?!.*(' + EXCLUDE_INFO + '|' + CF_NODE + ')).*$'
 
 
-# 地区分组的节点名正则。英文缩写一律用逆序环视包裹——裸 US 在忽略大小写下
+# 地区的节点名正则，只用来派生下面的直连线路分组。2026-11 起不再单独生成
+# 纯地区组（🇭🇰 香港 等），线路属性组（住宅IP / 专线 / 流媒体节点 / 低倍率）
+# 也一并去掉，与 default.conf 一致。
+# 英文缩写一律用逆序环视包裹——裸 US 在忽略大小写下
 # 会匹配 Russia / Australia / Brussels / Plus，把俄罗斯澳洲节点混进美国组。
 REGIONS = [
     ('🇭🇰 香港', r'(?i)(香港|港岛|深港|沪港|Hong ?Kong|(?<![A-Za-z])(HK|HKG)(?![A-Za-z]))'),
@@ -68,18 +71,6 @@ REGIONS = [
     # 🇰🇷 韩国：落云有 3 个韩国节点，已加回。只装旧机场订阅时为空。
     ('🇰🇷 韩国', r'(?i)(韩国|韓國|首尔|首爾|Korea|(?<![A-Za-z])(KR|ICN)(?![A-Za-z]))'),
     ('🇬🇧 英国', r'(?i)(英国|英國|伦敦|倫敦|London|(?<![A-Za-z])(UK|GB|LHR)(?![A-Za-z]))'),
-]
-
-# 线路属性分组。取自节点名的实际标签，与地区维度正交。
-ATTRS = [
-    # 只收住宅 / 家宽。「原生」是当地 ISP 名下的机房 IP，归流媒体组。
-    ('🏠 住宅IP', r'(?i)(住宅|家宽|家寬|Residential)'),
-    ('🛣️ 专线', r'(?i)(专线|專線|IPLC|IEPL)'),
-    # 旧机场的「流媒体」标签，加上落云的「原生」IP。它是 🎬 DISNEY+ 的默认首选，排除
-    # Disney+ 用不了的国家：俄罗斯、越南（未进入），马来西亚 / 印尼 / 泰国 / 菲律宾 / 印度
-    # （跑在本地 Hotstar 上，只对当地账号开放）。东南亚离国内近，url-test 很容易选中。
-    ('🎞️ 流媒体节点', r'(?i)^(?!.*(俄罗斯|俄羅斯|Russia|越南|Vietnam|马来西亚|馬來西亞|Malaysia|印度|(?<![A-Za-z])India(?![A-Za-z])|印尼|Indonesia|泰国|泰國|Thailand|菲律宾|菲律賓|Philippines))(?=.*(流媒体|流媒體|原生|解锁|解鎖)).*$'),
-    ('💴 低倍率', r'(?i)(?<![0-9.])0\.[0-9]+ ?x'),
 ]
 
 # 直连线路分组：地区 × 无中转。与 Shadowrocket 的同名分组同一判据。
@@ -474,7 +465,7 @@ def main():
     A('# 然后在订阅配置上启用该覆写。')
     A('')
     A('name: Shadowrocket 全量配置 (Stash)')
-    A('desc: 规则与分组候选由 default.conf 推导，与 Shadowrocket 一致。含地区、直连线路、线路属性分组。')
+    A('desc: 规则与分组候选由 default.conf 推导，与 Shadowrocket 一致。含地区直连线路分组。')
     A('author: adrianyusong')
     A('homepage: https://github.com/adrianyusong/shadowrocket')
     A('category: rules')
@@ -640,9 +631,8 @@ def main():
     A('  # 手动挑单个节点用。上面几组都是自动的，没有这一组就只能选组不能选节点。')
     grp('🔧 手动选择', 'select', None, include_all='true', filter=q(AUTO_FILTER))
 
-    filtered = ([(n, f) for n, f in ATTRS] + [(n, f) for n, f in REGIONS]
-                + [(n, f) for n, f in DIRECTS] + [CF_GROUP])
-    A('  # 线路属性、地区、直连线路（地区 × 无中转，判据见文件头 DIRECTS）、自建 CF。')
+    filtered = [(n, f) for n, f in DIRECTS] + [CF_GROUP]
+    A('  # 地区直连线路（地区 × 无中转，判据见文件头 DIRECTS）、自建 CF。')
     for name, f in filtered:
         grp(name, 'url-test', None, include_all='true', filter=q(guard(f)),
             url=q(TEST_URL), interval=600, tolerance=200, lazy='true')
