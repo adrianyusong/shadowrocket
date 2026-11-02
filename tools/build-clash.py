@@ -21,7 +21,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'config', 'clash.yaml')
 
-# 从 build-stash.py 取常量：策略映射、地区正则、线路属性只有一份定义。
+# 从 build-stash.py 取常量：策略映射、地区正则、直连线路只有一份定义。
 _spec = importlib.util.spec_from_file_location(
     'bs', os.path.join(ROOT, 'tools', 'build-stash.py'))
 bs = importlib.util.module_from_spec(_spec)
@@ -235,7 +235,7 @@ def main():
     A('      url: %s' % TEST_URL)
     A('      interval: 300')
     A('  # 第二家机场（例如落云）。分组都是 include-all，加进来就会按节点名自动归组；')
-    A('  # 🇰🇷 韩国 / 🔒 ANYTLS 等只有它有节点，只装一家时这些组是空的（空组等同直连）。')
+    A('  # 🇰🇷 韩国直连 / 🔒 ANYTLS 等只有它有节点，只装一家时这些组是空的（空组等同直连）。')
     A('  # airport-b:')
     A('  #   type: http')
     A('  #   url: "https://第二家机场的订阅地址?flag=clash"')
@@ -279,9 +279,9 @@ def main():
         filter=q(bs.AUTO_FILTER), url=TEST_URL, interval=300, strategy='consistent-hashing')
     grp('🔧 手动选择', 'select', include_all='true', filter=q(bs.AUTO_FILTER))
 
-    filtered = (list(bs.ATTRS) + list(bs.REGIONS) + list(bs.DIRECTS) + [bs.CF_GROUP])
-    A('  # 线路属性、地区、直连线路（地区 × 无中转）、自建 CF。与 Stash 同一份定义')
-    A('  # （build-stash.py 的 ATTRS / REGIONS / DIRECTS / CF_GROUP），都过 guard() 排除伪节点。')
+    filtered = list(bs.DIRECTS) + [bs.CF_GROUP]
+    A('  # 地区直连线路（地区 × 无中转）、自建 CF。与 Stash 同一份定义')
+    A('  # （build-stash.py 的 DIRECTS / CF_GROUP），都过 guard() 排除伪节点。')
     A('  # 英文缩写用逆序环视包裹，否则裸 US 在忽略大小写下会吃掉 Russia / Australia。')
     for name, rex in filtered:
         grp(name, 'url-test', include_all='true', filter=q(bs.guard(rex)),
