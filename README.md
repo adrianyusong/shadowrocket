@@ -43,7 +43,7 @@ https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/config/stash-pr
 https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/config/clash.yaml
 ```
 
-字段按 [clash.md](https://clash.md/guide/config/) 的说明取舍（Clash Core v1.19.33-clash.4，
+字段按 [clash.md](https://clash.md/guide/config/) 的说明取舍（Clash Core v1.19.33-clash.5，
 基于 mihomo 1.19.33）：在 Clash for Apple 上不生效、或会替用户对局域网开服务的字段都不写——
 本地代理端口、`dns.listen`、外部控制器、`find-process-mode`。`check-config.py` 会拦
 `dns.listen` 绑非回环地址与 `allow-lan: true`。
@@ -63,8 +63,27 @@ raw 地址 —— 文件里带着你的订阅地址，绝不能放公开仓库�
 可用内存约 50 MiB（社区反馈与官方真机测试的估计，不是 Apple 公布的数字），大型 text
 规则集在设备上解析建表可能把它挤爆——表现是启动失败、断线、代理被系统结束。
 `tools/build-mrs.py` 用钉死版本的 mihomo 把 `stash/` 的 domain / ipcidr 规则集
-（53 个，14.4 万条域名 + 1.5 万条 IP 段）转成 `mrs/*.mrs`。classical 没有 MRS 格式，仍用
-text；Stash 不认 MRS，继续用 `stash/*.txt`。
+（53 个，14.4 万条域名 + 1.5 万条 IP 段）转成 `mrs/*.mrs`。Stash 不认 MRS，继续用 `stash/*.txt`。
+
+**classical 规则集内嵌**：classical 没有 MRS 格式，而且每份只有几条到一百多条，所以直接写进
+`clash.yaml`（`type: inline`，26 份共 323 条），不再各开一个远程规则集——远程规则集从 83 个
+降到 53 个，启动与每天更新各少 30 个请求，也不存在「拉取失败后规则静默消失」。内嵌时剔掉
+mihomo 不认的 165 条 `USER-AGENT`（Stash 认，所以共用的 `stash/*-classical.txt` 里还留着）；
+`apple-media` / `bahamut` / `disney` / `hbo` 四份只有 `USER-AGENT`，Clash 不再引用。
+代价：这部分规则只随配置文件更新，不再每天自己刷新。`check_clash` 逐条比对内嵌内容与源文件。
+
+**Clash 这份与另外两份不同的地方**都在 `tools/build-clash.py`，`check-config.py` 逐项守着
+（均未在设备上实测，见「已知不确定项」）：
+
+| 项 | 写法 | 原因 |
+|---|---|---|
+| IPv6 | 顶层 `ipv6: true`，`dns.ipv6: false` | clash.md「TUN 与网络接入」：`ipv6` 为 false 时**隧道不接管 IPv6**，在有 IPv6 的网络上，直接用 IPv6 地址的连接整个绕过 Clash。不让 App 用 IPv6 靠的是不回 AAAA，不是这个开关 |
+| QUIC | 第一条规则 `SUB-RULE,…,QUIC`，加 `sub-rules` 里的镜像 | Clash for Apple 没有 `block-quic`，见下文「QUIC」 |
+| 国内域名兜底 | `GEOIP,CN` 之前加 `GEOSITE,CN` | 列表没覆盖到的国内域名不再落到兜底走代理。三份配置唯一一处有意的分流差异 |
+| 订阅 | `proxy: DIRECT`、`exclude-filter`、`override.ip-version: ipv4-prefer` | 订阅更新不经它自己的节点（节点全挂时也能更新）；伪节点在集合层就丢掉；连节点照旧优先 IPv4 |
+| 分组 | 每个 `include-all` 的组用 `exclude-type` 排除内置出站 | 订阅里 `type: direct` 一类条目会被当成节点收进来，进了 url-test 组就悄悄直连 |
+| DNS | 只用国内 DoH，没有 AdGuard 与 `nameserver-policy` | fake-ip 加全量 `no-resolve` 之下只有直连域名才本地解析；另外两份仍并行查 AdGuard |
+| 日志 | `log-level: warning` | clash.md「配置最佳实践」。`/logs?level=info` 订阅按请求里的级别过滤，不受影响（mihomo 上游的行为） |
 
 **模块（URL 重写去广告、iRingo）**：Clash for Apple 能直接导入 Shadowrocket / Surge 模块，
 重写、脚本、MITM 都生效。在配置库 ›「模块」粘贴链接，再按提示安装并信任「Clash 模块证书」：
@@ -118,7 +137,7 @@ https://cdn.jsdelivr.net/gh/adrianyusong/shadowrocket@main/config/default.conf
 |---|---|---|---|
 | 配置 | `config/default.conf` | `config/stash.stoverride` | `config/clash.yaml` |
 | 形态 | 完整配置 | 覆写（打补丁） | 完整配置 |
-| 规则 | `rule/*.list` | `stash/*.txt` | `mrs/*.mrs` + `stash/*-classical.txt` |
+| 规则 | `rule/*.list` | `stash/*.txt` | `mrs/*.mrs` + 内嵌的 classical |
 | 生成 | 手写（唯一来源） | 从 `default.conf` 推导 | 从 `default.conf` 推导 |
 | MITM / 重写 | ✅ | ✅ | ✅ Clash for Apple 的「模块」（Apple TV 除外） |
 | 协议分组 | ❌ | ❌ | ✅ `exclude-type` |
@@ -292,6 +311,13 @@ proxy-providers:
 机场的写法：剩余 / 到期 / 流量 / 重置 / 套餐 / 官网，以及落云的「续费地址」「请更新
 订阅」「客户端不对」和整排以 `🇦🇶` 打头的公告节点（其中一个名字只有旗子加空白）。
 
+排除词只有一份：`build-stash.py` 的 `PSEUDO_WORDS`，`default.conf` 各组手写同一批，
+`check_pseudo_parity` 核对。自动 / 手动组另加「官方 / 直连 / DIRECT」（`EXCLUDE_EXTRA`）——
+「官方」会连带排掉「CF官方优选」，不能进 `☁️ CF优选` 自己的排除词。以前生成器里有两份互相
+漏词的表：自动组没有「官網」，地区组与 Clash 的协议组没有「客服 / 群组 / 网站」，名字含
+这些词的同协议公告节点会直接进协议组。Clash 另在 `proxy-providers` 层用 `exclude-filter`
+先丢一遍，组内的排除词是第二道保险。
+
 **两家机场。** 配置按两份订阅同时装载来设计：旧机场（名字带 `CTCU` / `流媒体` /
 `0.1x` 这类标签）和落云（`[地区]₁`、`原生`、`家宽` 这类标签）。各组的来源：
 - `🇰🇷 韩国直连`、`🔒 ANYTLS` 只有落云的节点。只装一家时对应的组是空的——空的
@@ -329,7 +355,7 @@ proxy-providers:
 | `config/` | 三份主配置（`.conf` / `.stoverride` / `.yaml`） |
 | `rule/` | 分流规则集（`.list`），已收编上游 |
 | `module/` | 模块（`.module` / `.sgmodule`） |
-| `stash/` | Stash 的规则集（`.txt`）；Clash 的 classical 规则集与 `mrs/` 都取自这里 |
+| `stash/` | Stash 的规则集（`.txt`）；Clash 内嵌的 classical 规则与 `mrs/` 都取自这里 |
 | `mrs/` | Clash 用的 MRS 规则集（由 `stash/` 的 domain / ipcidr 转换，二进制） |
 | `clash-verge/` | Clash Verge Rev 扩展脚本与独立配置 |
 | `script/` | 重写脚本（`.js`） |
@@ -462,15 +488,17 @@ IP 类规则补上 `no-resolve`（见下文「DNS 泄漏」）。
 - **配置项被移除却不报错**：`global-client-fingerprint` 在 v1.19 已删，内核只记一行
   `level=error`，退出码仍是 0。所以日志里除白名单外不许出现任何 warning / error。
 - **规则集静默少载**：`mihomo -t` 不加载规则集，必须完整启动，再经 REST API 核对每个规则集
-  「载入条数 + 内核不认的 `USER-AGENT` 条数」是否等于文件行数。这是「规则静默消失，
-  不报错」那一类故障。地理库（含 ASN 库）预先备好；取不到 ASN 库时含 `IP-ASN` 的规则会被丢掉。
+  的载入条数是否等于来源的条数。这是「规则静默消失，不报错」那一类故障。地理库（含 ASN 库）
+  预先备好；取不到 ASN 库时含 `IP-ASN` 的规则会被丢掉。
 
-已知取舍：`USER-AGENT` 规则只有 Stash 认，mihomo 会丢弃（目前 165 条）。它们留在两端共用的
-classical 规则集里，测试按条数逐条核对，除它之外的任何丢失都算失败。
+`USER-AGENT` 规则只有 Stash 认，mihomo 会丢弃（目前 165 条）。它们留在 Stash 用的
+`stash/*-classical.txt` 里；`clash.yaml` 内嵌 classical 时已经剔掉，所以日志里不许再出现任何
+warning / error。
 
-订阅用 `tools/fixtures/mihomo-nodes.yaml` 的假节点代替，规则集取本地文件（classical 取
-`stash/*.txt`，domain / ipcidr 取 `mrs/*.mrs`，测的是这次提交的内容）。MRS 是二进制，按它的
-`stash/` 源文件核对条数——转换丢了条目或 `mrs/` 没跟着重新生成，都会在这里失败。配置里不带
+订阅用 `tools/fixtures/mihomo-nodes.yaml` 的假节点代替。domain / ipcidr 规则集取本地的
+`mrs/*.mrs`（测的是这次提交的内容）；MRS 是二进制，按它的 `stash/` 源文件核对条数——转换丢了
+条目或 `mrs/` 没跟着重新生成，都会在这里失败。classical 内嵌在配置里，按 payload 条数核对，
+内容是否与 `stash/` 源文件一致由 `check-config.py` 逐条比对。配置里不带
 控制器，测试时临时注入一个只绑 `127.0.0.1` 的。`clash-verge/config.yaml` 的规则集在外部站点，只做 `-t` 解析。升级内核时改
 `MIHOMO_REF`，再用 `python tools/check-mihomo.py --print-pins` 取各平台的官方 SHA-256 更新 `PINS`。
 
@@ -493,7 +521,7 @@ classical 规则集里，测试按条数逐条核对，除它之外的任何丢�
 
 ## 配置说明
 
-`config/default.conf` 包含 46 个策略组、35 个规则集（全部托管于本仓库 `rule/`，
+`config/default.conf` 包含 47 个策略组、35 个规则集（全部托管于本仓库 `rule/`，
 来自 70 个上游），合计 15.8 万条规则。上游为 [blackmatrix7/ios_rule_script](https://github.com/blackmatrix7/ios_rule_script)
 与 [anti-AD](https://anti-ad.net)。
 
@@ -613,6 +641,9 @@ YouTube / Netflix / Disney+ / HBO / Prime Video 以 `🇺🇲 美国直连` 打�
 
 地区直连分组的测速间隔调为 `interval = 600, tolerance = 200` 抑制抖动。
 要彻底稳定，选 `🔧 手动选择` 再点具体节点。
+这组数值三份配置必须相同：生成器取自 `build-stash.py` 的 `AUTO_TEST` / `REGION_TEST`，
+`default.conf` 手写，`check_test_params` 核对。Clash 那份曾在生成器里另写了一组 `300 / 50`，
+而 `🤖 AI 服务` 默认就落在 `🇺🇲 美国直连` 上——容差小了出口更常跳，与本节的目的相反。
 
 ### 规则顺序
 
@@ -652,6 +683,17 @@ YouTube / Netflix / Disney+ / HBO / Prime Video 以 `🇺🇲 美国直连` 打�
 TCP，属于纯损失。而阻断 QUIC 的两个理由——绕过 TCP 侧规则匹配、流媒体解锁判定
 不稳——只对代理连接成立。`all-proxy` 正好只管代理连接。
 
+**Clash 没有这个开关**（clash.md 全站只有「写规则」一种做法），所以 `clash.yaml` 用子规则
+做出同样的效果：第一条规则 `SUB-RULE,(AND,((NETWORK,UDP),(DST-PORT,443))),QUIC` 把 UDP/443
+交给 `sub-rules` 里的 `QUIC`。它是主规则的逐条镜像——策略组的默认候选是 `DIRECT` /
+`REJECT` 的保持原策略，其余一律换成 `REJECT`——所以直连流量的 QUIC 不受影响，代理流量回落
+TCP，同一个域名的 TCP 与 QUIC 也不会被判去两条路。镜像由 `build-clash.py` 生成，
+`check_derived_parity` 独立重算一遍核对。两点与 Shadowrocket 不完全相同：
+
+- 判定按**默认候选**，不看 App 里的当前选择：把某个代理组手动切成 `DIRECT`，它的 QUIC
+  仍被拒绝（回落 TCP，不影响使用）；把直连组切去代理，QUIC 会跟着走代理。
+- Stash 那份这次没有动，仍没有任何 QUIC 屏蔽规则。
+
 ### 游戏下载为什么要单独拦
 
 `🎮 游戏平台` 是代理优先（商店、社区、登录需要代理），但 `Steam.list` 与
@@ -681,11 +723,17 @@ Stash / Clash 没有 `skip-proxy`，所以 `[Rule]` 在 `apple.list` 之前另�
 `DOMAIN,captive.apple.com,DIRECT`，它也在 `always-real-ip` / `fake-ip-filter` 里。
 以前缺这一条，Stash / Clash 一直把它随 `🍎 苹果服务` 送去代理。
 
+**APNs 推送单独成组**：`DOMAIN-SUFFIX,push.apple.com` 交给 `🔔 苹果推送`，默认直连，
+排在 `apple.list` 之前。推送是一条长连接，随 `🍎 苹果服务` 走代理时，自动测速组一换节点
+它就断线重连，表现为通知延迟或丢失；推送不分区，外区账号直连同样可用（clash.md「配置
+最佳实践」的三份社区模板也把 Apple 推送拆成独立策略组）。想让它也走代理，在 App 里把这组
+切到 `🚀 节点选择`。
+直接用 IP 发起、没有域名的推送连接仍落到 `IP-CIDR,17.0.0.0/8` 随 `🍎 苹果服务`。
+
 **代价**：
 
 | 影响 | 后果 |
 |---|---|
-| APNs 推送 | `push.apple.com` 走代理，推送可能延迟或丢失 |
 | App Store 下载 | 应用动辄几百 MB，全走机场流量 |
 | iCloud 备份 / 照片同步 | 流量可能很大 |
 | Apple ID 登录 | 走代理易触发二次验证 |
@@ -715,6 +763,21 @@ stun-response-ipv6 = ::1
 引入 anti-AD 后规则总量从 2.3 万涨到 12.3 万，iOS 网络扩展的加载表现未在设备上
 验证。若出现启动慢或内存告警，从 `tools/sources.txt` 移除 anti-AD 一行后重跑同步即可。
 Clash 那份的 domain / ipcidr 规则集已改用 MRS，正是为了这一点（见「Clash for Apple / Clash Verge」）。
+
+`clash.yaml` 里按 clash.md 文档与 mihomo 1.19.33 源码改的几处，同样没有在设备上验证：
+
+- **IPv6**：`ipv6: true` 之后隧道才接管 IPv6。验证：蜂窝网络下连上 Clash，Safari 打开
+  `https://[2606:4700:4700::1111]/cdn-cgi/trace`，`ip=` 不应是你的真实 IPv6（改之前会是）。
+  若直连或节点连接因此出问题，把顶层 `ipv6` 改回 `false`（代价是回到「IPv6 连接绕过 Clash」）。
+- **QUIC 子规则**：被拒绝的 UDP/443 靠客户端自己超时后回落 TCP，回落要多久取决于 App。
+  若某个走代理的 App 首次加载明显变慢，这里最可疑。
+- **`IP-ASN`**：内嵌的 classical 规则里有 9 条（ai / telegram / meta / china）。clash.md 写明
+  ASN 库不会由隧道自动下载，到 App 的「资源」页确认它已备好，否则这 9 条不生效
+  （Telegram 的 IP 段另有 `telegram-ipcidr` 接着，影响有限）。
+- **`GEOSITE,CN`**：依赖 App 备好的 GeoSite 数据。它只接「本来会落到兜底」的域名，
+  误判时在 `default.conf` 里它之前的任意位置加一条显式规则即可压过。
+- **订阅 `proxy: DIRECT`**：订阅域名在当前网络直连不通时订阅更新会失败，改成另一家订阅的
+  节点或组名。
 
 ### MITM
 

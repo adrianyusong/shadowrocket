@@ -32,14 +32,30 @@ OUTDIR = os.path.join(ROOT, 'stash')
 OVERRIDE = os.path.join(ROOT, 'config', 'stash.stoverride')
 BASE = 'https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/stash/'
 
-# 排除信息类伪节点（机场把剩余流量、到期时间也做成节点）
+# 信息类伪节点（机场把剩余流量、到期时间、公告也做成节点）的排除词，只此一份。
+# 所有按节点名筛选的组都要带：「剩余流量：412 GB」里的 GB 会被英国组当成地区标签，
+# 把一个 ws 中转伪节点收进 🇬🇧 英国直连。
 # 落云（第二家机场）的公告节点：「续费地址」「请更新订阅」「客户端不对」，
 # 以及一整排以 🇦🇶 打头的节点（有一个名字只有 🇦🇶 加空白）。
-EXCLUDE_INFO = ('官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|'
-                '流量|套餐|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|群组|群組|直连|直連|'
-                'Expire|Traffic|Reset|Website')
+#
+# 以前这里有两份词表：自动测速组用的 EXCLUDE_INFO 有「网站 / 客服 / 邀请 / 群组 /
+# Website」却没有「官網」，地区组与 Clash 协议组用的 PSEUDO_WORDS 反过来。协议组
+# 没有地区关键词把关，名字含「客服」「群组」的同协议公告节点会直接进组。
+# 现在只有这一份基础词表，自动测速组在它之上追加（见 EXCLUDE_EXTRA）。
+# default.conf 各组的正则手写同一批词，check-config.py 的 check_pseudo_parity 核对。
+PSEUDO_WORDS = ('剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|'
+                '客户端|客戶端|🇦🇶|Expire|Traffic|Reset|'
+                '网站|網站|客服|邀请|邀請|群组|群組|Website')
+PSEUDO = '(?!.*(?:' + PSEUDO_WORDS + '))'
 
-# 自动测速类分组的 filter：排除上面那些信息类伪节点。
+# 自动测速组与 🔧 手动选择 追加的排除词。这几个不能进基础词表：
+#   官方           会连带排掉「CF官方优选」这类自建 CF 节点名，☁️ CF优选 组不能带它；
+#   直连 / DIRECT  订阅里名为「直连」「DIRECT」的直连伪节点。地区组自己就叫「直连」
+#                  （指无中转线路），不靠这个词筛。
+# D(IR)?ECT 原先只有 default.conf 有，Stash / Clash 漏了。
+EXCLUDE_EXTRA = '官方|直连|直連|D(IR)?ECT'
+EXCLUDE_INFO = PSEUDO_WORDS + '|' + EXCLUDE_EXTRA
+
 # 自建 Cloudflare 节点（edgetunnel 一类：Pages/Workers + 优选 IP）。
 # 它们只经 ☁️ CF优选 手动启用，不进任何自动测速组：
 # - 十几个「节点」是同一后端的不同入口 IP，出口都在 Cloudflare，落地地区
@@ -96,17 +112,8 @@ def direct_filter(region_rx):
 DIRECTS = [(n + '直连', direct_filter(rx)) for n, rx in REGIONS if n in DIRECT_REGIONS]
 DIRECTS.sort(key=lambda d: DIRECT_REGIONS.index(d[0][:-2]))
 
-# 信息类伪节点（「剩余流量：412 GB」「套餐到期：…」）排除。所有按节点名筛选的
-# 组都要带：「GB」会被英国组当成地区标签，把一个 ws 中转伪节点收进 🇬🇧 英国直连。
-# 与 Shadowrocket 各组用同一段。
-# 落云的公告节点另加「订阅 / 续费 / 客户端 / 🇦🇶」，见 EXCLUDE_INFO 处的说明。
-PSEUDO_WORDS = ('剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|'
-                '客户端|客戶端|🇦🇶|Expire|Traffic|Reset')
-PSEUDO = '(?!.*(?:' + PSEUDO_WORDS + '))'
-
-
 def guard(f):
-    """给筛选正则加上伪节点排除。"""
+    """给筛选正则加上伪节点排除（文件头的 PSEUDO，与 Shadowrocket 各组用同一段）。"""
     if f.startswith('(?i)^'):
         return '(?i)^' + PSEUDO + f[5:]
     inner = f[4:] if f.startswith('(?i)') else f
@@ -238,6 +245,13 @@ def emit_rules(A, kinds, indent='  '):
 # 用 https：机场劫持明文 204 测速地址很常见。开了 unified-delay 后 mihomo
 # 会发两次 HEAD，被劫持时第二次超时，好节点反而被判失败踢出候选。
 TEST_URL = 'https://www.gstatic.com/generate_204'
+
+# 测速参数 (interval 秒, tolerance 毫秒)，只在这里定义，两个生成器共用；default.conf
+# 手写同一组数值，check-config.py 的 check_test_params 核对三份一致。
+# Clash 那份曾经各写各的，漂成了 300 / 50——🤖 AI 服务 默认落在 🇺🇲 美国直连 上，
+# 容差一小出口就更常跳，正是 README「IP 稳定性」要避免的。
+AUTO_TEST = (300, 100)      # ♻️ 自动选择；🔯 故障转移 / 🔮 负载均衡 只用 interval
+REGION_TEST = (600, 200)    # 地区直连组、☁️ CF优选，以及 Clash 的协议分组
 
 # 策略 -> (rule/ 里的文件名, 是否为拦截类)
 POLICIES = [
@@ -623,11 +637,11 @@ def main():
     # 全体节点生效，两者都没有时组内无节点可筛，会是空组。
     A('  # 自动测速类。filter 排除机场的信息类伪节点与自建 CF 节点。')
     grp('♻️ 自动选择', 'url-test', None, include_all='true', filter=q(AUTO_FILTER),
-        url=q(TEST_URL), interval=300, tolerance=100, lazy='true')
+        url=q(TEST_URL), interval=AUTO_TEST[0], tolerance=AUTO_TEST[1], lazy='true')
     grp('🔯 故障转移', 'fallback', None, include_all='true', filter=q(AUTO_FILTER),
-        url=q(TEST_URL), interval=300, lazy='true')
+        url=q(TEST_URL), interval=AUTO_TEST[0], lazy='true')
     grp('🔮 负载均衡', 'load-balance', None, include_all='true', filter=q(AUTO_FILTER),
-        url=q(TEST_URL), interval=300, strategy='consistent-hashing')
+        url=q(TEST_URL), interval=AUTO_TEST[0], strategy='consistent-hashing')
     A('  # 手动挑单个节点用。上面几组都是自动的，没有这一组就只能选组不能选节点。')
     grp('🔧 手动选择', 'select', None, include_all='true', filter=q(AUTO_FILTER))
 
@@ -635,7 +649,7 @@ def main():
     A('  # 地区直连线路（地区 × 无中转，判据见文件头 DIRECTS）、自建 CF。')
     for name, f in filtered:
         grp(name, 'url-test', None, include_all='true', filter=q(guard(f)),
-            url=q(TEST_URL), interval=600, tolerance=200, lazy='true')
+            url=q(TEST_URL), interval=REGION_TEST[0], tolerance=REGION_TEST[1], lazy='true')
 
     # select 组：候选一律照抄 default.conf，policy-select-name 挪到首位。
     known = ({'♻️ 自动选择', '🔯 故障转移', '🔮 负载均衡', '🔧 手动选择',

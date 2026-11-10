@@ -12,6 +12,8 @@
   * skip-proxy 漏网    —— 该层在规则之前生效，命中即绕过隧道，规则拦不住
   * 丢失 no-resolve    —— 合并时丢掉修饰符，IP 规则会为每个域名请求触发本地 DNS
   * 凭据入库            —— 仓库是公开的，订阅地址 / 代理链接 / MITM 私钥一旦提交就已泄漏
+  * 词表与参数各抄一份  —— 伪节点排除词、测速参数在三份配置里各写各的，互相漏词、数值漂移
+  * ipv6: false         —— 在 Clash for Apple 上是「隧道不接管 IPv6」，IPv6 连接整个绕过代理
 
 用法：
     python tools/check-config.py
@@ -61,6 +63,8 @@ ORDER = [
     # 内联规则必须压过后面的规则集
     ('android.apis.google.com', 'ai.list'),
     ('adservice.google.', 'google.list'),
+    # APNs 单独成组，必须压过 apple.list 的 apple.com 全域后缀
+    ('push.apple.com', 'apple.list'),
 ]
 
 # 正常服务不该被任何拦截类策略命中
@@ -113,6 +117,9 @@ MUST_ROUTE = {
     'www.speedtest.net': '🎯 全球直连',         # 测本地真实带宽
     'api.biliintl.com': '🌍 国外媒体',          # B 站国际版压过 media-cn
     'gemini.google.com': '🤖 AI 服务',          # AI 压过 google.list
+    # APNs 单独成组、默认直连：随 🍎 苹果服务 走代理时，自动测速组一换节点长连接就断
+    '1-courier.push.apple.com': '🔔 苹果推送',
+    'init-p01st.push.apple.com': '🔔 苹果推送',
 }
 
 # fake-ip-filter 里的通配条目无法直接映射到域名，拿这组常见真实主机去撞。
@@ -147,6 +154,19 @@ def fail(msg):
 
 def warn(msg):
     WARNS.append(msg)
+
+
+def _tool(name):
+    """载入 tools/ 下的另一个脚本。文件名带连字符，不能直接 import。"""
+    import importlib.util
+    cache = _tool.__dict__.setdefault('cache', {})
+    if name not in cache:
+        spec = importlib.util.spec_from_file_location(
+            name[:-3].replace('-', '_'), os.path.join(ROOT, 'tools', name))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        cache[name] = mod
+    return cache[name]
 
 
 def sections(cfg):
@@ -751,6 +771,9 @@ def check_clash():
 
     check_controller(d)
     check_listeners(d)
+    bc = _tool('build-clash.py')
+    check_clash_ipv6(d)
+    check_clash_proxy_providers(d, bc)
 
     groups = d.get('proxy-groups') or []
     names = [g.get('name') for g in groups]
@@ -789,40 +812,106 @@ def check_clash():
             if not str(prov.get('url') or '').endswith('/mrs/%s.mrs' % pname):
                 fail('clash.yaml 的 rule-provider %s 的 url 没有指向 mrs/%s.mrs'
                      % (pname, pname))
+        # classical 一律内嵌，且内容必须就是 stash/ 源文件去掉 USER-AGENT 之后的那些行。
+        # 内嵌的规则不会自己更新，手改一条就永久偏离源文件，所以逐条比对。
+        if behavior == 'classical':
+            want = bc.classical_payload(pname[:-len('-classical')]) \
+                if pname.endswith('-classical') else None
+            if prov.get('type') != 'inline':
+                fail('clash.yaml 的 rule-provider %s 是 classical 却不是 type: inline——'
+                     'classical 一律内嵌，不为它另开远程规则集' % pname)
+            elif want is not None and [str(x) for x in prov.get('payload') or []] != want:
+                fail('clash.yaml 的 rule-provider %s 内嵌的规则与 stash/%s.txt 不一致'
+                     '（应为去掉 USER-AGENT 后的 %d 条），请重新运行 tools/build-clash.py'
+                     % (pname, pname, len(want)))
+            elif not prov.get('payload'):
+                fail('clash.yaml 的 rule-provider %s 内嵌了空的 payload' % pname)
+
+    subs = d.get('sub-rules') or {}
+
+    def check_rule(r, where):
+        parts = [x.strip() for x in str(r).split(',')]
+        if parts[0] == 'SUB-RULE':
+            # 形如 SUB-RULE,(条件),子规则名：目标是子规则，不是策略
+            if parts[-1] not in subs:
+                fail('clash.yaml %s引用了不存在的子规则: %s' % (where, parts[-1]))
+            return
+        if parts[0] == 'RULE-SET' and parts[1] not in providers:
+            fail('clash.yaml %s引用了未定义的 rule-provider: %s' % (where, parts[1]))
+        if parts[0] == 'MATCH':
+            tgt = parts[1]
+        elif parts[0] in ('AND', 'OR', 'NOT'):
+            tgt = parts[-1]             # 逻辑规则的条件里有逗号，策略在最后
+        else:
+            tgt = parts[2] if len(parts) > 2 else None
+        if tgt and tgt not in nameset and tgt not in builtin:
+            fail('clash.yaml %s指向了不存在的策略: %s' % (where, tgt))
 
     for r in d.get('rules') or []:
-        parts = [x.strip() for x in str(r).split(',')]
-        if parts[0] == 'RULE-SET' and parts[1] not in providers:
-            fail('clash.yaml 规则引用了未定义的 rule-provider: %s' % parts[1])
-        tgt = parts[1] if parts[0] == 'MATCH' else (
-            parts[2] if len(parts) > 2 else None)
-        if tgt and tgt not in nameset and tgt not in builtin:
-            fail('clash.yaml 规则指向了不存在的策略: %s' % tgt)
+        check_rule(r, '规则')
+    for sname, srules in sorted(subs.items()):
+        if not srules:
+            fail('clash.yaml 的子规则 %s 是空的' % sname)
+        for r in srules or []:
+            check_rule(r, '子规则 %s ' % sname)
 
     # exclude-type 必须用 AdapterType 名。小写的 ss / vless 之类会静默失效。
     #
-    # 直接从 build-clash.py 读 ALL_TYPES，不再在这里维护第二份拷贝——
+    # 直接从 build-clash.py 取 ALL_TYPES / BUILTIN_TYPES，不在这里维护第二份拷贝——
     # 这份拷贝曾经就是漂移源：build-clash.py 补了 8 个新协议后，
     # 这里还是旧的 15 个，于是把合法的 Masque / Tailscale 判成非法。
     # 上游新增协议由 tools/sync-modules.py 的 check_type_drift 负责发现。
-    src = io.open(os.path.join(os.path.dirname(os.path.dirname(
-        os.path.abspath(__file__))), 'tools', 'build-clash.py'),
-        encoding='utf-8').read()
-    m = re.search(r'ALL_TYPES = \[(.*?)\]', src, re.S)
-    if not m:
-        fail('build-clash.py 里找不到 ALL_TYPES，exclude-type 无法校验')
-        return len(groups)
-    adapter_types = set(re.findall(r"'([A-Za-z0-9]+)'", m.group(1)))
+    adapter_types = set(bc.ALL_TYPES) | set(bc.BUILTIN_TYPES)
     for g in groups:
         et = g.get('exclude-type')
-        if not et:
-            continue
-        for t in str(et).split('|'):
+        have = set(str(et).split('|')) if et else set()
+        for t in sorted(have):
             if t not in adapter_types:
                 fail('clash.yaml 分组 %s 的 exclude-type 含 %s，'
                      '不是 AdapterType 名（应写 Shadowsocks 而非 ss），会静默失效'
                      % (g.get('name'), t))
+        # include-all 会把订阅里用 type: direct / dns / reject / rematch 声明的内置出站
+        # 一并收进来。直连伪节点延迟最低，进了 url-test 组会被选中，整组流量悄悄直连。
+        if g.get('include-all') or g.get('include-all-providers'):
+            miss = [t for t in bc.BUILTIN_TYPES if t not in have]
+            if miss:
+                fail('clash.yaml 分组 %s 用了 include-all 却没有用 exclude-type 排除内置出站 %s：'
+                     '订阅里的 type: direct 一类条目会被当成节点收进来'
+                     % (g.get('name'), '|'.join(miss)))
     return len(groups)
+
+
+def check_clash_ipv6(d):
+    """顶层 ipv6 必须是 true，dns.ipv6 必须是 false。
+
+    clash.md「TUN 与网络接入」：ipv6 为 false 时隧道不接管 IPv6。在有 IPv6 的网络上，
+    直接用 IPv6 地址发起的连接整个绕过 Clash——不匹配规则、不走代理、不拦截。
+    「关掉 IPv6」的直觉在这里恰好相反；这份配置曾经就写着 ipv6: false。
+    不让 App 用 IPv6 靠的是 dns.ipv6: false（不回 AAAA），所以两项要一起守住。
+    """
+    if d.get('ipv6') is not True:
+        fail('clash.yaml 的顶层 ipv6 不是 true：Clash for Apple 的隧道就不接管 IPv6，'
+             '直接用 IPv6 地址的连接会整个绕过规则与代理')
+    if (d.get('dns') or {}).get('ipv6') is not False:
+        fail('clash.yaml 的 dns.ipv6 不是 false：App 会拿到 AAAA，流量改走 IPv6 目标，'
+             '而多数机场节点的 IPv6 出口不完整')
+
+
+def check_clash_proxy_providers(d, bc):
+    """模板里启用的订阅必须带 proxy 与 exclude-filter。
+
+    proxy：不写时订阅更新按规则走，落到 🐟 漏网之鱼 → 🚀 节点选择，等于用这家机场
+    的节点更新这家机场的订阅，节点全挂后就再也更新不了（clash.md「代理集合」）。
+    exclude-filter：信息类伪节点在集合层就丢掉；词表只有 build-stash.py 那一份。
+    """
+    want = '(?i)(' + bc.bs.PSEUDO_WORDS + ')'
+    for name, prov in sorted((d.get('proxy-providers') or {}).items()):
+        if not prov.get('proxy'):
+            fail('clash.yaml 的 proxy-provider %s 没写 proxy：订阅更新会按规则经它自己的'
+                 '节点发出，节点全挂时无法更新' % name)
+        if prov.get('exclude-filter') != want:
+            fail('clash.yaml 的 proxy-provider %s 的 exclude-filter 与 build-stash.py 的 '
+                 'PSEUDO_WORDS 不一致，伪节点会漏进分组' % name)
 
 
 def check_controller(d):
@@ -928,12 +1017,72 @@ def check_direct_groups(cfg):
     return len(found)
 
 
+def _clash_only_rules(got, want, doc):
+    """核对 Clash 独有的三处，返回 (剥掉它们之后的规则, 相应的期望)。
+
+    Clash 与 default.conf 的差异只允许是 build-clash.py 里声明的这三处：
+      1. 第一条是 QUIC_ENTRY，把 UDP/443 交给 sub-rules 里的镜像；
+      2. GEOSITE_RULE 恰好一条，紧挨在 GEOIP,CN 之前；
+      3. 剔掉 USER-AGENT 后为空的 classical 集不引用。
+    其余任何多出或缺少的规则，仍由调用方按「与 default.conf 不一致」报出来。
+    镜像这里独立重算一遍（按 clash.yaml 里各组的第一候选），不调用生成器的同名函数。
+    """
+    bc = _tool('build-clash.py')
+    kinds = bc.clash_kinds()
+    dropped = {slug + '-classical' for slug, ks in kinds.items()
+               if 'classical' not in ks
+               and os.path.exists(os.path.join(STASH_DIR, slug + '-classical.txt'))}
+    expect = [r for r in want
+              if not (r.startswith('RULE-SET,') and r.split(',')[1] in dropped)]
+
+    main = list(got)
+    if not got or got[0] != bc.QUIC_ENTRY:
+        fail('Clash 的第一条规则应是 QUIC 子规则入口 %s，实际是 %s'
+             % (bc.QUIC_ENTRY, got[0] if got else '（空）'))
+    else:
+        got = got[1:]
+        main = list(got)
+    if bc.QUIC_ENTRY in got:
+        fail('Clash 的规则里出现了第二条 %s' % bc.QUIC_ENTRY)
+
+    if got.count(bc.GEOSITE_RULE) != 1:
+        fail('Clash 的规则里 %s 应恰好一条，实际 %d 条'
+             % (bc.GEOSITE_RULE, got.count(bc.GEOSITE_RULE)))
+    else:
+        i = got.index(bc.GEOSITE_RULE)
+        if got[i + 1:i + 2] != [bc.GEOSITE_BEFORE]:
+            fail('Clash 的 %s 必须紧挨在 %s 之前（域名层的最后兜底，不能抢在显式规则前面）'
+                 % (bc.GEOSITE_RULE, bc.GEOSITE_BEFORE))
+        got = got[:i] + got[i + 1:]
+
+    subs = doc.get('sub-rules') or {}
+    if set(subs) != {bc.QUIC_SUBRULE}:
+        fail('Clash 的 sub-rules 应当只有 %s，实际: %s' % (bc.QUIC_SUBRULE, sorted(subs)))
+    mirror = [str(r) for r in subs.get(bc.QUIC_SUBRULE) or []]
+    first = {g['name']: (g.get('proxies') or [None])[0]
+             for g in doc.get('proxy-groups') or []}
+    if len(mirror) != len(main):
+        fail('Clash 的 QUIC 子规则有 %d 条，主规则（不含入口）有 %d 条——镜像必须逐条对应'
+             % (len(mirror), len(main)))
+    else:
+        for a, b in zip(main, mirror):
+            head, pol, mods = bc.split_policy(a)
+            keep = pol in bc.KEEP_POLICIES or first.get(pol) in bc.KEEP_POLICIES
+            should = ','.join(head + [pol if keep else 'REJECT'] + mods)
+            if b != should:
+                fail('Clash 的 QUIC 子规则与主规则不对应：%s 的镜像是 %s，应为 %s'
+                     '（默认走代理的换 REJECT，默认直连 / 拦截的照旧）' % (a, b, should))
+                break
+    return got, expect
+
+
 def check_derived_parity():
     """Stash / Clash 的规则与业务组默认出口必须与 default.conf 一致。
 
     两个生成器现在从 default.conf 推导，按构造就一致；这项检查防的是有人手改
     生成物，或者往生成器里重新塞回手写规则。2026-09 之前正是手写拷贝导致
     Stash / Clash 把 .cn 与 apple.com 排在广告规则集之前，3402 个广告域名放行。
+    Clash 另有三处声明过的独有规则，见 _clash_only_rules。
     """
     try:
         import yaml
@@ -964,13 +1113,17 @@ def check_derived_parity():
         doc = yaml.safe_load(io.open(path, encoding='utf-8').read()
                              .replace('#!replace', '')) or {}
         got = [str(r) for r in doc.get('rules') or []]
-        if got != want:
-            i = next((k for k, (a, b) in enumerate(zip(got, want)) if a != b),
-                     min(len(got), len(want)))
+        expect = want
+        if label == 'Clash':
+            # 先逐项核对并剥掉 Clash 独有的三处，剩下的必须与 default.conf 逐条相同。
+            got, expect = _clash_only_rules(got, want, doc)
+        if got != expect:
+            i = next((k for k, (a, b) in enumerate(zip(got, expect)) if a != b),
+                     min(len(got), len(expect)))
             fail('%s 的规则与 default.conf [Rule] 不一致（共 %d / 应为 %d 条），'
-                 '第 %d 条起不同：%s ≠ %s' % (label, len(got), len(want), i + 1,
+                 '第 %d 条起不同：%s ≠ %s' % (label, len(got), len(expect), i + 1,
                                            got[i] if i < len(got) else '（缺）',
-                                           want[i] if i < len(want) else '（多）'))
+                                           expect[i] if i < len(expect) else '（多）'))
         groups = {g['name']: g for g in doc.get('proxy-groups') or []}
         for name, (cands, psn) in sel.items():
             g = groups.get(name)
@@ -982,6 +1135,78 @@ def check_derived_parity():
                                   ('DIRECT', 'REJECT', 'REJECT-DROP')), None)
             if first != expect:
                 fail('%s 的 %s 默认出口是 %s，default.conf 是 %s' % (label, name, first, expect))
+
+
+def check_pseudo_parity(cfg):
+    """default.conf 各组手写的伪节点排除词，必须覆盖 build-stash.py 的那一份词表。
+
+    Stash / Clash 的 filter 由生成器拼出来，Shadowrocket 的 policy-regex-filter 是手写的
+    同一批词。以前生成器里就有两份互相漏词的表（自动组没有「官網」，地区组与 Clash 的
+    协议组没有「客服 / 群组 / 网站」），而 default.conf 照着各抄了一份，谁也没发现。
+    按名筛选的组都要带基础词表 PSEUDO_WORDS；没有正向条件 (?= 的那几个
+    （♻️ / 🔯 / 🔮 / 🔧）另加 EXCLUDE_EXTRA。
+    """
+    bs = _tool('build-stash.py')
+    base, extra = bs.PSEUDO_WORDS.split('|'), bs.EXCLUDE_EXTRA.split('|')
+    n = 0
+    for sec, i, s in sections(cfg):
+        if sec != '[Proxy Group]' or 'policy-regex-filter' not in s:
+            continue
+        name = s.split('=')[0].strip()
+        rx = s.split('policy-regex-filter', 1)[1]
+        words = base + ([] if '(?=' in rx else extra)
+        miss = [w for w in words if w not in rx]
+        if miss:
+            fail('L%d 分组 %s 的 policy-regex-filter 缺少伪节点排除词 %s'
+                 '（词表在 tools/build-stash.py 的 PSEUDO_WORDS / EXCLUDE_EXTRA）'
+                 % (i, name, '|'.join(miss)))
+        n += 1
+    if not n:
+        fail('default.conf 里没有找到任何带 policy-regex-filter 的分组，伪节点排除词无从核对')
+
+
+def check_test_params(cfg):
+    """自动测速组的 interval / tolerance 三份配置必须一致。
+
+    Clash 那份曾经在生成器里各写各的：地区直连组 300 / 50，而 default.conf、Stash 与
+    README 都是 600 / 200。🤖 AI 服务 默认落在 🇺🇲 美国直连 上，容差小了出口更常跳，
+    正是「IP 稳定性」一节要避免的。数值现在只在 build-stash.py 的 AUTO_TEST /
+    REGION_TEST 定义；这里拿 default.conf 的手写值去对两份生成物里的同名组。
+    """
+    try:
+        import yaml
+    except ImportError:
+        warn('未安装 PyYAML，跳过测速参数一致性检查')
+        return
+    sr = {}
+    for sec, i, s in sections(cfg):
+        if sec != '[Proxy Group]':
+            continue
+        name, body = s.split('=', 1)
+        if body.split(',')[0].strip() not in ('url-test', 'fallback', 'load-balance'):
+            continue
+        iv = re.search(r'\binterval\s*=\s*(\d+)', body)
+        tol = re.search(r'\btolerance\s*=\s*(\d+)', body)
+        sr[name.strip()] = (int(iv.group(1)) if iv else None,
+                            int(tol.group(1)) if tol else None)
+    for fname, label in (('stash.stoverride', 'Stash'), ('clash.yaml', 'Clash')):
+        path = os.path.join(os.path.dirname(CONFIG), fname)
+        if not os.path.exists(path):
+            continue
+        doc = yaml.safe_load(io.open(path, encoding='utf-8').read()
+                             .replace('#!replace', '')) or {}
+        seen = set()
+        for g in doc.get('proxy-groups') or []:
+            name = g.get('name')
+            if name not in sr:
+                continue
+            seen.add(name)
+            got = (g.get('interval'), g.get('tolerance'))
+            if got != sr[name]:
+                fail('%s 的 %s 测速参数是 interval=%s / tolerance=%s，default.conf 是 %s / %s'
+                     % (label, name, got[0], got[1], sr[name][0], sr[name][1]))
+        for name in sorted(set(sr) - seen):
+            fail('%s 缺少 default.conf 里的自动测速组 %s' % (label, name))
 
 
 def check_workflows():
@@ -1285,6 +1510,8 @@ def main():
     nclash = check_clash()
     ndirect = check_direct_groups(cfg)
     check_derived_parity()
+    check_pseudo_parity(cfg)
+    check_test_params(cfg)
     rules = load_rules()
     check_keywords(rules)
     check_no_block(rules, cfg)

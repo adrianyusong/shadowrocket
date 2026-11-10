@@ -45,7 +45,7 @@ def fetch(url):
 # ALL_TYPES 少一个，那个协议就会漏进全部四个分组——与最初
 # 「VLESS 组里混着 Hy2」是同一种失效，且同样不报错。
 #
-# 锁定到 Clash for Apple 的 Clash Core 所基于的 mihomo 版本（v1.19.33-clash.4 →
+# 锁定到 Clash for Apple 的 Clash Core 所基于的 mihomo 版本（v1.19.33-clash.5 →
 # mihomo 1.19.33，见 https://clash.md/core），不是 Alpha。
 # Alpha 是开发主线，新协议不断进（例如 EasyTier），拿它做基准会让每周同步
 # 因为一个用户客户端还不支持的协议而反复失败。基准必须与用户设备一致。
