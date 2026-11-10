@@ -150,7 +150,7 @@ proxy-groups: #!replace
   - name: "♻️ 自动选择"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|群组|群組|直连|直連|Expire|Traffic|Reset|Website|(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
+    filter: "(?i)^(?!.*(剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset|网站|網站|客服|邀请|邀請|群组|群組|Website|官方|直连|直連|D(IR)?ECT|(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
     url: "https://www.gstatic.com/generate_204"
     interval: 300
     tolerance: 100
@@ -158,14 +158,14 @@ proxy-groups: #!replace
   - name: "🔯 故障转移"
     type: fallback
     include-all: true
-    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|群组|群組|直连|直連|Expire|Traffic|Reset|Website|(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
+    filter: "(?i)^(?!.*(剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset|网站|網站|客服|邀请|邀請|群组|群組|Website|官方|直连|直連|D(IR)?ECT|(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
     url: "https://www.gstatic.com/generate_204"
     interval: 300
     lazy: true
   - name: "🔮 负载均衡"
     type: load-balance
     include-all: true
-    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|群组|群組|直连|直連|Expire|Traffic|Reset|Website|(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
+    filter: "(?i)^(?!.*(剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset|网站|網站|客服|邀请|邀請|群组|群組|Website|官方|直连|直連|D(IR)?ECT|(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
     url: "https://www.gstatic.com/generate_204"
     interval: 300
     strategy: consistent-hashing
@@ -173,12 +173,12 @@ proxy-groups: #!replace
   - name: "🔧 手动选择"
     type: select
     include-all: true
-    filter: "(?i)^(?!.*(官网|官方|网站|網站|客服|邀请|邀請|重置|剩余|剩餘|到期|过期|過期|流量|套餐|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|群组|群組|直连|直連|Expire|Traffic|Reset|Website|(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
+    filter: "(?i)^(?!.*(剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset|网站|網站|客服|邀请|邀請|群组|群組|Website|官方|直连|直連|D(IR)?ECT|(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
   # 地区直连线路（地区 × 无中转，判据见文件头 DIRECTS）、自建 CF。
   - name: "🇺🇲 美国直连"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(美国|美國|美西|美东|美東|洛杉矶|圣何塞|西雅图|达拉斯|凤凰城|United ?States|(?<![A-Za-z])(US|USA|LAX|SJC)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset|网站|網站|客服|邀请|邀請|群组|群組|Website))(?=.*(美国|美國|美西|美东|美東|洛杉矶|圣何塞|西雅图|达拉斯|凤凰城|United ?States|(?<![A-Za-z])(US|USA|LAX|SJC)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
     url: "https://www.gstatic.com/generate_204"
     interval: 600
     tolerance: 200
@@ -186,7 +186,7 @@ proxy-groups: #!replace
   - name: "🇯🇵 日本直连"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(日本|東京|东京|大阪|名古屋|埼玉|Japan|(?<![A-Za-z])(JP|JPN|NRT|KIX)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset|网站|網站|客服|邀请|邀請|群组|群組|Website))(?=.*(日本|東京|东京|大阪|名古屋|埼玉|Japan|(?<![A-Za-z])(JP|JPN|NRT|KIX)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
     url: "https://www.gstatic.com/generate_204"
     interval: 600
     tolerance: 200
@@ -194,7 +194,7 @@ proxy-groups: #!replace
   - name: "🇸🇬 狮城直连"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(新加坡|狮城|獅城|Singapore|(?<![A-Za-z])(SG|SIN)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset|网站|網站|客服|邀请|邀請|群组|群組|Website))(?=.*(新加坡|狮城|獅城|Singapore|(?<![A-Za-z])(SG|SIN)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
     url: "https://www.gstatic.com/generate_204"
     interval: 600
     tolerance: 200
@@ -202,7 +202,7 @@ proxy-groups: #!replace
   - name: "🇭🇰 香港直连"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(香港|港岛|深港|沪港|Hong ?Kong|(?<![A-Za-z])(HK|HKG)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset|网站|網站|客服|邀请|邀請|群组|群組|Website))(?=.*(香港|港岛|深港|沪港|Hong ?Kong|(?<![A-Za-z])(HK|HKG)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
     url: "https://www.gstatic.com/generate_204"
     interval: 600
     tolerance: 200
@@ -210,7 +210,7 @@ proxy-groups: #!replace
   - name: "🇹🇼 台湾直连"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(台湾|台灣|台北|臺灣|Taiwan|(?<![A-Za-z])(TW|TPE)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset|网站|網站|客服|邀请|邀請|群组|群組|Website))(?=.*(台湾|台灣|台北|臺灣|Taiwan|(?<![A-Za-z])(TW|TPE)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
     url: "https://www.gstatic.com/generate_204"
     interval: 600
     tolerance: 200
@@ -218,7 +218,7 @@ proxy-groups: #!replace
   - name: "🇬🇧 英国直连"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(英国|英國|伦敦|倫敦|London|(?<![A-Za-z])(UK|GB|LHR)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset|网站|網站|客服|邀请|邀請|群组|群組|Website))(?=.*(英国|英國|伦敦|倫敦|London|(?<![A-Za-z])(UK|GB|LHR)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
     url: "https://www.gstatic.com/generate_204"
     interval: 600
     tolerance: 200
@@ -226,7 +226,7 @@ proxy-groups: #!replace
   - name: "🇰🇷 韩国直连"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*(韩国|韓國|首尔|首爾|Korea|(?<![A-Za-z])(KR|ICN)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset|网站|網站|客服|邀请|邀請|群组|群組|Website))(?=.*(韩国|韓國|首尔|首爾|Korea|(?<![A-Za-z])(KR|ICN)(?![A-Za-z])))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
     url: "https://www.gstatic.com/generate_204"
     interval: 600
     tolerance: 200
@@ -234,7 +234,7 @@ proxy-groups: #!replace
   - name: "☁️ CF优选"
     type: url-test
     include-all: true
-    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset))(?=.*((?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset|网站|網站|客服|邀请|邀請|群组|群組|Website))(?=.*((?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
     url: "https://www.gstatic.com/generate_204"
     interval: 600
     tolerance: 200
@@ -412,6 +412,11 @@ proxy-groups: #!replace
       - "🇺🇲 美国直连"
       - "🇯🇵 日本直连"
       - "DIRECT"
+  - name: "🔔 苹果推送"
+    type: select
+    proxies:
+      - "DIRECT"
+      - "🚀 节点选择"
   - name: "🐱 GITHUB"
     type: select
     proxies:
@@ -1271,6 +1276,11 @@ rules: #!replace
   # 酒店与机场热点的登录页弹不出来。写死 DIRECT 而非 🎯 全球直连：门户检测必须
   # 打到本地网络，不该能被切成代理。必须排在 apple.list 之前。
   - DOMAIN,captive.apple.com,DIRECT
+  # APNs 推送：单独成组（🔔 苹果推送，默认直连，理由见 [Proxy Group]）。
+  # 设备连的是 <n>-courier.push.apple.com 与 init*.push.apple.com，都在这个后缀下。
+  # 必须排在 apple.list 之前——它有 apple.com 全域后缀，会把推送收进 🍎 苹果服务。
+  # 直接用 IP 发起的推送连接没有域名可匹配，仍落到下面的 IP-CIDR,17.0.0.0/8。
+  - DOMAIN-SUFFIX,push.apple.com,🔔 苹果推送
   - DOMAIN-SUFFIX,msftconnecttest.com,🎯 全球直连
   - DOMAIN-SUFFIX,msftncsi.com,🎯 全球直连
   - DOMAIN-SUFFIX,ipv6.microsoft.com,🎯 全球直连

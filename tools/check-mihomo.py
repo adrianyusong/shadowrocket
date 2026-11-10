@@ -15,12 +15,14 @@ check-config.py 用 Python 的 re / PyYAML 去「推测」mihomo 会怎么理解
   * 内核版本钉死（与 sync-modules.py 的 MIHOMO_REF 同一处），下载后核对 SHA-256，
     不符就拒绝运行。
   * 订阅用 tools/fixtures/mihomo-nodes.yaml 的假节点代替。
-  * 规则集取本地文件（测的是这次提交的内容，不是 main 上的）：classical 取 stash/*.txt，
-    domain / ipcidr 取 mrs/*.mrs。地理库预先备好，测试不依赖 CDN。
-  * 完整启动 config/clash.yaml，经 REST API 核对：每个规则集「载入条数 + 内核不认的
-    USER-AGENT 条数」必须等于 stash/ 源文件的行数——MRS 也按它的 .txt 源核对，
-    转换丢了条目或 mrs/ 过期都会在这里露出来；策略组与规则条数与配置一致；日志里除已知的
-    USER-AGENT 告警外，不许出现任何 warning / error。
+  * 规则集取本地文件（测的是这次提交的内容，不是 main 上的）：domain / ipcidr 取
+    mrs/*.mrs；classical 在 config/clash.yaml 里是内嵌的（type: inline，已剔掉内核不认的
+    USER-AGENT），没有文件，按 payload 条数核对。地理库预先备好，测试不依赖 CDN。
+  * 完整启动 config/clash.yaml，经 REST API 核对：每个规则集的载入条数必须等于来源的
+    条数——MRS 按它的 stash/*.txt 源核对，转换丢了条目或 mrs/ 过期都会在这里露出来；
+    策略组与规则条数与配置一致；日志里不许出现任何 warning / error。
+    用 --config 测别的配置、它又引用 text 格式的 classical 文件时，「载入条数 + 内核
+    不认的 USER-AGENT 条数」须等于文件行数，USER-AGENT 的告警在白名单内。
   * 配置里不带控制器（公开模板不该开任何监听），测试时临时注入一个只绑 127.0.0.1 的。
   * clash-verge/config.yaml 的规则集在外部站点，这里只做 -t（解析）这一层。
 
@@ -99,8 +101,9 @@ STASH_DIR = os.path.join(ROOT, 'stash')
 MRS_DIR = os.path.join(ROOT, 'mrs')
 FIXTURE = os.path.join(ROOT, 'tools', 'fixtures', 'mihomo-nodes.yaml')
 
-# 内核认不得 USER-AGENT 规则（Stash 认，所以它们留在共用的 classical 规则集里）。
-# 这是已知取舍：下面逐条核对条数，其余任何丢失都算失败。
+# 内核认不得 USER-AGENT 规则（Stash 认，所以它们留在共用的 stash/*-classical.txt 里）。
+# config/clash.yaml 内嵌 classical 时已经剔掉它们，正常不会再出现这条告警；白名单留给
+# --config 指向的、仍直接引用 text 格式 classical 文件的配置。
 ALLOWED_LOG = [
     re.compile(r'^parse classical rule \[USER-AGENT,.*\] error: '
                r'unsupported rule type: USER-AGENT$'),
@@ -430,6 +433,12 @@ def run_target(exe, cache, path, live, stash_dir, timeout, mrs_dir=MRS_DIR):
         expected = {}
         if live:
             for name, prov in (doc.get('rule-providers') or {}).items():
+                if prov.get('type') == 'inline':
+                    # 内嵌规则集没有文件可放，内核按 payload 载入：条数必须一条不少。
+                    # payload 是否就是 stash/ 源文件去掉 USER-AGENT 的那些行，
+                    # 由 check-config.py 的 check_clash 逐条比对。
+                    expected[name] = (len(prov.get('payload') or []), 0)
+                    continue
                 rel = os.path.normpath(prov.get('path') or '')
                 base = os.path.basename(rel)
                 # MRS 是二进制，数不了行：按它的 stash/ 源文件核对条数。
