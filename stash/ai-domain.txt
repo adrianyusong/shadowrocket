@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/ai.list 生成，请勿手改。
-# behavior: domain   条数: 104
+# behavior: domain   条数: 112
 +.chat.com
 +.chatgpt.com
 +.livekit.cloud
@@ -55,6 +55,14 @@ gemini.gstatic.com
 jules.google.com
 +.grok.com
 +.x.ai
++.meta.ai
++.meta.com
++.metaaivm.com
++.muse.ai
++.facebook.com
++.fbcdn.net
+graph.facebook.com
+imagine.meta.com
 +.openrouter.ai
 +.perplexity.ai
 +.perplexity.com

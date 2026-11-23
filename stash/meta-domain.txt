@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/meta.list 生成，请勿手改。
-# behavior: domain   条数: 542
+# behavior: domain   条数: 539
 +.aboutfacebook.com
 +.accessfacebookfromschool.com
 +.accountkit.com
@@ -111,7 +111,6 @@
 +.facebook.br
 +.facebook.ca
 +.facebook.cc
-+.facebook.com
 +.facebook.design
 +.facebook.hu
 +.facebook.in
@@ -299,7 +298,6 @@
 +.fbboostyourbusiness.com
 +.fbcdn-a.akamaihd.net
 +.fbcdn.com
-+.fbcdn.net
 +.fbf8.com
 +.fbfeedback.com
 +.fbhome.com
@@ -464,7 +462,6 @@
 +.mcrouter.org
 +.messenger.com
 +.messengerdevelopers.com
-+.meta.com
 +.midentsolutions.com
 +.mobilefacebook.com
 +.moneywithfacebook.com
