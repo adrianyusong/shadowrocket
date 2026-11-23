@@ -1,5 +1,5 @@
 # 由 tools/build-stash.py 从 rule/proxy.list 生成，请勿手改。
-# behavior: domain   条数: 31223
+# behavior: domain   条数: 31220
 +.a2z.com
 +.aboutamazon.cn
 +.aboutamazon.co.uk
@@ -28084,8 +28084,6 @@ login.microsoftonline.com
 +.merlinblog.xyz
 +.meshrep.com
 +.mesotw.com
-+.meta.ai
-+.metaaivm.com
 +.metacafe.com
 +.metacubex.one
 +.metafilter.com
@@ -28266,7 +28264,6 @@ login.microsoftonline.com
 +.multiupload.com
 +.mummysgold.com
 +.murmur.tw
-+.muse.ai
 +.musicade.net
 +.musixmatch.com
 +.muslimvideo.com

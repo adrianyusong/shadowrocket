@@ -1152,6 +1152,7 @@ rule-providers:
       - "DOMAIN-KEYWORD,claude"
       - "DOMAIN-KEYWORD,notebooklm.google"
       - "DOMAIN-KEYWORD,labs.google"
+      - "DOMAIN-KEYWORD,museai"
       - "DOMAIN-KEYWORD,openai"
       - "IP-ASN,20473,no-resolve"
       - "DOMAIN-KEYWORD,colab"

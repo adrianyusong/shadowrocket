@@ -2,7 +2,7 @@
 # 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
 # 需要增补规则请写进 config/default.conf 的内联规则段。
 # 上游: blackmatrix7/ios_rule_script
-# 规则数: 31314
+# 规则数: 31311
 
 DOMAIN-SUFFIX,a2z.com
 DOMAIN-SUFFIX,aboutamazon.cn
@@ -28103,8 +28103,6 @@ DOMAIN-SUFFIX,merit-times.com.tw
 DOMAIN-SUFFIX,merlinblog.xyz
 DOMAIN-SUFFIX,meshrep.com
 DOMAIN-SUFFIX,mesotw.com
-DOMAIN-SUFFIX,meta.ai
-DOMAIN-SUFFIX,metaaivm.com
 DOMAIN-SUFFIX,metacafe.com
 DOMAIN-SUFFIX,metacubex.one
 DOMAIN-SUFFIX,metafilter.com
@@ -28285,7 +28283,6 @@ DOMAIN-SUFFIX,multiproxy.org
 DOMAIN-SUFFIX,multiupload.com
 DOMAIN-SUFFIX,mummysgold.com
 DOMAIN-SUFFIX,murmur.tw
-DOMAIN-SUFFIX,muse.ai
 DOMAIN-SUFFIX,musicade.net
 DOMAIN-SUFFIX,musixmatch.com
 DOMAIN-SUFFIX,muslimvideo.com

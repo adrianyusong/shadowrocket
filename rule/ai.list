@@ -2,7 +2,7 @@
 # 由 tools/sync-rules.py 自动生成，请勿手改——改动会在下次同步时丢失。
 # 需要增补规则请写进 config/default.conf 的内联规则段。
 # 上游: blackmatrix7/ios_rule_script
-# 规则数: 122
+# 规则数: 131
 
 DOMAIN-SUFFIX,chat.com
 DOMAIN-SUFFIX,chatgpt.com
@@ -68,6 +68,15 @@ DOMAIN-KEYWORD,notebooklm.google
 DOMAIN-KEYWORD,labs.google
 DOMAIN-SUFFIX,grok.com
 DOMAIN-SUFFIX,x.ai
+DOMAIN-SUFFIX,meta.ai
+DOMAIN-SUFFIX,meta.com
+DOMAIN-SUFFIX,metaaivm.com
+DOMAIN-SUFFIX,muse.ai
+DOMAIN-SUFFIX,facebook.com
+DOMAIN-SUFFIX,fbcdn.net
+DOMAIN-KEYWORD,museai
+DOMAIN,graph.facebook.com
+DOMAIN,imagine.meta.com
 DOMAIN-SUFFIX,openrouter.ai
 DOMAIN-SUFFIX,perplexity.ai
 DOMAIN-SUFFIX,perplexity.com
