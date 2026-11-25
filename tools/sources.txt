@@ -82,10 +82,10 @@ https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shado
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/GlobalMedia/GlobalMedia.list 🌍 国外媒体
 
 # ===== AI：[Rule] 里须早于 Twitter（Twitter 集含 grok.com）与 Global =====
+# Gemini 集不在这里，归 📢 谷歌服务（见下方 Google 一节）。
 https://raw.githubusercontent.com/iab0x00/ProxyRules/main/Rule/AI.txt 🤖 AI 服务
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/OpenAI/OpenAI.list 🤖 AI 服务
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Claude/Claude.list 🤖 AI 服务
-https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Gemini/Gemini.list 🤖 AI 服务
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Copilot/Copilot.list 🤖 AI 服务
 
 # ===== 社交 =====
@@ -116,10 +116,13 @@ https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shado
 # firebaseinstallations.googleapis.com、device-provisioning.googleapis.com、
 # android.apis.google.com、mtalk4.google.com 和 26 条 FCM IP 段，它们仍经
 # direct.list 直连。改在源头映射后，内联那 11 条就不需要了。
-# android.apis.google.com 例外：ai.list 的 apis.google.com 后缀排在 google.list
-# 之前会先接住它，default.conf 在 ai.list 之前单独内联了一条。
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/GoogleFCM/GoogleFCM.list 📢 谷歌服务
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Google/Google.list 📢 谷歌服务
+# Gemini 归 📢 谷歌服务，不归 🤖 AI 服务。Gemini 要先登录 Google 账号，登录本就走
+# 📢 谷歌服务；归 AI 组时两边出口不一致，而且 AI 组默认的 🇺🇲 美国直连 被 Google
+# 判成中国 IP（送中），Gemini 直接拒绝服务。iab0x00 AI.txt 里的 Google 条目同理，
+# 已在 exclude.txt 从 ai 策略剔除。
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Gemini/Gemini.list 📢 谷歌服务
 https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/TikTok/TikTok.list 🎶 TIKTOK
 
 # ===== 游戏：[Rule] 里 SteamCN（direct-global）须早于 Steam（game） =====

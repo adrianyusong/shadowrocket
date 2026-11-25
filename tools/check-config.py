@@ -61,7 +61,6 @@ ORDER = [
     ('biliintl.com', 'media-cn.list'),
     ('media-global.list', 'media-cn.list'),
     # 内联规则必须压过后面的规则集
-    ('android.apis.google.com', 'ai.list'),
     ('adservice.google.', 'google.list'),
     # APNs 单独成组，必须压过 apple.list 的 apple.com 全域后缀
     ('push.apple.com', 'apple.list'),
@@ -92,8 +91,9 @@ MUST_ROUTE = {
     'static.blzstatic.cn': '🇨🇳 国内服务',
     'www.nintendoswitch.com.cn': '🇨🇳 国内服务',
     'lol.leagueoflegends.cn': '🇨🇳 国内服务',
-    # FCM 的 Android 端点，ai.list 的 apis.google.com 后缀会抢走它
+    # FCM 的端点。以前被 ai.list 的 apis.google.com / googleapis.com 宽后缀抢走
     'android.apis.google.com': '📢 谷歌服务',
+    'firebaseinstallations.googleapis.com': '📢 谷歌服务',
     'mtalk.google.com': '📢 谷歌服务',
     # 去重顺序相关
     'www.bing.com': '🤖 AI 服务',
@@ -116,7 +116,16 @@ MUST_ROUTE = {
     'blzddist1-a.akamaihd.net': '🎯 全球直连',
     'www.speedtest.net': '🎯 全球直连',         # 测本地真实带宽
     'api.biliintl.com': '🌍 国外媒体',          # B 站国际版压过 media-cn
-    'gemini.google.com': '🤖 AI 服务',          # AI 压过 google.list
+    # Google 系 AI 与 Google 登录同走 📢 谷歌服务（AI 组默认出口送中，Gemini 拒绝服务）。
+    # ai.list 曾收 DOMAIN-SUFFIX,googleapis.com，把 YouTube App 的 API 与登录的
+    # oauth2.googleapis.com 一起拖进 🤖 AI 服务；现已在 exclude.txt 剔除
+    'gemini.google.com': '📢 谷歌服务',
+    'aistudio.google.com': '📢 谷歌服务',
+    'generativelanguage.googleapis.com': '📢 谷歌服务',
+    'notebooklm.google.com': '📢 谷歌服务',
+    'antigravity-unleash.goog': '📢 谷歌服务',   # 靠 default.conf 的 .goog 内联
+    'oauth2.googleapis.com': '📢 谷歌服务',
+    'youtubei.googleapis.com': '📹 YOUTUBE',
     # APNs 单独成组、默认直连：随 🍎 苹果服务 走代理时，自动测速组一换节点长连接就断
     '1-courier.push.apple.com': '🔔 苹果推送',
     'init-p01st.push.apple.com': '🔔 苹果推送',
@@ -973,6 +982,8 @@ def check_listeners(d):
 # 直连组必须带的中转排除子句，以及绝不能出现的正向写法。
 RELAY_EXCLUDE_CLAUSE = '(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))'
 RELAY_AS_POSITIVE = re.compile(r'\(\?=\.\*[^)]*CTCU')
+# 名字含这些词的组只收无中转节点：地区直连组，以及按实测白名单建的「未送中」组。
+DIRECTISH = ('直连', '未送中')
 
 
 def check_direct_groups(cfg):
@@ -983,9 +994,10 @@ def check_direct_groups(cfg):
     节点名看不出对错，真正的核对要靠 tools/check-direct.py 读订阅文件的
     network 字段；那份文件含凭据不能进仓库，所以 CI 里只能守住结构。
     """
+    # 「未送中」分组同样只收无中转节点，一并核对（DIRECTISH）。
     found = []
-    for m in re.finditer(r'^(\S+ [^=\n]*直连) = url-test, policy-regex-filter = (.*?), url =',
-                         cfg, re.M):
+    for m in re.finditer(r'^(\S+ [^=\n]*(?:%s)) = url-test, policy-regex-filter = (.*?), url ='
+                         % '|'.join(DIRECTISH), cfg, re.M):
         found.append(('Shadowrocket', m.group(1).strip(), m.group(2)))
     try:
         import yaml
@@ -999,7 +1011,7 @@ def check_direct_groups(cfg):
             doc = yaml.safe_load(io.open(path, encoding='utf-8').read()
                                  .replace('#!replace', '')) or {}
             for g in doc.get('proxy-groups') or []:
-                if '直连' in g.get('name', '') and g.get('filter'):
+                if any(k in g.get('name', '') for k in DIRECTISH) and g.get('filter'):
                     found.append((label, g['name'], g['filter']))
     for label, name, rx in found:
         if RELAY_EXCLUDE_CLAUSE not in rx:
@@ -1135,6 +1147,55 @@ def check_derived_parity():
                                   ('DIRECT', 'REJECT', 'REJECT-DROP')), None)
             if first != expect:
                 fail('%s 的 %s 默认出口是 %s，default.conf 是 %s' % (label, name, first, expect))
+
+
+def check_unsent_groups(cfg):
+    """「未送中」分组三份配置逐字一致，且 Stash / Clash 的 🚀 节点选择 排第一个。
+
+    这几组是按实测结果把节点编号写死的白名单，复测后要改两处：build-stash.py 的
+    UNSENT_REGIONS（Stash / Clash 由它生成）与 default.conf 手写的正则。只改一处，
+    三份配置的成员就悄悄不同了，所以这里要求逐字相同，不像直连组那样只核对结构。
+    Stash / Clash 的策略组页按 proxy-groups 的顺序列出；🚀 以前排在 15 个节点组之后。
+    """
+    bs = _tool('build-stash.py')
+    want = {n: bs.guard(f) for n, f in bs.UNSENTS}
+    got = {}
+    for sec, i, s in sections(cfg):
+        if sec == '[Proxy Group]' and s.split('=')[0].strip() in want:
+            m = re.search(r'policy-regex-filter = (.*?), url =', s)
+            got[s.split('=')[0].strip()] = m.group(1) if m else None
+    for name, rx in want.items():
+        if name not in got:
+            fail('default.conf 缺少未送中分组 %s（tools/build-stash.py 的 UNSENT_REGIONS 有它）'
+                 % name)
+        elif got[name] != rx:
+            fail('default.conf 的 %s 与 tools/build-stash.py 的 UNSENT_REGIONS 不一致：%s ≠ %s'
+                 % (name, got[name], rx))
+    for name in set(got) - set(want):
+        fail('default.conf 的 %s 不在 tools/build-stash.py 的 UNSENT_REGIONS 里' % name)
+    try:
+        import yaml
+    except ImportError:
+        warn('未安装 PyYAML，跳过未送中分组与分组顺序检查')
+        return
+    for fname, label in (('stash.stoverride', 'Stash'), ('clash.yaml', 'Clash')):
+        path = os.path.join(os.path.dirname(CONFIG), fname)
+        if not os.path.exists(path):
+            continue
+        doc = yaml.safe_load(io.open(path, encoding='utf-8').read()
+                             .replace('#!replace', '')) or {}
+        groups = doc.get('proxy-groups') or []
+        head = groups[0].get('name') if groups else None
+        if head != bs.FIRST_GROUP:
+            fail('%s 的第一个策略组应是 %s（策略组页按顺序列出），实际是 %s'
+                 % (label, bs.FIRST_GROUP, head))
+        byname = {g.get('name'): g for g in groups}
+        for name, rx in want.items():
+            g = byname.get(name)
+            if g is None:
+                fail('%s 缺少未送中分组 %s' % (label, name))
+            elif g.get('filter') != rx:
+                fail('%s 的 %s 的 filter 与 UNSENT_REGIONS 不一致' % (label, name))
 
 
 def check_pseudo_parity(cfg):
@@ -1510,6 +1571,7 @@ def main():
     nclash = check_clash()
     ndirect = check_direct_groups(cfg)
     check_derived_parity()
+    check_unsent_groups(cfg)
     check_pseudo_parity(cfg)
     check_test_params(cfg)
     rules = load_rules()
@@ -1522,7 +1584,7 @@ def main():
     if nmod:
         print('自托管模块:   %d 个' % nmod)
     if ndirect:
-        print('直连分组:     %d 个（三份配置合计）' % ndirect)
+        print('直连/未送中:  %d 个分组（三份配置合计）' % ndirect)
     if nclash:
         print('Clash:        分组 %d' % nclash)
     if sgroups:

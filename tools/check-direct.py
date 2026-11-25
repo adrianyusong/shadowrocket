@@ -20,9 +20,9 @@
     python tools/check-direct.py <Clash 订阅文件.yaml> [更多订阅文件.yaml …]
 传多份时按合并后的节点核对（配置同时装两家机场订阅时就该这样查）。
 退出码 1 的情形：
-  - 任一直连组混进中转
+  - 任一直连组或未送中组混进中转
   - 任一按名筛选的组收进信息类伪节点
-  - 直连组，或被某个 select 组当默认首选（policy-select-name / 第一候选）的组，
+  - 直连 / 未送中组，或被某个 select 组当默认首选（policy-select-name / 第一候选）的组，
     对当前订阅筛出来是空的——空的 url-test 组在 Shadowrocket 里只剩 DIRECT，
     mihomo 里只剩 COMPATIBLE（同样是直连），默认流量会悄悄直连出去
 其余被 select 组引用的空组只告警。☁️ CF优选 例外（见 EMPTY_OK）。
@@ -56,6 +56,10 @@ INFO = re.compile(_bs.PSEUDO_WORDS, re.I)
 
 # ☁️ CF优选 的节点来自另外添加的 CF 订阅，只看机场订阅时必然为空，不报。
 EMPTY_OK = {'☁️ CF优选'}
+
+# 名字含这些词的组只收无中转节点，混进中转或筛出空组都判 FAIL：地区直连组，
+# 以及按实测白名单建的「未送中」组（与 check-config.py 的 DIRECTISH 同一口径）。
+DIRECTISH = ('直连', '未送中')
 
 # 订阅 type: 值 -> mihomo AdapterType.String()（exclude-type 比较的是后者）。
 # 表里没有的按忽略大小写直接比较。
@@ -147,9 +151,10 @@ def check(label, groups, nodes):
             continue
         pseudo = [x[0] for x in sel if x[2]]
         real = [(x[0], x[1]) for x in sel if not x[2]]
-        relay_in = [n for n, r in real if r] if '直连' in name else []
+        directish = any(k in name for k in DIRECTISH)
+        relay_in = [n for n, r in real if r] if directish else []
         empty = not real and name not in EMPTY_OK
-        critical = '直连' in name or name in defaults
+        critical = directish or name in defaults
         if pseudo or relay_in or (empty and critical):
             status = 'FAIL'
             fails += 1
@@ -157,8 +162,8 @@ def check(label, groups, nodes):
             status = 'WARN'
         else:
             status = 'ok  '
-        if status == 'ok  ' and '直连' not in name:
-            continue                      # 只把直连组与有问题的组打出来，避免刷屏
+        if status == 'ok  ' and not directish:
+            continue                      # 只把直连 / 未送中组与有问题的组打出来，避免刷屏
         extra = ''
         if '直连' in name:
             region = filtered.get(name.replace('直连', ''))

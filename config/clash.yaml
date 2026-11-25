@@ -242,6 +242,29 @@ proxy-providers:
   #   interval: 3600
 
 proxy-groups:
+  # 🚀 节点选择 排第一个：Clash 的策略组页按这里的顺序列出。候选照抄 default.conf。
+  - name: "🚀 节点选择"
+    type: select
+    proxies:
+      - "✅ 狮城未送中"
+      - "✅ 日本未送中"
+      - "✅ 香港未送中"
+      - "♻️ 自动选择"
+      - "🔯 故障转移"
+      - "🔮 负载均衡"
+      - "🔧 手动选择"
+      - "🇺🇲 美国直连"
+      - "🇯🇵 日本直连"
+      - "🇸🇬 狮城直连"
+      - "🇭🇰 香港直连"
+      - "🇹🇼 台湾直连"
+      - "🇬🇧 英国直连"
+      - "🇰🇷 韩国直连"
+      - "☁️ CF优选"
+      - "🔐 VLESS 节点"
+      - "⚡ HY2 节点"
+      - "🔒 ANYTLS 节点"
+      - "DIRECT"
   # 自动测速类与手动选择。filter 排除信息类伪节点与自建 CF 节点。
   # exclude-type 排掉订阅里用 type: direct / dns / reject / rematch 声明的内置出站——
   # 它们不是节点；直连伪节点延迟最低，混进 url-test 组会被选中，整组流量悄悄直连。
@@ -274,6 +297,31 @@ proxy-groups:
     include-all: true
     filter: "(?i)^(?!.*(剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset|网站|網站|客服|邀请|邀請|群组|群組|Website|官方|直连|直連|D(IR)?ECT|(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
     exclude-type: "Direct|Reject|RejectDrop|Compatible|Pass|PassRule|Rematch|Dns"
+  # 未送中：只收实测没被 Google 判成中国的节点，编号写死（build-stash.py 的 UNSENT_REGIONS）。
+  - name: "✅ 狮城未送中"
+    type: url-test
+    include-all: true
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset|网站|網站|客服|邀请|邀請|群组|群組|Website))(?=.*((新加坡专线0[1-4])(?!\\d)))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
+    exclude-type: "Direct|Reject|RejectDrop|Compatible|Pass|PassRule|Rematch|Dns"
+    url: https://www.gstatic.com/generate_204
+    interval: 600
+    tolerance: 200
+  - name: "✅ 日本未送中"
+    type: url-test
+    include-all: true
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset|网站|網站|客服|邀请|邀請|群组|群組|Website))(?=.*((日本专线0[1-4]|日本高速0[1-5])(?!\\d)))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
+    exclude-type: "Direct|Reject|RejectDrop|Compatible|Pass|PassRule|Rematch|Dns"
+    url: https://www.gstatic.com/generate_204
+    interval: 600
+    tolerance: 200
+  - name: "✅ 香港未送中"
+    type: url-test
+    include-all: true
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset|网站|網站|客服|邀请|邀請|群组|群組|Website))(?=.*((香港专线0[1-4]|香港高速0[1-5])(?!\\d)))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
+    exclude-type: "Direct|Reject|RejectDrop|Compatible|Pass|PassRule|Rematch|Dns"
+    url: https://www.gstatic.com/generate_204
+    interval: 600
+    tolerance: 200
   # 地区直连线路（地区 × 无中转）、自建 CF。与 Stash 同一份定义
   # （build-stash.py 的 DIRECTS / CF_GROUP），都过 guard() 排除伪节点。
   # 英文缩写用逆序环视包裹，否则裸 US 在忽略大小写下会吃掉 Russia / Australia。
@@ -371,25 +419,6 @@ proxy-groups:
     tolerance: 200
   # 以下 select 组的候选由 tools/build-clash.py 从 config/default.conf 照抄，
   # Shadowrocket 的 policy-select-name 在这里体现为「排第一」。
-  - name: "🚀 节点选择"
-    type: select
-    proxies:
-      - "🇺🇲 美国直连"
-      - "♻️ 自动选择"
-      - "🔯 故障转移"
-      - "🔮 负载均衡"
-      - "🔧 手动选择"
-      - "🇯🇵 日本直连"
-      - "🇸🇬 狮城直连"
-      - "🇭🇰 香港直连"
-      - "🇹🇼 台湾直连"
-      - "🇬🇧 英国直连"
-      - "🇰🇷 韩国直连"
-      - "☁️ CF优选"
-      - "🔐 VLESS 节点"
-      - "⚡ HY2 节点"
-      - "🔒 ANYTLS 节点"
-      - "DIRECT"
   - name: "🤖 AI 服务"
     type: select
     proxies:
@@ -405,8 +434,11 @@ proxy-groups:
   - name: "📹 YOUTUBE"
     type: select
     proxies:
-      - "🇺🇲 美国直连"
+      - "✅ 日本未送中"
+      - "✅ 香港未送中"
+      - "✅ 狮城未送中"
       - "🚀 节点选择"
+      - "🇺🇲 美国直连"
       - "♻️ 自动选择"
       - "🇭🇰 香港直连"
       - "🇹🇼 台湾直连"
@@ -571,6 +603,9 @@ proxy-groups:
   - name: "📢 谷歌服务"
     type: select
     proxies:
+      - "✅ 日本未送中"
+      - "✅ 香港未送中"
+      - "✅ 狮城未送中"
       - "🚀 节点选择"
       - "♻️ 自动选择"
       - "DIRECT"
@@ -1150,14 +1185,9 @@ rule-providers:
       - "DOMAIN-WILDCARD,*siri*.apple.com"
       - "DOMAIN-KEYWORD,anthropic"
       - "DOMAIN-KEYWORD,claude"
-      - "DOMAIN-KEYWORD,notebooklm.google"
-      - "DOMAIN-KEYWORD,labs.google"
       - "DOMAIN-KEYWORD,museai"
       - "DOMAIN-KEYWORD,openai"
       - "IP-ASN,20473,no-resolve"
-      - "DOMAIN-KEYWORD,colab"
-      - "DOMAIN-KEYWORD,developerprofiles"
-      - "DOMAIN-KEYWORD,generativelanguage"
       - "DOMAIN-KEYWORD,openaicom-api"
       - "IP-ASN,14061,no-resolve"
   telegram-domain:
@@ -1331,6 +1361,9 @@ rule-providers:
       - "DOMAIN-KEYWORD,gmail"
       - "DOMAIN-KEYWORD,google"
       - "DOMAIN-KEYWORD,recaptcha"
+      - "DOMAIN-KEYWORD,colab"
+      - "DOMAIN-KEYWORD,developerprofiles"
+      - "DOMAIN-KEYWORD,generativelanguage"
   tiktok-domain:
     type: http
     behavior: domain
@@ -1481,9 +1514,9 @@ rules:
   #
   # FCM 推送端点原先在这里内联了 11 条 mtalk 主机，现已改在 tools/sources.txt
   # 把 GoogleFCM 集映射到 📢 谷歌服务，之前漏掉的 firebaseinstallations 等 3 个
-  # 主机与 26 条 IP 段都由 google.list 接住。例外是 android.apis.google.com：
-  # ai.list 的 DOMAIN-SUFFIX,apis.google.com 排在 google.list 之前会先接住它，
-  # 所以在 ai.list 之前单独内联了一条。
+  # 主机与 26 条 IP 段都由 google.list 接住。其中 firebaseinstallations 等 googleapis.com
+  # 主机与 android.apis.google.com 以前会先被 ai.list 的宽后缀抢走，Google 系 AI 从 ai.list
+  # 剔除后（见 tools/exclude.txt）才真正落到 google.list，原先内联的 android 那条已删除。
   #
   # statsigapi.net 在 reject-ads 集里是 REJECT（返回 404），客户端拿到明确
   # 答复会毫秒级重试。改 REJECT-DROP 让它等 TCP 超时，与 rmonitor.qq.com 同理。
@@ -1568,9 +1601,6 @@ rules:
   - DOMAIN-SUFFIX,claudemcpclient.com,🤖 AI 服务
   - DOMAIN-SUFFIX,claudemcpcontent.com,🤖 AI 服务
   - DOMAIN-SUFFIX,clau.de,🤖 AI 服务
-  # FCM 的 Android 端点。ai.list 有 DOMAIN-SUFFIX,apis.google.com（Gemini 登录要
-  # 与 AI 出口一致，不能剔除），会抢在 google.list 之前把它收进 AI 组。
-  - DOMAIN,android.apis.google.com,📢 谷歌服务
   - RULE-SET,ai-domain,🤖 AI 服务
   - RULE-SET,ai-ipcidr,🤖 AI 服务,no-resolve
   - RULE-SET,ai-classical,🤖 AI 服务
@@ -1751,6 +1781,10 @@ rules:
   - RULE-SET,game-ipcidr,🎮 游戏平台,no-resolve
   - RULE-SET,game-classical,🎮 游戏平台
   # 含 GoogleFCM：它在国内直连连不上，已随 Google 一起走 📢 谷歌服务。
+  # 也含 Gemini 等 Google 系 AI（见 tools/sources.txt）。.goog 是 Google 的品牌顶级域，
+  # google.list 只收了 pki.goog 等几个主机；Antigravity 的 antigravity-unleash.goog
+  # 从 ai.list 剔除后没有别的规则接，按整个顶级域补一条。
+  - DOMAIN-SUFFIX,goog,📢 谷歌服务
   - RULE-SET,google-domain,📢 谷歌服务
   - RULE-SET,google-ipcidr,📢 谷歌服务,no-resolve
   - RULE-SET,google-classical,📢 谷歌服务
@@ -1891,7 +1925,6 @@ sub-rules:
     - DOMAIN-SUFFIX,claudemcpclient.com,REJECT
     - DOMAIN-SUFFIX,claudemcpcontent.com,REJECT
     - DOMAIN-SUFFIX,clau.de,REJECT
-    - DOMAIN,android.apis.google.com,REJECT
     - RULE-SET,ai-domain,REJECT
     - RULE-SET,ai-ipcidr,REJECT,no-resolve
     - RULE-SET,ai-classical,REJECT
@@ -2012,6 +2045,7 @@ sub-rules:
     - RULE-SET,game-domain,REJECT
     - RULE-SET,game-ipcidr,REJECT,no-resolve
     - RULE-SET,game-classical,REJECT
+    - DOMAIN-SUFFIX,goog,REJECT
     - RULE-SET,google-domain,REJECT
     - RULE-SET,google-ipcidr,REJECT,no-resolve
     - RULE-SET,google-classical,REJECT

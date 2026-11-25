@@ -146,6 +146,26 @@ http:
 
 # 分组用 #!replace 整段替换，否则会与订阅自带的分组混在一起。
 proxy-groups: #!replace
+  # 🚀 节点选择 排第一个：Stash 的策略组页按这里的顺序列出。候选照抄 default.conf。
+  - name: "🚀 节点选择"
+    type: select
+    proxies:
+      - "✅ 狮城未送中"
+      - "✅ 日本未送中"
+      - "✅ 香港未送中"
+      - "♻️ 自动选择"
+      - "🔯 故障转移"
+      - "🔮 负载均衡"
+      - "🔧 手动选择"
+      - "🇺🇲 美国直连"
+      - "🇯🇵 日本直连"
+      - "🇸🇬 狮城直连"
+      - "🇭🇰 香港直连"
+      - "🇹🇼 台湾直连"
+      - "🇬🇧 英国直连"
+      - "🇰🇷 韩国直连"
+      - "☁️ CF优选"
+      - "DIRECT"
   # 自动测速类。filter 排除机场的信息类伪节点与自建 CF 节点。
   - name: "♻️ 自动选择"
     type: url-test
@@ -174,6 +194,31 @@ proxy-groups: #!replace
     type: select
     include-all: true
     filter: "(?i)^(?!.*(剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset|网站|網站|客服|邀请|邀請|群组|群組|Website|官方|直连|直連|D(IR)?ECT|(?<![A-Za-z])CF(?![A-Za-z])|Cloudflare)).*$"
+  # 未送中：只收实测没被 Google 判成中国的节点，编号写死（见文件头 UNSENT_REGIONS）。
+  - name: "✅ 狮城未送中"
+    type: url-test
+    include-all: true
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset|网站|網站|客服|邀请|邀請|群组|群組|Website))(?=.*((新加坡专线0[1-4])(?!\\d)))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
+    url: "https://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "✅ 日本未送中"
+    type: url-test
+    include-all: true
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset|网站|網站|客服|邀请|邀請|群组|群組|Website))(?=.*((日本专线0[1-4]|日本高速0[1-5])(?!\\d)))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
+    url: "https://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
+  - name: "✅ 香港未送中"
+    type: url-test
+    include-all: true
+    filter: "(?i)^(?!.*(?:剩余|剩餘|流量|到期|过期|過期|重置|套餐|官网|官網|订阅|訂閱|续费|續費|客户端|客戶端|🇦🇶|Expire|Traffic|Reset|网站|網站|客服|邀请|邀請|群组|群組|Website))(?=.*((香港专线0[1-4]|香港高速0[1-5])(?!\\d)))(?!.*(?<![A-Za-z])CTCU(?![A-Za-z]))(?!.*(中转|中轉|隧道|转发|轉發)).*$"
+    url: "https://www.gstatic.com/generate_204"
+    interval: 600
+    tolerance: 200
+    lazy: true
   # 地区直连线路（地区 × 无中转，判据见文件头 DIRECTS）、自建 CF。
   - name: "🇺🇲 美国直连"
     type: url-test
@@ -241,22 +286,6 @@ proxy-groups: #!replace
     lazy: true
   # 以下 select 组的候选由 tools/build-stash.py 从 config/default.conf 照抄，
   # Shadowrocket 的 policy-select-name 在这里体现为「排第一」。
-  - name: "🚀 节点选择"
-    type: select
-    proxies:
-      - "🇺🇲 美国直连"
-      - "♻️ 自动选择"
-      - "🔯 故障转移"
-      - "🔮 负载均衡"
-      - "🔧 手动选择"
-      - "🇯🇵 日本直连"
-      - "🇸🇬 狮城直连"
-      - "🇭🇰 香港直连"
-      - "🇹🇼 台湾直连"
-      - "🇬🇧 英国直连"
-      - "🇰🇷 韩国直连"
-      - "☁️ CF优选"
-      - "DIRECT"
   - name: "🤖 AI 服务"
     type: select
     proxies:
@@ -269,8 +298,11 @@ proxy-groups: #!replace
   - name: "📹 YOUTUBE"
     type: select
     proxies:
-      - "🇺🇲 美国直连"
+      - "✅ 日本未送中"
+      - "✅ 香港未送中"
+      - "✅ 狮城未送中"
       - "🚀 节点选择"
+      - "🇺🇲 美国直连"
       - "♻️ 自动选择"
       - "🇭🇰 香港直连"
       - "🇹🇼 台湾直连"
@@ -435,6 +467,9 @@ proxy-groups: #!replace
   - name: "📢 谷歌服务"
     type: select
     proxies:
+      - "✅ 日本未送中"
+      - "✅ 香港未送中"
+      - "✅ 狮城未送中"
       - "🚀 节点选择"
       - "♻️ 自动选择"
       - "DIRECT"
@@ -1061,9 +1096,9 @@ rules: #!replace
   #
   # FCM 推送端点原先在这里内联了 11 条 mtalk 主机，现已改在 tools/sources.txt
   # 把 GoogleFCM 集映射到 📢 谷歌服务，之前漏掉的 firebaseinstallations 等 3 个
-  # 主机与 26 条 IP 段都由 google.list 接住。例外是 android.apis.google.com：
-  # ai.list 的 DOMAIN-SUFFIX,apis.google.com 排在 google.list 之前会先接住它，
-  # 所以在 ai.list 之前单独内联了一条。
+  # 主机与 26 条 IP 段都由 google.list 接住。其中 firebaseinstallations 等 googleapis.com
+  # 主机与 android.apis.google.com 以前会先被 ai.list 的宽后缀抢走，Google 系 AI 从 ai.list
+  # 剔除后（见 tools/exclude.txt）才真正落到 google.list，原先内联的 android 那条已删除。
   #
   # statsigapi.net 在 reject-ads 集里是 REJECT（返回 404），客户端拿到明确
   # 答复会毫秒级重试。改 REJECT-DROP 让它等 TCP 超时，与 rmonitor.qq.com 同理。
@@ -1148,9 +1183,6 @@ rules: #!replace
   - DOMAIN-SUFFIX,claudemcpclient.com,🤖 AI 服务
   - DOMAIN-SUFFIX,claudemcpcontent.com,🤖 AI 服务
   - DOMAIN-SUFFIX,clau.de,🤖 AI 服务
-  # FCM 的 Android 端点。ai.list 有 DOMAIN-SUFFIX,apis.google.com（Gemini 登录要
-  # 与 AI 出口一致，不能剔除），会抢在 google.list 之前把它收进 AI 组。
-  - DOMAIN,android.apis.google.com,📢 谷歌服务
   - RULE-SET,ai-domain,🤖 AI 服务
   - RULE-SET,ai-ipcidr,🤖 AI 服务,no-resolve
   - RULE-SET,ai-classical,🤖 AI 服务
@@ -1334,6 +1366,10 @@ rules: #!replace
   - RULE-SET,game-ipcidr,🎮 游戏平台,no-resolve
   - RULE-SET,game-classical,🎮 游戏平台
   # 含 GoogleFCM：它在国内直连连不上，已随 Google 一起走 📢 谷歌服务。
+  # 也含 Gemini 等 Google 系 AI（见 tools/sources.txt）。.goog 是 Google 的品牌顶级域，
+  # google.list 只收了 pki.goog 等几个主机；Antigravity 的 antigravity-unleash.goog
+  # 从 ai.list 剔除后没有别的规则接，按整个顶级域补一条。
+  - DOMAIN-SUFFIX,goog,📢 谷歌服务
   - RULE-SET,google-domain,📢 谷歌服务
   - RULE-SET,google-ipcidr,📢 谷歌服务,no-resolve
   - RULE-SET,google-classical,📢 谷歌服务
