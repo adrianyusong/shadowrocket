@@ -440,6 +440,26 @@ def main():
     builtin = q('|'.join(BUILTIN_TYPES))
     auto_iv, auto_tol = bs.AUTO_TEST
     region_iv, region_tol = bs.REGION_TEST
+    unsent = list(bs.UNSENTS)
+    filtered = list(bs.DIRECTS) + [bs.CF_GROUP]
+
+    # select 组：候选照抄 config/default.conf，policy-select-name 挪到首位。
+    # 协议分组是 Clash 独有的，作为附加候选挂在节点选择与 AI 服务上。
+    known = ({'♻️ 自动选择', '🔯 故障转移', '🔮 负载均衡', '🔧 手动选择',
+              'DIRECT', 'REJECT', 'REJECT-DROP'}
+             | {n for n, _ in unsent + filtered} | set(protos) | set(bs.sr_select_groups()))
+    extras = {'🚀 节点选择': protos, '🤖 AI 服务': protos}
+    first = {}              # 策略组 -> 默认候选，QUIC 镜像靠它判断「默认走不走代理」
+
+    def select_group(name):
+        cands = bs.derived_candidates(name, known, extras.get(name))
+        first[name] = cands[0]
+        grp(name, 'select', cands)
+
+    # 🚀 节点选择 排第一个（build-stash.py 的 FIRST_GROUP）。mihomo 按依赖关系
+    # 建组，不要求被引用的组先定义。
+    A('  # 🚀 节点选择 排第一个：Clash 的策略组页按这里的顺序列出。候选照抄 default.conf。')
+    select_group(bs.FIRST_GROUP)
 
     A('  # 自动测速类与手动选择。filter 排除信息类伪节点与自建 CF 节点。')
     A('  # exclude-type 排掉订阅里用 type: direct / dns / reject / rematch 声明的内置出站——')
@@ -454,7 +474,11 @@ def main():
     grp('🔧 手动选择', 'select', include_all='true', filter=q(bs.AUTO_FILTER),
         exclude_type=builtin)
 
-    filtered = list(bs.DIRECTS) + [bs.CF_GROUP]
+    A('  # 未送中：只收实测没被 Google 判成中国的节点，编号写死（build-stash.py 的 UNSENT_REGIONS）。')
+    for name, rex in unsent:
+        grp(name, 'url-test', include_all='true', filter=q(bs.guard(rex)),
+            exclude_type=builtin, url=TEST_URL, interval=region_iv, tolerance=region_tol)
+
     A('  # 地区直连线路（地区 × 无中转）、自建 CF。与 Stash 同一份定义')
     A('  # （build-stash.py 的 DIRECTS / CF_GROUP），都过 guard() 排除伪节点。')
     A('  # 英文缩写用逆序环视包裹，否则裸 US 在忽略大小写下会吃掉 Russia / Australia。')
@@ -473,19 +497,11 @@ def main():
             exclude_filter=proto_exclude,
             url=TEST_URL, interval=region_iv, tolerance=region_tol)
 
-    # select 组：候选照抄 config/default.conf，policy-select-name 挪到首位。
-    # 协议分组是 Clash 独有的，作为附加候选挂在节点选择与 AI 服务上。
-    known = ({'♻️ 自动选择', '🔯 故障转移', '🔮 负载均衡', '🔧 手动选择',
-              'DIRECT', 'REJECT', 'REJECT-DROP'}
-             | {n for n, _ in filtered} | set(protos) | set(bs.sr_select_groups()))
-    extras = {'🚀 节点选择': protos, '🤖 AI 服务': protos}
-    first = {}              # 策略组 -> 默认候选，QUIC 镜像靠它判断「默认走不走代理」
     A('  # 以下 select 组的候选由 tools/build-clash.py 从 config/default.conf 照抄，')
     A('  # Shadowrocket 的 policy-select-name 在这里体现为「排第一」。')
     for name in bs.sr_select_groups():
-        cands = bs.derived_candidates(name, known, extras.get(name))
-        first[name] = cands[0]
-        grp(name, 'select', cands)
+        if name != bs.FIRST_GROUP:
+            select_group(name)
     A('')
 
     # ---- rule-providers ----

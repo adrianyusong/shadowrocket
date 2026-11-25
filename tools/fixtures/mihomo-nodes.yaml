@@ -10,6 +10,9 @@ proxies:
   - {name: "🇸🇬新加坡01", type: hysteria2, server: 192.0.2.5, port: 443, password: test, sni: example.com}
   - {name: "🇸🇬新加坡02", type: vless, server: 192.0.2.6, port: 443, uuid: 00000000-0000-0000-0000-000000000000, network: tcp, tls: true, servername: example.com}
   - {name: "🇭🇰香港专线01|BGP|住宅IP", type: ss, server: 192.0.2.7, port: 8388, cipher: aes-128-gcm, password: test}
+  # 下面两个让 ✅ 狮城未送中 / ✅ 日本未送中 有成员（✅ 香港未送中 由上面的香港专线01 接住）
+  - {name: "🇸🇬新加坡专线01|BGP|流媒体", type: hysteria2, server: 192.0.2.13, port: 443, password: test, sni: example.com}
+  - {name: "🇯🇵日本高速01|BGP|CUCM", type: vless, server: 192.0.2.14, port: 443, uuid: 00000000-0000-0000-0000-000000000000, network: tcp, tls: true, servername: example.com}
   - {name: "🇹🇼台湾01", type: anytls, server: 192.0.2.8, port: 443, password: test, sni: example.com}
   - {name: "🇬🇧英国01", type: ss, server: 192.0.2.9, port: 8388, cipher: aes-128-gcm, password: test}
   - {name: "🇰🇷韩国01", type: ss, server: 192.0.2.10, port: 8388, cipher: aes-128-gcm, password: test}

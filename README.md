@@ -333,9 +333,44 @@ proxy-providers:
 | 类别 | 分组 |
 |---|---|
 | 自动 / 手动 | `♻️ 自动选择` `🔯 故障转移` `🔮 负载均衡` `🔧 手动选择` |
+| 未送中 | `✅ 狮城未送中` `✅ 日本未送中` `✅ 香港未送中`（只收实测没被 Google 判成中国的节点，编号写死，见下方「未送中分组」；`🚀 节点选择` 默认 `✅ 狮城未送中`） |
 | 地区直连 | `🇺🇲 美国直连` `🇯🇵 日本直连` `🇸🇬 狮城直连` `🇭🇰 香港直连` `🇹🇼 台湾直连` `🇬🇧 英国直连` `🇰🇷 韩国直连`（地区 × 无中转，三份配置都有） |
 | 自建 | `☁️ CF优选` |
 | 协议 | **仅 Clash**：`🔐 VLESS` `⚡ HY2` `🔒 ANYTLS`（落云以 AnyTLS 为主；只列订阅里有的协议——筛完为空的组在 mihomo 里只剩 COMPATIBLE，等同 DIRECT；VMESS / TROJAN 因此移除，有节点后在 `build-clash.py` 加回） |
+
+Stash 与 Clash 的策略组页按 `proxy-groups` 的顺序列出，生成器把 `🚀 节点选择` 排在
+第一个（以前排在 15 个节点组之后）；Shadowrocket 按 `[Proxy Group]` 的顺序，本来就是第一行。
+
+**未送中分组。** 「送中」是 Google 把节点的出口 IP 判成中国：google.com 跳 google.com.hk，
+YouTube Music / Premium 显示所在地区不支持，Gemini 拒绝服务。看的是出口 IP，节点名看不出来，
+所以 `✅` 三组按实测结果把良心云的节点编号写死：
+
+| 分组 | 收录（良心云） | 2026-11-07 实测 |
+|---|---|---|
+| `✅ 狮城未送中` | 新加坡专线 01-04 | 专线 01-03 正常；新加坡高速 01-08 全部送中，不收 |
+| `✅ 日本未送中` | 日本专线 01-04、日本高速 01-05 | 活着的 8 个全部正常（专线01 那轮连不上） |
+| `✅ 香港未送中` | 香港专线 01-04、香港高速 01-05 | 7 个全部正常 |
+
+美国、英国、台湾、韩国没有实测干净的节点，不建组：`🇺🇲 美国直连` 的 7 个节点那轮只活
+美国05，而它送中——这也是 `🚀 节点选择` 默认从 `🇺🇲 美国直连` 改成 `✅ 狮城未送中` 的原因。
+机场新增的同名节点没测过，不会自动进组；下架的编号留在正则里，比对不到就是了。
+编号后用 `(?!\d)` 截断，不依赖「|」之后的标签（机场改过：住宅IP → 流媒体）。
+
+`📢 谷歌服务` 与 `📹 YOUTUBE` 默认 `✅ 日本未送中`，**不跟 `🚀` 走新加坡**：机场在服务端把
+accounts.google.com、gemini.google.com、aistudio 等一批 Google 登录与 AI 域名另外分流，
+新加坡专线的那个分流出口会掐断 TLS 握手（11-03 实测专线 01、02 都是），Google 账号登录不了。
+日本、香港的分流出口时好时坏、国家在日本 / 台湾 / 美国之间轮换，但没有整个掐断。
+两组用同一个出口，同一个 Google 账号不会同时从两个 IP 出现。
+
+Gemini、AI Studio、NotebookLM 等 Google 系 AI 也归 `📢 谷歌服务`（2026-11 从 `🤖 AI 服务` 挪来），
+与 Google 登录同一出口：AI 组默认的 `🇺🇲 美国直连` 只剩送中的美国05，Gemini 直接拒绝服务。
+同时剔除了 `ai.list` 里上游带来的 `DOMAIN-SUFFIX,googleapis.com`——它排在 youtube / google
+之前，把 YouTube App 的 `youtubei.googleapis.com`、登录用的 `oauth2.googleapis.com` 与 FCM
+都拖进了 AI 组。做法见 `tools/exclude.txt` 末节与 `tools/sources.txt` 的 Gemini 一行。
+
+送中状态会变，要定期复测（测试脚本在桌面端 Clash Verge 那边，不在本仓库）。改名单要同时改
+`tools/build-stash.py` 的 `UNSENT_REGIONS` 与 `default.conf` 手写的正则，`check_unsent_groups`
+要求两边逐字相同；`check-direct.py` 用真实订阅核对它们没混进中转、没有筛成空组。
 
 **协议维度在 Shadowrocket 与 Stash 上做不到**，原因见上方更正。
 `tools/check-config.py` 会拒绝任何 Stash 未记载的 `proxy-groups` 选项，
@@ -540,8 +575,8 @@ warning / error。
 
 直连线路分组是「地区 × 无中转」：只收节点自身直接落地的线路，排除前置 Cloudflare
 的中转节点。中转节点出口是共享边缘 IP，支付风控与 AI 服务对它命中率高，长连接也
-容易中断。`🚀 节点选择` 与 `🤖 AI 服务` 都以 `🇺🇲 美国直连` 为首选。这里的「直连」
-与 `DIRECT` 策略无关。
+容易中断。`🤖 AI 服务` 以 `🇺🇲 美国直连` 为首选；`🚀 节点选择` 2026-11 起改为
+`✅ 狮城未送中`（见上方「未送中分组」）。这里的「直连」与 `DIRECT` 策略无关。
 
 **判据：节点名里单独出现的 `CTCU` 标签 = 中转。** 用机场订阅文件的真实传输方式核对过
 （`network: ws` 即 Cloudflare 中转）：
@@ -630,14 +665,17 @@ App 自己硬编码的明文 DNS：发往 `114.114.114.114:53`、`223.5.5.5:53`�
 
 `🤖 AI 服务` 的候选中**刻意不放** `🚀 节点选择` —— 它可间接指向 `🔮 负载均衡`，
 导致每个请求换一次出口，会被 OpenAI 判定异常。AI 组以直连线路组打头，默认
-`🇺🇲 美国直连`；不放 `🇭🇰 香港直连`，因为 OpenAI / Claude / Gemini 都不对香港开放。
+`🇺🇲 美国直连`；不放 `🇭🇰 香港直连`，因为 OpenAI / Claude 都不对香港开放
+（Gemini 已改走 `📢 谷歌服务`）。
 
-YouTube / Netflix / Disney+ / HBO / Prime Video / 巴哈姆特 / AbemaTV 把地区直连组
+Netflix / Disney+ / HBO / Prime Video / 巴哈姆特 / AbemaTV 把地区直连组
 排在 `🚀` 之前，默认不落到它，`🚀` 只作备选（之前文档说「流媒体组不放 🚀」，
 与实际不符）。Spotify / TikTok / Twitch / 国外媒体 / PikPak 则以 `🚀` 打头、默认
 跟随它——把 `🚀` 切到 `🔮 负载均衡` 时，它们也会跟着每请求换出口。
-YouTube / Netflix / Disney+ / HBO / Prime Video 以 `🇺🇲 美国直连` 打头，
+Netflix / Disney+ / HBO / Prime Video 以 `🇺🇲 美国直连` 打头，
 旧机场的 7 个美国直连节点全带流媒体标签、落云的 4 个美国节点全是原生 IP。
+YouTube 例外：它与 `📢 谷歌服务` 一起以 `✅ 日本未送中` 打头并用 `policy-select-name`
+强制——它是 Google 的服务，送中就没有 Premium / Music，与片库地区无关。
 
 地区直连分组的测速间隔调为 `interval = 600, tolerance = 200` 抑制抖动。
 要彻底稳定，选 `🔧 手动选择` 再点具体节点。
@@ -662,7 +700,7 @@ YouTube / Netflix / Disney+ / HBO / Prime Video 以 `🇺🇲 美国直连` 打�
 | 游戏 CDN 内联规则在 Steam / Blizzard 之前 | 见下 |
 | BiliBiliIntl 在 BiliBili 之前 | 国际版需代理，国内版直连 |
 | `adservice.google.` 关键词在 Google 之前 | anti-AD 的短关键词已剔除（误伤太多），各国家后缀的 adservice 靠它补回 |
-| `android.apis.google.com` 在 AI 之前 | `ai.list` 的 `apis.google.com` 后缀会把这个 FCM 端点抢进 AI 组 |
+| Google 系 AI 不进 `ai.list` | `ai.list` 排在 YouTube / Google 之前，上游的 `googleapis.com`、`apis.google.com` 宽后缀曾把 YouTube App 的 API、Google 登录与 FCM 抢进 AI 组；由 `exclude.txt` 从 ai 策略剔除，Gemini 集改映射到 📢 谷歌服务 |
 | 游戏集不含 `.cn` 域名 | 游戏组排在 `.cn` 之前且默认代理，暴雪国服、腾讯 Switch 等会被拖去境外；由 `exclude.txt` 的 `DOMAIN-SUFFIX,*.cn,game` 剔除 |
 | Speedtest 走直连 | 测本地真实带宽 |
 | `china.list` + `GEOIP,CN` 在 FINAL 之前 | 域名规则先行，IP 兜底 |

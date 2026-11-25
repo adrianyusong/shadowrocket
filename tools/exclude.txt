@@ -134,3 +134,26 @@ DOMAIN-SUFFIX,*.cn,game
 # 显示国内 DNS——配置本身没有泄漏也会被它报成泄漏，拿它验证只会得出错误结论。
 # 只从国内策略剔除，落到 FINAL 走代理，与 ipleak.net / dnsleaktest.com 一致。
 DOMAIN-SUFFIX,browserleaks.com,china
+
+# ---- Google 系 AI 从 ai 策略剔除，改走 📢 谷歌服务 ----
+# iab0x00 AI.txt 把 Google 的 AI 产品一并收进 AI 集，其中 DOMAIN-SUFFIX,googleapis.com
+# 是整个 Google API 的后缀。ai.list 在 [Rule] 里排在 youtube.list 与 google.list 之前，
+# 于是 YouTube App 的 youtubei.googleapis.com、Google 登录的 oauth2 / www.googleapis.com、
+# FCM 的 firebaseinstallations.googleapis.com 全被拖进 🤖 AI 服务。AI 组默认的
+# 🇺🇲 美国直连 被 Google 判成中国 IP（送中），YouTube App 因此按中国区处理。
+# 其余几条（Gemini、AI Studio、NotebookLM、Labs、Jules、Antigravity、DeepMind）都要登录
+# Google 账号，与登录同走 📢 谷歌服务 才不会两边出口不一致。
+# 剔除后由 google.list 的 google.com / gstatic.com / google.dev 后缀与 google 关键词接住；
+# google.list 没有的 deepmind.com 与 .goog，default.conf 在 google.list 前内联补上。
+# Gemini.list 已在 sources.txt 改映射到 📢 谷歌服务，这里只剔除 ai 策略，不影响它。
+DOMAIN-SUFFIX,googleapis.com,ai
+DOMAIN,*.google.com,ai
+DOMAIN-SUFFIX,*.google.com,ai
+DOMAIN,*.google,ai
+DOMAIN-SUFFIX,*.google,ai
+DOMAIN,*.goog,ai
+DOMAIN,ai.google.dev,ai
+DOMAIN,gemini.gstatic.com,ai
+DOMAIN-SUFFIX,deepmind.com,ai
+DOMAIN-KEYWORD,notebooklm.google,ai
+DOMAIN-KEYWORD,labs.google,ai

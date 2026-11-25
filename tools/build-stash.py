@@ -112,6 +112,28 @@ def direct_filter(region_rx):
 DIRECTS = [(n + '直连', direct_filter(rx)) for n, rx in REGIONS if n in DIRECT_REGIONS]
 DIRECTS.sort(key=lambda d: DIRECT_REGIONS.index(d[0][:-2]))
 
+# 「未送中」分组：只收实测没被 Google 判成中国（送中）的节点，有干净节点的地区各一组。
+# 送中看的是出口 IP，节点名看不出来，只能按实测结果把节点编号写死：机场日后新增的
+# 同名节点没测过，不会自动进来；下架的节点正则留着，比对不到就是了。
+# 依据是 Clash Verge 那边 node-test 的 2026-11-07-yt-premium.json（良心云 44 个节点，
+# 逐个测 YouTube Premium / YouTube Music / Gemini / google.com）：
+#   专线（香港 01/02、新加坡 01-03、日本 02-04）与香港、日本高速 01-05 全部正常，
+#   Google 判定的国家就是节点所在地；新加坡高速 01-08、美国、英国全部送中。
+#   日本专线01、新加坡专线04、香港专线03/04 那轮不在或连不上，与桌面脚本一样保留。
+# 美国、英国、台湾、韩国没有实测干净的节点，不建组。送中状态会变，要定期复测。
+# 编号后面用 (?!\d) 截断，不依赖「|」之后的标签（那部分机场改过：住宅IP -> 流媒体）。
+# 同样排除中转（RELAY_EXCLUDE），check-config.py 把它们当直连组一样核对。
+UNSENT_REGIONS = [
+    ('✅ 狮城未送中', r'新加坡专线0[1-4]'),
+    ('✅ 日本未送中', r'日本专线0[1-4]|日本高速0[1-5]'),
+    ('✅ 香港未送中', r'香港专线0[1-4]|香港高速0[1-5]'),
+]
+UNSENTS = [(n, direct_filter(r'(?i)((' + rx + r')(?!\d))')) for n, rx in UNSENT_REGIONS]
+
+# Stash / Clash 的策略组页按 proxy-groups 的顺序列出，🚀 节点选择 要排第一个
+# （Shadowrocket 按 [Proxy Group] 的顺序，它本来就在第一行）。两个生成器都先输出它。
+FIRST_GROUP = '🚀 节点选择'
+
 def guard(f):
     """给筛选正则加上伪节点排除（文件头的 PSEUDO，与 Shadowrocket 各组用同一段）。"""
     if f.startswith('(?i)^'):
@@ -632,6 +654,16 @@ def main():
             for p in proxies:
                 A('      - %s' % q(p))
 
+    unsent = list(UNSENTS)
+    filtered = [(n, f) for n, f in DIRECTS] + [CF_GROUP]
+    known = ({'♻️ 自动选择', '🔯 故障转移', '🔮 负载均衡', '🔧 手动选择',
+              'DIRECT', 'REJECT', 'REJECT-DROP'}
+             | {n for n, _ in unsent + filtered} | set(sr_select_groups()))
+
+    # 🚀 节点选择 排第一个（见文件头 FIRST_GROUP）。组之间的引用不要求先定义后引用。
+    A('  # 🚀 节点选择 排第一个：Stash 的策略组页按这里的顺序列出。候选照抄 default.conf。')
+    grp(FIRST_GROUP, 'select', derived_candidates(FIRST_GROUP, known))
+
     # 按节点名筛选的组。filter 一律过 guard()，排除信息类伪节点。
     # include-all 不可省：filter 只对 use 引入的 provider 或 include-all 之后的
     # 全体节点生效，两者都没有时组内无节点可筛，会是空组。
@@ -645,20 +677,21 @@ def main():
     A('  # 手动挑单个节点用。上面几组都是自动的，没有这一组就只能选组不能选节点。')
     grp('🔧 手动选择', 'select', None, include_all='true', filter=q(AUTO_FILTER))
 
-    filtered = [(n, f) for n, f in DIRECTS] + [CF_GROUP]
+    A('  # 未送中：只收实测没被 Google 判成中国的节点，编号写死（见文件头 UNSENT_REGIONS）。')
+    for name, f in unsent:
+        grp(name, 'url-test', None, include_all='true', filter=q(guard(f)),
+            url=q(TEST_URL), interval=REGION_TEST[0], tolerance=REGION_TEST[1], lazy='true')
     A('  # 地区直连线路（地区 × 无中转，判据见文件头 DIRECTS）、自建 CF。')
     for name, f in filtered:
         grp(name, 'url-test', None, include_all='true', filter=q(guard(f)),
             url=q(TEST_URL), interval=REGION_TEST[0], tolerance=REGION_TEST[1], lazy='true')
 
     # select 组：候选一律照抄 default.conf，policy-select-name 挪到首位。
-    known = ({'♻️ 自动选择', '🔯 故障转移', '🔮 负载均衡', '🔧 手动选择',
-              'DIRECT', 'REJECT', 'REJECT-DROP'}
-             | {n for n, _ in filtered} | set(sr_select_groups()))
     A('  # 以下 select 组的候选由 tools/build-stash.py 从 config/default.conf 照抄，')
     A('  # Shadowrocket 的 policy-select-name 在这里体现为「排第一」。')
     for name in sr_select_groups():
-        grp(name, 'select', derived_candidates(name, known))
+        if name != FIRST_GROUP:
+            grp(name, 'select', derived_candidates(name, known))
     A('')
 
     # ---- rule-providers ----
