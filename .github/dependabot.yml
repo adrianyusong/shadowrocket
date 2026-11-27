@@ -1,0 +1,37 @@
+# workflow 里的 action 钉的是提交 SHA，tools/requirements*.txt 钉的是确切版本：
+# 都不会自己升级，由 Dependabot 每周检查一次、有新版就提 PR，照常过 validate。
+# action 的 PR 会同时更新 SHA 与后面的 # vX.Y.Z 注释。
+#
+# cooldown：新版本发布满 7 天才提。被劫持的发布通常几天内就会被发现并撤下，
+# 晚一周升级换来的是不当第一批用户。
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: saturday
+      time: '10:17'
+      timezone: Asia/Shanghai
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ['*']
+    commit-message:
+      prefix: ci
+
+  - package-ecosystem: pip
+    directory: /tools
+    schedule:
+      interval: weekly
+      day: saturday
+      time: '10:17'
+      timezone: Asia/Shanghai
+    cooldown:
+      default-days: 7
+    groups:
+      python:
+        patterns: ['*']
+    commit-message:
+      prefix: chore
