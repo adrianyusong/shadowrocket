@@ -371,7 +371,7 @@ jobs:
             {
               printf -- '- PR #%s 含需要人工审核的变更，没有开自动合并，已贴 needs-review。' "$PR_NUMBER"
               printf '确认是上游有意的改动后手动合并，否则在 tools/exclude.txt 剔除：\n\n'
-              cat "$dir/risk.md"
+              cat "$dir/risk.md" 2> /dev/null || printf '（风险清单没能从 artifact 取回，见 PR 描述）\n'
             } >> "$alerts"
           fi
           [ -s "$alerts" ] || exit 0
