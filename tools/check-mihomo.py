@@ -13,7 +13,7 @@ check-config.py 用 Python 的 re / PyYAML 去「推测」mihomo 会怎么理解
 
 做法：
   * 内核版本钉死（与 sync-modules.py 的 MIHOMO_REF 同一处），下载后核对 SHA-256，
-    不符就拒绝运行。
+    不符就拒绝运行。缓存里只留压缩包，每次使用前重新核对再解压。
   * 订阅用 tools/fixtures/mihomo-nodes.yaml 的假节点代替。
   * 规则集取本地文件（测的是这次提交的内容，不是 main 上的）：domain / ipcidr 取
     mrs/*.mrs；classical 在 config/clash.yaml 里是内嵌的（type: inline，已剔掉内核不认的
@@ -166,6 +166,12 @@ def _platform():
 
 
 def ensure_binary(cache):
+    """核对并解压钉死版本的 mihomo，返回 (可执行文件路径, 平台)。
+
+    缓存目录里留的是发布页的压缩包，每次都重新核对 SHA-256、再解压覆盖可执行文件。
+    validate.yml 用 actions/cache 保存这个目录，缓存里现成的可执行文件不可信：
+    只有对得上钉死哈希的压缩包才算数。核对 + 解压不到一秒。
+    """
     key = _platform()
     pin = PINS.get(MIHOMO_REF, {}).get(key)
     if not pin:
@@ -176,48 +182,72 @@ def ensure_binary(cache):
     asset = 'mihomo-%s-%s.%s' % (key, MIHOMO_REF, 'zip' if win else 'gz')
     folder = os.path.join(cache, MIHOMO_REF)
     os.makedirs(folder, exist_ok=True)
-    exe = os.path.join(folder, 'mihomo-%s%s' % (key, '.exe' if win else ''))
-    stamp = exe + '.sha256'
-    if os.path.isfile(exe) and os.path.isfile(stamp) \
-            and io.open(stamp, encoding='utf-8').read().strip() == pin:
-        return exe, key
-
-    say('下载 %s ……' % asset)
     archive = os.path.join(folder, asset)
-    _download('https://github.com/MetaCubeX/mihomo/releases/download/%s/%s'
-              % (MIHOMO_REF, asset), archive)
-    got = _sha256(archive)
-    if got != pin:
-        os.remove(archive)
-        raise Failure('%s 的 SHA-256 是 %s，脚本里钉的是 %s——发布资产被替换或下载损坏，拒绝运行'
-                      % (asset, got, pin))
+    if not (os.path.isfile(archive) and _sha256(archive) == pin):
+        say('下载 %s ……' % asset)
+        _download('https://github.com/MetaCubeX/mihomo/releases/download/%s/%s'
+                  % (MIHOMO_REF, asset), archive)
+        got = _sha256(archive)
+        if got != pin:
+            os.remove(archive)
+            raise Failure('%s 的 SHA-256 是 %s，脚本里钉的是 %s——发布资产被替换或下载损坏，'
+                          '拒绝运行' % (asset, got, pin))
+
+    exe = os.path.join(folder, 'mihomo-%s%s' % (key, '.exe' if win else ''))
+    tmp = exe + '.part'
     if win:
         with zipfile.ZipFile(archive) as z:
             names = [n for n in z.namelist() if n.lower().endswith('.exe')]
             if len(names) != 1:
                 raise Failure('%s 里应当只有一个 .exe，实际 %s' % (asset, names))
-            with z.open(names[0]) as src, io.open(exe, 'wb') as dst:
+            with z.open(names[0]) as src, io.open(tmp, 'wb') as dst:
                 shutil.copyfileobj(src, dst)
     else:
-        with gzip.open(archive, 'rb') as src, io.open(exe, 'wb') as dst:
+        with gzip.open(archive, 'rb') as src, io.open(tmp, 'wb') as dst:
             shutil.copyfileobj(src, dst)
-        os.chmod(exe, 0o755)
-    os.remove(archive)
-    with io.open(stamp, 'w', encoding='utf-8') as fh:
-        fh.write(pin)
+        os.chmod(tmp, 0o755)
+    try:
+        os.replace(tmp, exe)
+    except PermissionError:
+        # Windows 上正在运行的 .exe 不能覆盖（比如本机另开着一个测试）。内容一致就照用。
+        same = os.path.isfile(exe) and _sha256(exe) == _sha256(tmp)
+        os.remove(tmp)
+        if not same:
+            raise Failure('%s 正在使用，无法用核对过的版本覆盖' % exe)
     return exe, key
 
 
+def _sum_matches(path, sumfile):
+    """sumfile 是发布页的 .sha256sum（「哈希  文件名」）；对得上返回 True。"""
+    want = io.open(sumfile, encoding='utf-8', errors='replace').read().split()
+    return bool(want) and want[0].lower() == _sha256(path)
+
+
 def ensure_geodata(cache, names):
+    """地理库取 meta-rules-dat 的 latest 发布，7 天内复用缓存。
+
+    每个文件都按发布页同名的 .sha256sum 核对，缓存里的也一样：下载不完整或缓存损坏时
+    重新下载，而不是把半截文件交给内核——那样内核报的是规则集少载，很难看出是地理库坏了。
+    latest 随时会更新，文件与校验和先后各下一次可能刚好跨过一次发布，所以对不上时再整组重下一次。
+    """
     folder = os.path.join(cache, 'geodata')
     os.makedirs(folder, exist_ok=True)
     got = {}
     for name in names:
         asset = GEODATA[name]
         path = os.path.join(folder, asset)
-        if not (os.path.isfile(path) and time.time() - os.path.getmtime(path) < GEODATA_TTL):
-            say('下载 %s ……' % asset)
-            _download(GEODATA_BASE + asset, path)
+        sumfile = path + '.sha256sum'
+        fresh = (os.path.isfile(path) and os.path.isfile(sumfile)
+                 and time.time() - os.path.getmtime(path) < GEODATA_TTL)
+        if not (fresh and _sum_matches(path, sumfile)):
+            for _ in range(2):
+                say('下载 %s ……' % asset)
+                _download(GEODATA_BASE + asset + '.sha256sum', sumfile)
+                _download(GEODATA_BASE + asset, path)
+                if _sum_matches(path, sumfile):
+                    break
+            else:
+                raise Failure('%s 与发布页的 .sha256sum 对不上，连下两次都是这样' % asset)
         got[name] = path
     return got
 
