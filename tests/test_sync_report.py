@@ -20,6 +20,9 @@ import pytest
     ('DOMAIN-WILDCARD,*.com', True),
     ('DOMAIN-WILDCARD,*.*.xyz', True),
     ('DOMAIN-WILDCARD,*.example.com', False),
+    ('DOMAIN-WILDCARD,*', True),
+    ('DOMAIN-WILDCARD,apple.*', False),              # 品牌名 + 通配顶级域：同步 #8 新增过 10 条
+    ('DOMAIN-WILDCARD,a*.com', False),
     ('IP-ASN,4134,no-resolve', True),
     ('GEOIP,CN', True),
     ('GEOSITE,google', True),

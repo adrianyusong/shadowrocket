@@ -99,9 +99,11 @@ def risky_rule(line):
     if rtype == 'DOMAIN-SUFFIX':
         return '裸顶级域后缀' if '.' not in value.strip('.') else None
     if rtype == 'DOMAIN-WILDCARD':
-        # 去掉只由 * / ? 组成的标签后只剩一段，就是整个顶级域：*.com、*.*.xyz
-        labels = [x for x in value.split('.') if x.strip('*?')]
-        return '通配整个顶级域' if len(labels) <= 1 else None
+        # 除了最后一段，其余全是只由 * / ? 组成的通配，就是整个顶级域：*.com、*.*.xyz、*。
+        # apple.* 这类「固定的名字 + 通配顶级域」不算：盖住的是同一个品牌，上游一直有。
+        labels = value.split('.')
+        fixed = [x for x in labels if x.strip('*?')]
+        return '通配整个顶级域' if not fixed or fixed == labels[-1:] else None
     if rtype in AREA_TYPES:
         return '整片地址或地区规则'
     return None
