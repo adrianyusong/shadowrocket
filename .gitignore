@@ -30,6 +30,7 @@ desktop.ini
 *.swp
 *~
 
-# Python 缓存
+# Python 缓存。.pytest_cache 必须忽略：validate.yml 跑完测试还要核对工作区是干净的。
 __pycache__/
 *.pyc
+.pytest_cache/
