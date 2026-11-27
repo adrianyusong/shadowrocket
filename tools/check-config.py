@@ -732,14 +732,69 @@ def check_realip_parity(cfg):
         fail('always-real-ip 多出 Stash fake-ip-filter 没有的 %s' % x)
 
 
-def check_modules():
-    """module/ 下的自托管模块必须保持无脚本。
+# 自托管 .sgmodule 只允许这几段、这些写法（白名单，不是黑名单）。只拦 script-path 不够：
+# 302 / 307 跳转能把解密后的请求改送任意地址，header 重写、[Map Local]、[Body Rewrite]
+# 能篡改明文。同步 PR 没人审就自动合并，上游加进来的这类东西会直达设备，所以一律判失败，
+# 不做静默过滤——要么上游有问题，要么该有人看过再决定。
+# 段名 -> 该段允许的键；None 表示逐行按拦截规则核对。
+MODULE_SECTIONS = {
+    '[General]': ('force-http-engine-hosts',),
+    '[URL Rewrite]': None,
+    '[MITM]': ('hostname',),
+}
+# Shadowrocket 的拦截类重写动作。302 / 307 / header 不在其中。
+MODULE_REWRITE_ACTIONS = ('reject', 'reject-200', 'reject-img', 'reject-dict', 'reject-array')
+
+
+def module_problems(body, fn):
+    """逐行核对一个自托管模块，返回问题列表（空列表表示通过）。"""
+    problems = []
+    for marker in ('script-path', '[Script]'):
+        if marker in body:
+            problems.append('module/%s 出现 %s——自托管模块应保持纯重写，'
+                            '引入远端脚本等于把明文流量交给第三方代码' % (fn, marker))
+    if not fn.endswith('.sgmodule'):
+        return problems
+    section = None
+    for no, line in enumerate(body.splitlines(), 1):
+        s = line.strip()
+        if not s or s.startswith('#'):
+            continue
+        if s.startswith('[') and s.endswith(']'):
+            section = s
+            if s not in MODULE_SECTIONS:
+                problems.append('module/%s:%d 出现 %s 段——自托管模块只允许 %s'
+                                % (fn, no, s, '、'.join(MODULE_SECTIONS)))
+            continue
+        if section is None:
+            problems.append('module/%s:%d 段外的内容：%s' % (fn, no, s[:120]))
+            continue
+        if section not in MODULE_SECTIONS:
+            continue                    # 不允许的段，段头已经报过
+        keys = MODULE_SECTIONS[section]
+        if keys is None:
+            parts = s.split()
+            if len(parts) != 3 or parts[1] != '-' or parts[2] not in MODULE_REWRITE_ACTIONS:
+                problems.append('module/%s:%d 不是「<正则> - %s」形式的拦截规则：%s'
+                                % (fn, no, '/'.join(MODULE_REWRITE_ACTIONS), s[:160]))
+        else:
+            key = s.split('=', 1)[0].strip()
+            if key not in keys:
+                problems.append('module/%s:%d %s 段只允许 %s，出现了 %s'
+                                % (fn, no, section, '、'.join(keys), key[:60]))
+    return problems
+
+
+def check_modules(moddir=None):
+    """module/ 下的自托管模块必须保持「只拦截」。
 
     这批模块的卖点就是「纯重写」：只按 URL 拦截，不下载也不执行远端 JS。
     上游哪天在里面塞进 script-path，同步会把它一并搬进来——那时解密后的
     明文流量就会交给第三方代码处理，而这正是选它的理由被推翻的时刻。
+    跳转与改写同理，见 MODULE_SECTIONS。解密范围扩大（新增 MITM 主机）不算错，
+    但要人看过：由 tools/sync-report.py 在同步 PR 上拦下自动合并。
     """
-    d = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'module')
+    d = moddir or os.path.join(ROOT, 'module')
     if not os.path.isdir(d):
         return 0
     n = 0
@@ -748,10 +803,8 @@ def check_modules():
             continue
         n += 1
         body = io.open(os.path.join(d, fn), encoding='utf-8').read()
-        for marker in ('script-path', '[Script]'):
-            if marker in body:
-                fail('module/%s 出现 %s——自托管模块应保持纯重写，'
-                     '引入远端脚本等于把明文流量交给第三方代码' % (fn, marker))
+        for p in module_problems(body, fn):
+            fail(p)
     return n
 
 
