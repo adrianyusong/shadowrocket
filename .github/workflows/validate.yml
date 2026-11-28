@@ -5,18 +5,25 @@ name: 校验配置
 #
 # 这里在推送 main 与每个 PR 时重新生成全部派生产物，跑 check-config.py，最后核对
 # 生成结果与已提交内容一致：改了 default.conf 或 tools/ 却忘了重新生成 stash/、
-# config/ 下的文件，设备拉到的就是陈旧产物。
+# config/ 下的文件，设备拉到的就是陈旧产物。tests/ 的单元测试与 workflow 审计
+# （tools/lint-workflows.py）也在这里跑。
 #
-# 全程离线：不抓上游（那是 sync.yml 的事），结果只取决于提交的内容，
-# 不会因为上游抖动让无关的 PR 变红。只读权限，不会提交任何东西。
+# 不抓上游规则（那是 sync.yml 的事）：结果只取决于提交的内容，不会因为上游抖动让无关的
+# PR 变红。要联网的只有钉死版本、核对 SHA-256 的工具（mihomo、actionlint）与 mihomo 的
+# 地理库，都放进 actions/cache。validate 与 windows 两个 job 只读，不提交任何东西。
+#
+# 每天还在 main 上定时跑一次：sync.yml 用 GITHUB_TOKEN 合并的 bot PR 不会触发 push 运行，
+# 外部的东西（地理库、runner 镜像）也会变。定时运行失败、同步 PR 卡住或没通过校验时，
+# notify 开 issue。
 on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: '41 21 * * *'   # UTC 21:41 = 北京时间 05:41；避开整点排队
   workflow_dispatch:        # 也可手动触发（注意：这样跑出的检查不算进 PR 的必需检查）
 
-permissions:
-  contents: read
+permissions: {}
 
 # 同一分支 / PR 的新推送取消还在跑的旧校验；main 上的推送不取消，每次都留记录。
 concurrency:
@@ -24,21 +31,48 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  # job id 就是 ruleset 里的必需检查 validate（.github/rulesets/main.json）：不要加 name，
+  # 也不要改成 matrix——检查名一变，所有 PR 都会卡在等一个永远不会出现的检查上。
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.13'
 
+      - name: 工具缓存目录
+        id: cache-key
+        # mihomo、actionlint 的压缩包与地理库。按周换 key：地理库取 latest，一周刷新一次。
+        # 压缩包每次使用前都重新核对 SHA-256 再解压，缓存里的东西不被信任。
+        run: |
+          echo "CHECK_MIHOMO_CACHE=$RUNNER_TEMP/tools-cache" >> "$GITHUB_ENV"
+          echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/tools-cache
+          key: tools-${{ runner.os }}-${{ steps.cache-key.outputs.week }}
+          restore-keys: tools-${{ runner.os }}-
+
       - name: 安装依赖
         # 缺 PyYAML 时 check-config.py 只降级为警告，等于没校验 YAML，所以显式安装。
-        run: pip install --quiet pyyaml
+        # 版本钉在 tools/requirements*.txt。
+        run: pip install --quiet -r tools/requirements-dev.txt
+
+      - name: 单元测试
+        run: python -m pytest -q tests
+
+      - name: 审计 workflow
+        # actionlint 查写法（runner 自带 shellcheck，顺带查 run 脚本），zizmor 查权限、
+        # 表达式注入、令牌落盘与未钉 SHA 的 action。
+        run: python tools/lint-workflows.py
 
       - name: 重新生成 Stash 配置
         run: python tools/build-stash.py
@@ -72,3 +106,130 @@ jobs:
             exit 1
           fi
           echo "生成产物与已提交内容一致"
+
+  # 作者在 Windows 上本地跑这些脚本：路径分隔符、控制台编码、mihomo 的 .exe 这类差异只在
+  # Windows 上露出来。不是必需检查，失败不挡合并，定时体检时会报出来。
+  # 步骤与 validate 相同，只少了 workflow 审计；tests/test_workflows.py 核对两边没走样。
+  windows:
+    name: validate (windows)
+    runs-on: windows-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13'
+
+      - name: 工具缓存目录
+        id: cache-key
+        run: |
+          echo "CHECK_MIHOMO_CACHE=$RUNNER_TEMP/tools-cache" >> "$GITHUB_ENV"
+          echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/tools-cache
+          key: tools-${{ runner.os }}-${{ steps.cache-key.outputs.week }}
+          restore-keys: tools-${{ runner.os }}-
+
+      - name: 安装依赖
+        run: pip install --quiet -r tools/requirements-dev.txt
+
+      - name: 单元测试
+        run: python -m pytest -q tests
+
+      - name: 重新生成 Stash 配置
+        run: python tools/build-stash.py
+
+      - name: 重新生成 MRS 规则集
+        run: python tools/build-mrs.py
+
+      - name: 重新生成 Clash 配置
+        run: python tools/build-clash.py
+
+      - name: 校验配置与规则
+        run: python tools/check-config.py
+
+      - name: mihomo 内核载入测试
+        run: python tools/check-mihomo.py
+
+      - name: 核对生成产物与已提交内容一致
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::Windows 上生成的产物与已提交内容不一致"
+            git status --short
+            git --no-pager diff --stat
+            exit 1
+          fi
+          echo "生成产物与已提交内容一致"
+
+  notify:
+    needs: [validate, windows]
+    # 只处理两种情况：main 上的定时体检，与同步机器人的 PR（来自本仓库，不是 fork）。
+    if: >-
+      ${{ !cancelled() && (github.event_name == 'schedule' ||
+      (github.event_name == 'pull_request' && github.head_ref == 'bot/sync-rules' &&
+      github.event.pull_request.head.repo.full_name == github.repository)) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read          # 检出 tools/ci-issue.sh
+      issues: write           # 开 / 关告警 issue
+      pull-requests: read     # 查卡住的同步 PR
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      VALIDATE_RESULT: ${{ needs.validate.result }}
+      WINDOWS_RESULT: ${{ needs.windows.result }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: 定时体检
+        if: github.event_name == 'schedule'
+        run: |
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          body="$RUNNER_TEMP/body.md"
+          title="健康检查失败：main 上的 validate 未通过"
+          if [ "$VALIDATE_RESULT" = success ] && [ "$WINDOWS_RESULT" = success ]; then
+            bash tools/ci-issue.sh close "$title" "已恢复：$run_url 全部通过。"
+          else
+            {
+              printf 'main（%s）上的定时校验未通过：validate %s，validate (windows) %s。\n\n运行日志：%s\n\n' \
+                "${GITHUB_SHA:0:7}" "$VALIDATE_RESULT" "$WINDOWS_RESULT" "$run_url"
+              printf '提交没变而校验变红，多半是外部的东西变了：mihomo 地理库（latest）、runner 镜像或下载失败。'
+              printf '只有 validate (windows) 失败时不挡合并，但在 Windows 上本地跑脚本会遇到同样的问题。\n'
+            } > "$body"
+            # 同一个提交、同样的结果每天只记一次。
+            bash tools/ci-issue.sh open "$title" "$body" "health:$GITHUB_SHA:$VALIDATE_RESULT:$WINDOWS_RESULT"
+          fi
+          # 同步 PR 卡住：最后一次更新超过 24 小时还没合并，也没贴 needs-review（那种是在等人审核）。
+          stale="$(gh pr list --head bot/sync-rules --base main --state open --json number,updatedAt,labels,headRefOid \
+            --jq '.[] | select((now - (.updatedAt | fromdateiso8601)) > 86400)
+                      | select([.labels[].name] | index("needs-review") | not)
+                      | "\(.number) \(.headRefOid)"')"
+          if [ -n "$stale" ]; then
+            read -r num sha <<< "$stale"
+            printf -- '- 同步 PR #%s 超过 24 小时没有合并（%s）。常见原因：validate 运行在等批准或没通过、仓库没开 Allow auto-merge。\n' \
+              "$num" "$run_url" > "$body"
+            bash tools/ci-issue.sh open "同步告警：需要人工处理" "$body" "stale:$num:$sha"
+          fi
+
+      - name: 同步 PR 没通过校验
+        if: github.event_name == 'pull_request' && needs.validate.result != 'success'
+        run: |
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          printf -- '- 同步 PR #%s 的 validate 未通过（%s），不会自动合并。上游内容通不过校验时，在 tools/exclude.txt 剔除问题规则后手动触发 sync.yml。\n' \
+            "$PR_NUMBER" "$run_url" > "$RUNNER_TEMP/body.md"
+          bash tools/ci-issue.sh open "同步告警：需要人工处理" "$RUNNER_TEMP/body.md" "validate:$HEAD_SHA"

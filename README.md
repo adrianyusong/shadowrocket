@@ -418,10 +418,16 @@ Gemini、AI Studio、NotebookLM 等 Google 系 AI 也归 `📢 谷歌服务`（2
 | `tools/check-config.py` | 静态校验（含凭据扫描），失败退出码非 0 |
 | `tools/check-mihomo.py` | 用真实 mihomo 内核载入 Clash 配置与规则集，内核版本与 SHA-256 钉死 |
 | `tools/fixtures/mihomo-nodes.yaml` | `check-mihomo.py` 用的假订阅节点（RFC 5737 文档地址） |
-| `.github/workflows/sync.yml` | 每周日自动同步，校验通过后开 PR 并自动合并；失败或告警开 issue |
-| `.github/workflows/validate.yml` | 推送 `main` 与每个 PR 时离线重新生成并校验 |
+| `tools/sync-report.py` | 同步 PR 的摘要与风险闸门：有需要人工审核的变更时拦下自动合并 |
+| `tools/lint-workflows.py` | 用 actionlint 与 zizmor 审计 workflow（版本与 SHA-256 钉死） |
+| `tools/ci-issue.sh` | CI 开 / 关告警 issue，同一标题只留一个，恢复后自动关闭 |
+| `tools/requirements.txt`、`requirements-dev.txt` | 脚本与 CI 的 Python 依赖，版本钉死 |
+| `tests/` | 单元测试：`python -m pytest tests` |
+| `.github/workflows/sync.yml` | 每周日自动同步：只读的 build 生成并校验，publish 开 PR，没有需要人工审核的变更就自动合并；失败或告警开 issue |
+| `.github/workflows/validate.yml` | 推送 `main`、每个 PR 与每天定时：重新生成并校验，跑测试与 workflow 审计；另有不挡合并的 Windows 校验 |
+| `.github/dependabot.yml` | 每周升级钉死的 action 与 Python 依赖 |
 | `.github/rulesets/main.json` | `main` 的保护规则（要求 PR + `validate`、禁止强推与删除） |
-| `tools/apply-github-settings.sh` | 一次性套上 ruleset、secret scanning、自动合并等仓库设置 |
+| `tools/apply-github-settings.sh` | 一次性套上 ruleset、secret scanning、自动合并、action 白名单与钉 SHA、Dependabot、CodeQL 等仓库设置 |
 
 ```bash
 python tools/sync-rules.py \
@@ -433,12 +439,26 @@ python tools/sync-rules.py \
   && python tools/check-mihomo.py
 ```
 
-CI 分两条：`sync.yml` 每周日抓上游、重新生成并校验，通过后把 `rule/`、`module/`、
-`stash/`、`mrs/`、`config/stash.stoverride`、`config/clash.yaml` 推到 `bot/sync-rules` 分支并开 PR；`validate.yml` 在推送 `main`
-与每个 PR 时**离线**重新生成并校验，再核对生成结果与已提交内容一致。改了 `default.conf`
+改了 `tools/` 或 `.github/` 之后再跑测试与 workflow 审计：
+
+```bash
+pip install -r tools/requirements-dev.txt
+python -m pytest tests && python tools/lint-workflows.py
+```
+
+CI 分两条。`sync.yml` 每周日抓上游、重新生成并校验，通过后把 `rule/`、`module/`、
+`stash/`、`mrs/`、`config/stash.stoverride`、`config/clash.yaml` 推到 `bot/sync-rules` 分支并开 PR。
+它拆成三个 job，写权限不进处理外部数据的那一个：`build` 只读，拉上游、生成、校验、跑内核，
+结果打成 git bundle 交出去；`publish` 核对 bundle（必须直接建在当次的 `main` 上、只改上面这些
+路径）后推分支、开 PR；`alert` 只能开关 issue。
+
+`validate.yml` 在推送 `main`、每个 PR 与每天定时重新生成并校验，再核对生成结果与已提交内容
+一致；单元测试与 workflow 审计也在这里跑。它不抓上游规则，结果只取决于提交的内容；要联网的
+只有钉死版本、核对 SHA-256 的工具（mihomo、actionlint）与地理库。改了 `default.conf`
 或 `tools/` 之后，要在本地跑 `python tools/build-stash.py && python tools/build-mrs.py && python tools/build-clash.py`
 并把变动一起提交，否则 `validate.yml` 会失败。两条都会跑 `check-config.py` 与
 `check-mihomo.py`；`sync.yml` 里它们排在提交之前，失败就不会把坏规则推给设备。
+另有一个 Windows 上的同样校验（`validate (windows)`），不是必需检查，失败不挡合并。
 
 **`main` 的保护**写在 `.github/rulesets/main.json`：必须经 PR 且 `validate` 通过才能合并，
 禁止强推与删除，没有任何人绕过——包括机器人。规则集与 secret scanning 是 GitHub 设置，
@@ -458,13 +478,29 @@ bash tools/apply-github-settings.sh
 合并；批准失败会开 `sync-alert` issue，到 Actions 页点 Approve and run 即可。
 自动合并与「允许 Actions 创建 PR」两项设置也由上面的脚本打开；没开时 PR 会留着等手动合并。
 
+可选：配一个 GitHub App（仓库变量 `SYNC_APP_CLIENT_ID`、密钥 `SYNC_APP_PRIVATE_KEY`，App 只需
+Contents 与 Pull requests 的读写），`sync.yml` 就改用它的令牌推分支、开 PR。`GITHUB_TOKEN`
+做的事不会触发新的运行，所以 bot PR 合并进 `main` 时 `validate` 的 push 运行不会跑；
+没配 App 时由 `validate.yml` 每天的定时运行补查 `main`。
+
 **同步守卫**：
 - 缩水阈值：单个规则文件少于原来的 90% 且至少少 50 条，或总量少于 95%，`sync-rules.py`
   就中止、不提交。之前只拦「整个策略 0 条」，上游返回截断内容时照样推给设备。近 7 次同步
   单文件最大删除约 3%。确认是上游有意删减时，手动触发 `sync.yml` 并勾选 `allow_shrink`。
-- `concurrency` 排队（不取消）、`timeout-minutes: 20`。
-- 失败开 issue（标签 `sync-alert`，已有未关闭的就追加评论）。协议漂移告警在**成功**的运行里
-  也会开 issue——之前只写进运行摘要，成功的运行没人会点开看。
+- 风险闸门：`tools/sync-report.py` 把每次同步的 diff 压成摘要写进 PR 描述。新增 MITM 主机或
+  `force-http-engine-hosts`、宽于 /8（IPv6 宽于 /16）的网段、裸顶级域后缀或通配、`IP-ASN` /
+  `GEOIP` / `GEOSITE` 时不开自动合并，PR 贴 `needs-review` 并开 issue。只看新增，已有的不重复报。
+  模块里出现跳转、改写、脚本这类非拦截写法时，`check-config.py` 直接判失败。
+- `publish` 拒收改到登记路径之外的同步提交：同步一旦能改 `tools/` 或 `.github/`，PR 上的
+  `validate` 跑的就是被改过的校验脚本。
+- 定时在 UTC 19:23（北京时间周一 03:23）。GitHub 的定时任务在整点扎堆排队，原先的
+  `0 20 * * 0` 实测每次晚 2 小时 17 分到 4 小时 38 分才开跑。
+- `concurrency` 排队（不取消）、`timeout-minutes: 20`。手动触发时可勾 `dry_run`：只同步与校验，
+  不推分支、不开 PR 与 issue，摘要见运行页。
+- 失败开 issue（标签 `sync-alert`，已有未关闭的就追加评论），恢复后自动关闭。协议漂移、
+  内核版本与 Clash Core 不一致、需要人工审核的变更在**成功**的运行里也会开 issue——成功的
+  运行没人会点开看。`validate.yml` 的每日定时运行失败、同步 PR 超过 24 小时没合并或没通过
+  校验时，同样开 issue。
 
 **凭据防泄**两层：GitHub 原生的 secret scanning + push protection 拦云厂商令牌一类；
 它认不得代理分享链接、机场订阅 token 与 Shadowrocket 的 `ca-p12`，这些由
@@ -517,7 +553,8 @@ IP 类规则补上 `no-resolve`（见下文「DNS 泄漏」）。
 
 `check-config.py` 只能用 Python 推测 mihomo 的行为。推测与内核之间有三类实测到的差距，
 `check-mihomo.py` 用钉死版本的真实内核（版本号取自 `sync-modules.py` 的 `MIHOMO_REF`，
-下载后核对 SHA-256，不符就拒绝运行）把它们补上：
+下载后核对 SHA-256，不符就拒绝运行；缓存里只留压缩包，每次使用前重新核对再解压，地理库按
+发布页的 `.sha256sum` 核对）把它们补上：
 
 - **正则引擎不同**：group filter 走 regexp2，Python 合法的 `(?P<n>…)` 它直接 panic。
 - **配置项被移除却不报错**：`global-client-fingerprint` 在 v1.19 已删，内核只记一行
@@ -536,6 +573,8 @@ warning / error。
 内容是否与 `stash/` 源文件一致由 `check-config.py` 逐条比对。配置里不带
 控制器，测试时临时注入一个只绑 `127.0.0.1` 的。`clash-verge/config.yaml` 的规则集在外部站点，只做 `-t` 解析。升级内核时改
 `MIHOMO_REF`，再用 `python tools/check-mihomo.py --print-pins` 取各平台的官方 SHA-256 更新 `PINS`。
+什么时候该升：`sync-modules.py` 每周对照 [clash.md/core](https://clash.md/core) 上 Clash Core
+所基于的 mihomo 版本，与 `MIHOMO_REF` 不一致时在同步告警里提醒。
 
 ### 广告拦截
 

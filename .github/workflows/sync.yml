@@ -3,23 +3,43 @@ name: 同步上游规则
 # 规则集收编进仓库后不会自己更新，广告类上游变动尤其频繁。
 # 每周日拉一次并跑校验，有变化就开（或更新）一个 PR，由 validate.yml 把关后自动合并。
 #
-# 为什么不再直接推 main：main 受 ruleset 保护（要求 PR + validate 通过、禁止强推，
+# 拆成三个 job，写权限只给不碰上游数据的那两个：
+#   build    只读。拉上游、生成全部产物、跑校验与内核载入测试、算同步摘要，把结果
+#            打成 git bundle 上传成 artifact。这里处理的全是外部数据，还要运行下载来的
+#            mihomo，所以拿不到任何能推代码、开 PR 的令牌。
+#   publish  contents / pull-requests / actions 写。核对 bundle 后推成 bot 分支、开 PR、
+#            批准 validate 运行。不跑仓库里的 Python，也不碰上游。
+#   alert    issues 写。失败与告警开 issue，恢复后关掉。
+#
+# 为什么不直接推 main：main 受 ruleset 保护（要求 PR + validate 通过、禁止强推，
 # 见 .github/rulesets/main.json）。
 #
 # 2026-10-18 实测：GITHUB_TOKEN 开的 PR 会触发 validate.yml 的 pull_request 运行，
 # 但 github-actions[bot] 被当成首次贡献者，运行停在 action_required 等人批准，
 # PR 因此一直 BLOCKED。用 workflow_dispatch 另跑一次 validate 也没用——那次检查
-# 虽然挂在同一个提交上，却不算进 PR 的必需检查。所以这里开完 PR 直接批准那次
+# 虽然挂在同一个提交上，却不算进 PR 的必需检查。所以 publish 开完 PR 直接批准那次
 # pull_request 运行；批准失败就开 issue，不会悄悄卡住。
 #
-# 失败或出现协议漂移告警时开 issue：成功的运行没人会点开看。
+# 可选：配了 GitHub App（仓库变量 SYNC_APP_CLIENT_ID 与密钥 SYNC_APP_PRIVATE_KEY）就改用
+# App 的令牌推分支、开 PR。GITHUB_TOKEN 做的事不会触发新的运行，所以 bot PR 合并进 main
+# 时 validate 的 push 运行不会跑；换成 App 令牌后会跑。没配时由 validate.yml 每天的
+# 定时运行补查 main。
+#
+# 自动合并前有一道风险闸门（tools/sync-report.py）：新增解密主机、过宽网段、
+# 裸顶级域或整片规则时不开自动合并，PR 贴 needs-review 并开 issue 等人审核。
 on:
   schedule:
-    - cron: '0 20 * * 0'   # UTC 20:00 周日 = 北京时间周一 04:00
+    # UTC 19:23 周日 = 北京时间周一 03:23。GitHub 的定时任务在整点扎堆排队，原先的
+    # '0 20 * * 0' 实测每次晚 2 小时 17 分到 4 小时 38 分才开跑，所以避开整点。
+    - cron: '23 19 * * 0'
   workflow_dispatch:        # 也可手动触发
     inputs:
       allow_shrink:
         description: '放行规则缩水（确认上游是有意删减时才勾）'
+        type: boolean
+        default: false
+      dry_run:
+        description: '只同步与校验，不推分支、不开 PR 与 issue（摘要见运行页）'
         type: boolean
         default: false
 
@@ -28,38 +48,55 @@ concurrency:
   group: sync-upstream
   cancel-in-progress: false
 
-permissions:
-  contents: write         # 推 bot 分支
-  pull-requests: write    # 开 / 更新 PR、开启自动合并
-  actions: write          # 批准 bot PR 上等待批准的 validate 运行
-  issues: write           # 失败与告警开 issue
+# 默认没有任何权限，每个 job 只拿自己要的。
+permissions: {}
 
 env:
   BOT_BRANCH: bot/sync-rules
   ALERT_LABEL: sync-alert
+  # 本流程各步骤的产物，逐一登记在这里；新增生成步骤时必须同步补上。
+  #   rule/                            拉取上游并合并
+  #   module/                          收编自托管模块
+  #   stash/  config/stash.stoverride  生成 Stash 配置
+  #   mrs/                             生成 MRS 规则集
+  #   config/clash.yaml                生成 Clash 配置
+  # 漏登记的产物只会随 runner 一起被丢弃——module/ 与 clash.yaml 之前就是这样从没被
+  # 机器人提交过。现在 tests/test_workflows.py 核对它覆盖了各生成脚本的输出，build 把
+  # 登记之外被改动的文件写进告警，publish 拒收改到登记之外的同步提交。
+  SYNC_PATHS: rule/ module/ stash/ mrs/ config/stash.stoverride config/clash.yaml
 
 jobs:
-  sync:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.bundle.outputs.changed }}
+      high_risk: ${{ steps.bundle.outputs.high_risk }}
     env:
-      GH_TOKEN: ${{ github.token }}
       SYNC_ALLOW_SHRINK: ${{ inputs.allow_shrink && '1' || '0' }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - name: 告警文件路径
+      - name: 准备输出目录
         # runner 上下文在 job 级 env 里不可用，只能在步骤里写进 GITHUB_ENV。
-        run: echo "SYNC_ALERT_FILE=$RUNNER_TEMP/sync-alerts.md" >> "$GITHUB_ENV"
+        # 整个目录最后上传成 artifact，交给 publish 与 alert。
+        run: |
+          mkdir -p "$RUNNER_TEMP/out"
+          echo "SYNC_OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
+          echo "SYNC_ALERT_FILE=$RUNNER_TEMP/out/alerts.md" >> "$GITHUB_ENV"
 
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.13'
 
       - name: 安装依赖
-        # check-config.py 用 PyYAML 校验本文件自身的语法；缺库只会降级为警告，
-        # 那样等于没校验，所以显式安装。
-        run: pip install --quiet pyyaml
+        # check-config.py 用 PyYAML 校验 workflow 自身的语法；缺库只会降级为警告，
+        # 那样等于没校验，所以显式安装。版本钉在 tools/requirements.txt。
+        run: pip install --quiet -r tools/requirements.txt
 
       - name: 拉取上游并合并
         # 缩水超过阈值会返回 1（见 sync-rules.py 的 SHRINK_*），不提交。
@@ -92,80 +129,251 @@ jobs:
         # 失败就不提交。
         run: python tools/check-mihomo.py
 
-      - name: 有变化才开 PR
-        id: pr
+      - name: 同步摘要与打包
+        id: bundle
         run: |
-          # 本流程各步骤的产物，逐一登记在这里；新增生成步骤时必须同步补上。
-          #   rule/                            拉取上游并合并
-          #   module/                          收编自托管模块
-          #   stash/  config/stash.stoverride  生成 Stash 配置
-          #   mrs/                             生成 MRS 规则集
-          #   config/clash.yaml                生成 Clash 配置
-          # 漏登记不会报错，产物只会随 runner 一起被丢弃——module/ 与 clash.yaml
-          # 之前就是这样从没被机器人提交过。
-          paths=(rule/ module/ stash/ mrs/ config/stash.stoverride config/clash.yaml)
+          read -ra paths <<< "$SYNC_PATHS"
+          # 登记之外被改动的文件不会提交，但要让人知道：多半是新加的生成步骤忘了登记。
+          excludes=()
+          for p in "${paths[@]}"; do excludes+=(":(exclude)$p"); done
+          stray="$(git status --porcelain -- . "${excludes[@]}")"
+          if [ -n "$stray" ]; then
+            fence='```'
+            printf -- '- 同步流程改动了没有登记在 SYNC_PATHS 的文件，这些改动不会提交：\n\n%s\n%s\n%s\n' \
+              "$fence" "$stray" "$fence" >> "$SYNC_ALERT_FILE"
+          fi
           # 用 status --porcelain 而非 diff --quiet：后者看不到新增文件，
           # 往 sources.txt 加新策略时生成的新 .list 会被静默丢弃。
           if [ -z "$(git status --porcelain -- "${paths[@]}")" ]; then
             echo "上游无变化，跳过"
+            echo "changed=0" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          # 摘要写进 PR 描述与运行页；有需要人工审核的变更时 high_risk=1，publish 不开自动合并。
+          python tools/sync-report.py --out "$SYNC_OUT/report.md" --risk-out "$SYNC_OUT/risk.md" --github-output
+          base="$(git rev-parse HEAD)"
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c "$BOT_BRANCH"
           git add -- "${paths[@]}"
           # 不用 heredoc：它的内容必须顶格，会冲出 YAML 块作用域导致语法错误。
           git commit -m "chore: 同步上游规则集" -m "由 .github/workflows/sync.yml 自动执行，校验与 mihomo 载入测试通过后才提交。" -m "上游清单见 tools/sources.txt，缺陷豁免见 tools/exclude.txt。"
+          # bundle 只含这一个提交，以本次运行的 main 为前提；publish 检出同一个提交后取出。
+          git bundle create "$SYNC_OUT/sync.bundle" "$BOT_BRANCH" "^$base"
+          echo "changed=1" >> "$GITHUB_OUTPUT"
+
+      - name: 上传同步结果
+        # 失败时也传：alert 要把运行中的告警一起写进 issue。
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sync
+          path: ${{ runner.temp }}/out/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  publish:
+    needs: build
+    # 只在 main 上发布：在别的分支上手动跑（试 workflow 改动）只到 build 为止。
+    if: needs.build.outputs.changed == '1' && github.ref == 'refs/heads/main' && !inputs.dry_run
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write         # 推 bot 分支
+      pull-requests: write    # 开 / 更新 PR、贴标签、开关自动合并
+      actions: write          # 批准 bot PR 上等待批准的 validate 运行
+    outputs:
+      number: ${{ steps.pr.outputs.number }}
+      approve_failed: ${{ steps.approve.outputs.approve_failed }}
+    env:
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: 换用 GitHub App 的令牌（可选）
+        id: app
+        if: vars.SYNC_APP_CLIENT_ID != ''
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
+        with:
+          client-id: ${{ vars.SYNC_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SYNC_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: sync
+          path: ${{ runner.temp }}/sync
+
+      - name: 核对并推送 bot 分支
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+        run: |
+          bundle="$RUNNER_TEMP/sync/sync.bundle"
+          git bundle verify -q "$bundle"
+          git fetch --no-tags "$bundle" "+refs/heads/$BOT_BRANCH:refs/heads/$BOT_BRANCH"
+          # build 处理的是外部数据，它交来的提交要再核一遍：必须直接建在本次运行的 main 上，
+          # 而且只改登记过的产物。同步一旦能改 tools/ 或 .github/，PR 上的 validate
+          # 跑的就是被改过的校验脚本。
+          if [ "$(git rev-parse "$BOT_BRANCH^")" != "$GITHUB_SHA" ]; then
+            echo "::error::同步提交的父提交不是本次运行的 main（$GITHUB_SHA）"
+            exit 1
+          fi
+          read -ra paths <<< "$SYNC_PATHS"
+          bad=()
+          while IFS= read -r f; do
+            ok=0
+            for p in "${paths[@]}"; do
+              case "$p" in
+                */) [[ "$f" == "$p"* ]] && ok=1 ;;
+                *) [[ "$f" == "$p" ]] && ok=1 ;;
+              esac
+            done
+            [ "$ok" = 1 ] || bad+=("$f")
+          done < <(git diff --no-renames --name-only "$GITHUB_SHA" "$BOT_BRANCH")
+          if [ "${#bad[@]}" -gt 0 ]; then
+            echo "::error::同步提交改到了 SYNC_PATHS 之外的文件：${bad[*]}"
+            exit 1
+          fi
+          # 令牌不落盘（checkout 用了 persist-credentials: false）：推送时 git 现找 gh 要 GH_TOKEN。
+          gh auth setup-git
           # bot 分支每次从 main 重建，旧的未合并同步直接被新的一次取代。
           # ruleset 只保护 main，这个分支可以强推。
-          git push --force origin "HEAD:$BOT_BRANCH"
-          num=$(gh pr list --head "$BOT_BRANCH" --base main --state open --json number --jq '.[0].number')
+          git push --force origin "refs/heads/$BOT_BRANCH:refs/heads/$BOT_BRANCH"
+
+      - name: 开或更新 PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          HIGH_RISK: ${{ needs.build.outputs.high_risk }}
+        run: |
+          body="$RUNNER_TEMP/pr-body.md"
+          {
+            printf '由 sync.yml 自动创建（[运行记录](%s/%s/actions/runs/%s)）。上游清单见 tools/sources.txt，缺陷豁免见 tools/exclude.txt。\n\n' \
+              "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
+            cat "$RUNNER_TEMP/sync/report.md"
+          } > "$body"
+          num="$(gh pr list --head "$BOT_BRANCH" --base main --state open --json number --jq '.[0].number')"
           if [ -z "$num" ]; then
-            gh pr create --head "$BOT_BRANCH" --base main --title "chore: 同步上游规则集" --body "由 sync.yml 自动创建。validate 通过后自动合并；规则数变化见各 rule/*.list 的 diff。"
-            num=$(gh pr list --head "$BOT_BRANCH" --base main --state open --json number --jq '.[0].number')
+            url="$(gh pr create --head "$BOT_BRANCH" --base main --title "chore: 同步上游规则集" --body-file "$body")"
+            num="${url##*/}"
+          else
+            # 摘要每次都按新内容重写。走 REST，不依赖 gh pr edit 的 GraphQL 查询。
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/pulls/$num" -F "body=@$body" > /dev/null
           fi
           echo "number=$num" >> "$GITHUB_OUTPUT"
-          # 自动合并要在仓库设置里打开 Allow auto-merge；没开就留着 PR 等人手动合并。
-          gh pr merge "$num" --auto --squash || echo "::warning::自动合并未开启，PR #$num 需要手动合并"
+          if [ "$HIGH_RISK" = 1 ]; then
+            # 风险闸门：关掉上一轮可能开着的自动合并，贴标签等人审核（alert 会开 issue）。
+            gh pr merge "$num" --disable-auto > /dev/null 2>&1 || true
+            gh label create needs-review --color FBCA04 --description "同步 PR 含需要人工审核的变更" --force > /dev/null
+            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$num/labels" -f "labels[]=needs-review" > /dev/null
+            echo "::warning::PR #$num 含需要人工审核的变更（见 PR 描述），没有开自动合并"
+          else
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/issues/$num/labels/needs-review" > /dev/null 2>&1 || true
+            # 自动合并要在仓库设置里打开 Allow auto-merge；没开就留着 PR 等人手动合并。
+            gh pr merge "$num" --auto --squash || echo "::warning::自动合并未开启，PR #$num 需要手动合并"
+          fi
+
+      - name: 批准等待中的 validate 运行
+        id: approve
+        env:
+          GH_TOKEN: ${{ github.token }}   # 批准要 actions: write，App 令牌没申请这项
+          NUM: ${{ steps.pr.outputs.number }}
+        run: |
           # 批准 bot PR 上停在 action_required 的 validate 运行（见文件头）。运行是异步
           # 创建的，最多等 2 分钟。已经在跑或跑完（bot 不再算首次贡献者时）就不用批准。
-          sha=$(git rev-parse HEAD)
-          for i in $(seq 1 24); do
-            runs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$sha&event=pull_request" --jq '[.workflow_runs[] | select(.path == ".github/workflows/validate.yml")]')
-            [ "$(echo "$runs" | jq length)" -gt 0 ] && break
+          sha="$(git rev-parse "refs/heads/$BOT_BRANCH")"
+          runs='[]'
+          for _ in $(seq 1 24); do
+            runs="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$sha&event=pull_request" \
+              --jq '[.workflow_runs[] | select(.path == ".github/workflows/validate.yml")]')"
+            [ "$(jq length <<< "$runs")" -gt 0 ] && break
             sleep 5
           done
-          pending=$(echo "$runs" | jq -r '.[] | select(.conclusion == "action_required" or .status == "waiting") | .id')
-          for id in $pending; do
-            if gh api -X POST "repos/$GITHUB_REPOSITORY/actions/runs/$id/approve" >/dev/null; then
+          if [ "$(jq length <<< "$runs")" -eq 0 ]; then
+            echo "approve_failed=none" >> "$GITHUB_OUTPUT"
+            echo "::warning::2 分钟内没等到 PR #$NUM 的 validate 运行"
+            exit 0
+          fi
+          for id in $(jq -r '.[] | select(.conclusion == "action_required" or .status == "waiting") | .id' <<< "$runs"); do
+            if gh api -X POST "repos/$GITHUB_REPOSITORY/actions/runs/$id/approve" > /dev/null; then
               echo "已批准 validate 运行 $id"
             else
               echo "approve_failed=$id" >> "$GITHUB_OUTPUT"
-              echo "::warning::无法批准 validate 运行 $id，PR #$num 会卡在 BLOCKED"
+              echo "::warning::无法批准 validate 运行 $id，PR #$NUM 会卡在 BLOCKED"
             fi
           done
-          if [ "$(echo "$runs" | jq length)" -eq 0 ]; then
-            echo "approve_failed=none" >> "$GITHUB_OUTPUT"
-            echo "::warning::2 分钟内没等到 PR #$num 的 validate 运行"
-          fi
 
-      - name: 协议漂移等告警开 issue
-        if: success()
-        run: |
-          failed="${{ steps.pr.outputs.approve_failed }}"
-          if [ -n "$failed" ]; then
-            printf -- '- PR #%s 的 validate 运行没能自动批准（%s），PR 会卡在 BLOCKED：到 Actions 页手动 Approve and run\n' "${{ steps.pr.outputs.number }}" "$failed" >> "$SYNC_ALERT_FILE"
-          fi
-          [ -s "$SYNC_ALERT_FILE" ] || exit 0
-          gh label create "$ALERT_LABEL" --color D93F0B --description "同步流程的失败与告警" --force
-          body="$(printf '同步成功，但有需要处理的告警（运行：%s/%s/actions/runs/%s）：\n\n%s' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$(cat "$SYNC_ALERT_FILE")")"
-          num=$(gh issue list --label "$ALERT_LABEL" --state open --search "同步告警 in:title" --json number --jq '.[0].number')
-          if [ -n "$num" ]; then gh issue comment "$num" --body "$body"; else gh issue create --title "同步告警：需要人工处理" --label "$ALERT_LABEL" --body "$body"; fi
+  alert:
+    needs: [build, publish]
+    # 手动取消的运行不报；超时算失败，照样开 issue。只在 main 上报，试跑也不报。
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read          # 检出 tools/ci-issue.sh
+      issues: write           # 失败与告警开 issue，恢复后关掉
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - name: 失败时开 issue
-        if: failure()
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        # build 早早失败时可能一个文件都没传上来；那样就只报失败本身。
+        continue-on-error: true
+        with:
+          name: sync
+          path: ${{ runner.temp }}/sync
+
+      - name: 开或关 issue
+        env:
+          BUILD_RESULT: ${{ needs.build.result }}
+          PUBLISH_RESULT: ${{ needs.publish.result }}
+          HIGH_RISK: ${{ needs.build.outputs.high_risk }}
+          PR_NUMBER: ${{ needs.publish.outputs.number }}
+          APPROVE_FAILED: ${{ needs.publish.outputs.approve_failed }}
         run: |
-          gh label create "$ALERT_LABEL" --color D93F0B --description "同步流程的失败与告警" --force
-          body="$(printf '每周同步失败，未提交任何内容。\n\n运行日志：%s/%s/actions/runs/%s\n\n常见原因：上游抓取失败或缩水超过阈值（确认是有意删减后手动触发并勾选 allow_shrink）、check-config / mihomo 载入测试未通过。' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")"
-          num=$(gh issue list --label "$ALERT_LABEL" --state open --search "同步失败 in:title" --json number --jq '.[0].number')
-          if [ -n "$num" ]; then gh issue comment "$num" --body "$body"; else gh issue create --title "同步失败：每周规则同步未完成" --label "$ALERT_LABEL" --body "$body"; fi
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          dir="$RUNNER_TEMP/sync"
+          body="$RUNNER_TEMP/issue-body.md"
+          fail_title="同步失败：每周规则同步未完成"
+          failed=0
+          [ "$BUILD_RESULT" = success ] || failed=1
+          case "$PUBLISH_RESULT" in success|skipped) ;; *) failed=1 ;; esac
+          if [ "$failed" = 1 ]; then
+            {
+              printf '每周同步没有完成（build：%s，publish：%s）。\n\n运行日志：%s\n\n' "$BUILD_RESULT" "$PUBLISH_RESULT" "$run_url"
+              printf '常见原因：上游抓取失败或缩水超过阈值（确认是有意删减后手动触发并勾选 allow_shrink）、'
+              printf 'check-config / mihomo 载入测试未通过、publish 拒收了改到登记路径之外的同步提交。\n'
+              if [ -s "$dir/alerts.md" ]; then
+                printf '\n运行中的告警：\n\n'
+                cat "$dir/alerts.md"
+              fi
+            } > "$body"
+            bash tools/ci-issue.sh open "$fail_title" "$body"
+            exit 0
+          fi
+          bash tools/ci-issue.sh close "$fail_title" "已恢复：$run_url 同步成功。"
+
+          alerts="$RUNNER_TEMP/alerts.md"
+          : > "$alerts"
+          if [ -s "$dir/alerts.md" ]; then cat "$dir/alerts.md" >> "$alerts"; fi
+          if [ -n "$APPROVE_FAILED" ]; then
+            printf -- '- PR #%s 的 validate 运行没能自动批准（%s），PR 会卡在 BLOCKED：到 Actions 页手动 Approve and run\n' \
+              "$PR_NUMBER" "$APPROVE_FAILED" >> "$alerts"
+          fi
+          if [ "$HIGH_RISK" = 1 ] && [ -n "$PR_NUMBER" ]; then
+            {
+              printf -- '- PR #%s 含需要人工审核的变更，没有开自动合并，已贴 needs-review。' "$PR_NUMBER"
+              printf '确认是上游有意的改动后手动合并，否则在 tools/exclude.txt 剔除：\n\n'
+              cat "$dir/risk.md" 2> /dev/null || printf '（风险清单没能从 artifact 取回，见 PR 描述）\n'
+            } >> "$alerts"
+          fi
+          [ -s "$alerts" ] || exit 0
+          { printf '同步成功，但有需要处理的告警（运行：%s）：\n\n' "$run_url"; cat "$alerts"; } > "$body"
+          bash tools/ci-issue.sh open "同步告警：需要人工处理" "$body"

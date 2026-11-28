@@ -1,0 +1,3 @@
+# tools/ 下脚本的运行依赖。版本钉死：同样的提交在 CI 与本地用同一份库。
+# 更新由 Dependabot 每周提 PR（.github/dependabot.yml）。
+pyyaml==6.0.4

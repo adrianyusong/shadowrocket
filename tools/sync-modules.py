@@ -61,13 +61,13 @@ NON_PROXY_TYPES = {'Direct', 'Reject', 'RejectDrop', 'Compatible', 'Pass',
 GROUP_TYPES = {'Relay', 'Selector', 'Fallback', 'URLTest', 'LoadBalance'}
 
 
-def _warn_summary(msg):
+def _warn_summary(msg, tag='协议漂移'):
     """告警但不失败：打到 stderr，并在 CI 里追加到步骤摘要。
 
-    协议漂移不阻断同步，但也不能悄无声息 —— 摘要会显示在 Actions 运行页，
-    本地则打到 stderr。
+    协议漂移、内核版本落后都不阻断同步，但也不能悄无声息 —— 摘要会显示在
+    Actions 运行页，本地则打到 stderr。
     """
-    sys.stderr.write('[协议漂移] ' + msg + chr(10))
+    sys.stderr.write('[%s] %s%s' % (tag, msg, chr(10)))
     # 成功的运行没人会点开看摘要，所以另写一份告警文件，sync.yml 据此开 issue。
     alerts = os.environ.get('SYNC_ALERT_FILE')
     if alerts:
@@ -142,6 +142,50 @@ def check_type_drift():
     return 0
 
 
+# clash.md/core 列出 Clash for Apple 的 Clash Core 版本（形如 v1.19.34-clash.3）。
+# MIHOMO_REF 要跟着它走：协议清单、内核载入测试与 MRS 转换都以 MIHOMO_REF 为准，
+# 两边版本不一致，测的就不是用户设备上的那个内核。这里只提醒、不改版本——升级要同时
+# 更新 check-mihomo.py 的 PINS（python tools/check-mihomo.py --print-pins）并跑完整校验。
+CORE_PAGE = 'https://clash.md/core'
+CORE_VERSION = re.compile(r'v(\d+)\.(\d+)\.(\d+)-clash\.\d+')
+
+
+def _version(ref):
+    """'v1.19.33' -> (1, 19, 33)"""
+    return tuple(int(x) for x in re.findall(r'\d+', ref)[:3])
+
+
+def core_version_gap(page, ref=MIHOMO_REF):
+    """页面上最新的 Clash Core 所基于的 mihomo 版本与 ref 不同时返回它，否则返回 None。
+
+    页面上没找到任何版本号时抛 ValueError（页面改版了，比对不了）。
+    """
+    found = {tuple(int(x) for x in m) for m in CORE_VERSION.findall(page)}
+    if not found:
+        raise ValueError('没找到 vX.Y.Z-clash.N 形式的版本号')
+    newest = max(found)
+    return None if newest == _version(ref) else 'v%d.%d.%d' % newest
+
+
+def check_core_version():
+    """MIHOMO_REF 与 Clash Core 所基于的 mihomo 版本不一致时告警。返回值一律为 0。"""
+    try:
+        gap = core_version_gap(fetch(CORE_PAGE))
+    except Exception as e:                           # noqa: BLE001
+        print('内核版本比对跳过（%s：%s）' % (CORE_PAGE, e))
+        return 0
+    if gap is None:
+        print('内核版本比对：MIHOMO_REF %s 与 Clash Core 一致' % MIHOMO_REF)
+    elif _version(gap) > _version(MIHOMO_REF):
+        _warn_summary('Clash Core 已基于 mihomo %s，MIHOMO_REF 还是 %s：升级 tools/sync-modules.py '
+                      '的 MIHOMO_REF，用 python tools/check-mihomo.py --print-pins 更新 PINS 后跑完整校验'
+                      % (gap, MIHOMO_REF), tag='内核版本')
+    else:
+        _warn_summary('MIHOMO_REF %s 比 Clash Core 所基于的 mihomo %s 还新：用户设备上的内核'
+                      '可能还不支持校验时放行的写法' % (MIHOMO_REF, gap), tag='内核版本')
+    return 0
+
+
 def main():
     if not os.path.isdir(OUTDIR):
         os.makedirs(OUTDIR)
@@ -195,6 +239,7 @@ def main():
         print('module/%s.sgmodule  重写 %d 条 / 解密域名 %d 个'
               % (s['name'], len(rules), len(hosts)))
     failed |= check_type_drift()
+    failed |= check_core_version()
     return failed
 
 

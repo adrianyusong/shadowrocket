@@ -1,0 +1,5 @@
+# validate.yml 额外需要的工具：pytest 跑 tests/，zizmor 审计 workflow（tools/lint-workflows.py）。
+# sync.yml 只装 requirements.txt：发布流程不需要它们。
+-r requirements.txt
+pytest==9.2.0
+zizmor==1.33.1
