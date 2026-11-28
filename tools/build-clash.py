@@ -49,7 +49,7 @@ TEST_URL = bs.TEST_URL
 # 首次写这份清单时一口气漏了 8 个（Sudoku / Masque / TrustTunnel /
 # ShadowQuic / OpenVPN / Tailscale / ZeroTier / GostRelay），是 Shadowrocket
 # 2.2.92 加入 Sudoku 才暴露出来的。tools/sync-modules.py 会拉 Clash Core 所基于的
-# mihomo 版本（v1.19.33）比对，漏了在 CI 摘要里告警（不阻断同步）。
+# mihomo 版本（v1.19.34）比对，漏了在 CI 摘要里告警（不阻断同步）。
 # EasyTier 从 mihomo v1.19.31 起进了稳定版。Clash for Apple 只在 Mac 上实现它，
 # iPhone / iPad / Apple TV 保留节点但拒绝连接。
 ALL_TYPES = ['Shadowsocks', 'ShadowsocksR', 'Snell', 'Socks5', 'Http',
@@ -219,7 +219,7 @@ def main():
     A('# Clash for Apple / Clash Verge 完整配置')
     A('# 由 tools/build-clash.py 生成，请勿手改——下次同步会覆盖。')
     A('# https://github.com/adrianyusong/shadowrocket')
-    A('# 字段按 clash.md（Clash Core v1.19.33-clash.5，基于 mihomo 1.19.33）的说明取舍。')
+    A('# 字段按 clash.md（Clash Core v1.19.34-clash.3，基于 mihomo 1.19.34）的说明取舍。')
     A('#')
     A('# ============================================================')
     A('# 这是模板，不是可直接订阅的地址。')

@@ -1,7 +1,7 @@
 # Clash for Apple / Clash Verge 完整配置
 # 由 tools/build-clash.py 生成，请勿手改——下次同步会覆盖。
 # https://github.com/adrianyusong/shadowrocket
-# 字段按 clash.md（Clash Core v1.19.33-clash.5，基于 mihomo 1.19.33）的说明取舍。
+# 字段按 clash.md（Clash Core v1.19.34-clash.3，基于 mihomo 1.19.34）的说明取舍。
 #
 # ============================================================
 # 这是模板，不是可直接订阅的地址。

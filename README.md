@@ -43,8 +43,8 @@ https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/config/stash-pr
 https://raw.githubusercontent.com/adrianyusong/shadowrocket/main/config/clash.yaml
 ```
 
-字段按 [clash.md](https://clash.md/guide/config/) 的说明取舍（Clash Core v1.19.33-clash.5，
-基于 mihomo 1.19.33）：在 Clash for Apple 上不生效、或会替用户对局域网开服务的字段都不写——
+字段按 [clash.md](https://clash.md/guide/config/) 的说明取舍（Clash Core v1.19.34-clash.3，
+基于 mihomo 1.19.34）：在 Clash for Apple 上不生效、或会替用户对局域网开服务的字段都不写——
 本地代理端口、`dns.listen`、外部控制器、`find-process-mode`。`check-config.py` 会拦
 `dns.listen` 绑非回环地址与 `allow-lan: true`。
 
