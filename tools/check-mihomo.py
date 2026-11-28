@@ -72,12 +72,12 @@ PLATFORMS = ('darwin-amd64', 'darwin-arm64', 'linux-amd64', 'linux-arm64', 'wind
 
 # 官方发布页为每个资产列出的 SHA-256。
 PINS = {
-    'v1.19.33': {
-        'darwin-amd64': '551ae54ef8d77a5e21f7a8185a59b441fb13a0fb0514fcdef5ca2816f6f50015',
-        'darwin-arm64': '060b64b0f2c9a310831db0fe4adb2878de67bfa606c311813c1f13966aa504b6',
-        'linux-amd64': '132f6f3edf9a65e62f04853aed3358472e0b2b7666daa8419edfa2ddf5bb6323',
-        'linux-arm64': 'ba408b317080ee265c46cb923a50018c1b82cbd708551cdd46a1e3e307396187',
-        'windows-amd64': '6ab2180875f9f6fff8b19386d760daec257f66b45f72b3afc650634272fa837a',
+    'v1.19.34': {
+        'darwin-amd64': '089b033be801ff365b6558851115238b443b237433aa0841bc3fa41ad75a3927',
+        'darwin-arm64': '1a7a20eca63fbbaec90137717465bfde488d0db2a3a79b8fadebf9b2545b6e4c',
+        'linux-amd64': '223fab877e5795ce780ba39902e5f0b1113c1256ae244a7160f1165e017e9ccc',
+        'linux-arm64': 'daaf78a6240a282cdfd75bcbf98fe321f6bd52765cc29e79f344191198f0b50f',
+        'windows-amd64': 'f6b855de8722781caea62686f0301f89625fc558d48c1103ffdd98dad7f7f488',
     },
 }
 
